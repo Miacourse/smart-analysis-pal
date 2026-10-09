@@ -38,8 +38,8 @@ export const Route = createFileRoute("/api/chat")({
         if (!authHeader) return jsonError(401, "Connexion requise.");
 
         const supabase = createClient(
-          process.env.SUPABASE_URL!,
-          process.env.VITE_SUPABASE_PUBLISHABLE_KEY!,
+          process.env["SUPABASE_URL"]!,
+          process.env["VITE_SUPABASE_PUBLISHABLE_KEY"]!,
           { global: { headers: { Authorization: authHeader } } },
         );
         const {
@@ -81,7 +81,7 @@ export const Route = createFileRoute("/api/chat")({
           instructions += `\n\nJeu de données fourni par l'utilisateur : "${thread.dataset_name ?? "dataset"}" (extrait CSV, premières lignes) :\n\`\`\`csv\n${thread.dataset_preview}\n\`\`\`\nBase tes analyses sur cet extrait et précise quand une réponse complète nécessiterait l'ensemble des données.`;
         }
 
-        const apiKey = process.env.LOVABLE_API_KEY;
+        const apiKey = process.env["LOVABLE_API_KEY"];
         if (!apiKey) return jsonError(500, "Service IA non configuré.");
 
         const modelMessages = await convertToModelMessages(messages);
@@ -93,6 +93,7 @@ export const Route = createFileRoute("/api/chat")({
         );
 
         const lastUserMessage = messages[messages.length - 1];
+        if (!lastUserMessage) return jsonError(400, "Message manquant.");
         const response = call.result.toUIMessageStreamResponse({
           originalMessages: messages,
           sendReasoning: true,

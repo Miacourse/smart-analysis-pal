@@ -36,8 +36,9 @@ function ChatIndex() {
         .order("updated_at", { ascending: false })
         .limit(1);
       if (cancelled) return;
-      if (threads && threads.length > 0) {
-        navigate({ to: "/chat/$threadId", params: { threadId: threads[0].id }, replace: true });
+      const latest = threads?.[0];
+      if (latest) {
+        navigate({ to: "/chat/$threadId", params: { threadId: latest.id }, replace: true });
       } else {
         const { data, error } = await supabase
           .from("threads")
