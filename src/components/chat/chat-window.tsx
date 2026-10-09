@@ -140,20 +140,12 @@ function ChatSession({
           toast.error("Impossible d'associer le fichier à la conversation.");
           return;
         }
-        setDatasetName(file.name);
+        onDatasetChange(file.name);
         toast.success(`Fichier « ${file.name} » chargé. Posez votre question !`);
         textareaRef.current?.focus();
       },
       error: () => toast.error("Lecture du fichier impossible. Utilisez un CSV valide."),
     });
-  }
-
-  if (initialMessages === null) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <Shimmer className="text-sm">Chargement de la conversation…</Shimmer>
-      </div>
-    );
   }
 
   return (
@@ -240,7 +232,7 @@ function ChatSession({
               disabled={busy}
             />
             <PromptInputFooter className="justify-end">
-              <PromptInputSubmit status={status} onStop={stop} disabled={busy === false && false} />
+              <PromptInputSubmit status={status} onStop={stop} />
             </PromptInputFooter>
           </PromptInput>
           <p className="mt-2 text-center text-xs text-muted-foreground">
