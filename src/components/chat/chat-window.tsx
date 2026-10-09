@@ -59,6 +59,41 @@ export function ChatWindow({ threadId }: { threadId: string }) {
     };
   }, [threadId]);
 
+  if (initialMessages === null) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Shimmer className="text-sm">Chargement de la conversation…</Shimmer>
+      </div>
+    );
+  }
+
+  return (
+    <ChatSession
+      threadId={threadId}
+      initialMessages={initialMessages}
+      datasetName={datasetName}
+      accessToken={accessToken}
+      onDatasetChange={setDatasetName}
+    />
+  );
+}
+
+function ChatSession({
+  threadId,
+  initialMessages,
+  datasetName,
+  accessToken,
+  onDatasetChange,
+}: {
+  threadId: string;
+  initialMessages: UIMessage[];
+  datasetName: string | null;
+  accessToken: string | null;
+  onDatasetChange: (name: string) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
@@ -72,7 +107,7 @@ export function ChatWindow({ threadId }: { threadId: string }) {
   const { messages, sendMessage, status, stop } = useChat({
     id: threadId,
     transport,
-    messages: initialMessages ?? [],
+    messages: initialMessages,
     onError: async (error) => {
       let msg = "Une erreur est survenue. Réessayez.";
       try {
