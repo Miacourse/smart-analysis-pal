@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { MessageSquarePlus, Trash2, LogOut } from "lucide-react";
+import { MessageSquarePlus, Trash2, LogOut, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -121,7 +121,14 @@ export function ThreadSidebar({ activeThreadId }: { activeThreadId?: string }) {
         )}
       </div>
 
-      <div className="border-t border-sidebar-border p-3">
+      <div className="space-y-1 border-t border-sidebar-border p-3">
+        <Link
+          to="/pricing"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-primary hover:bg-sidebar-accent"
+        >
+          <Sparkles className="h-4 w-4" />
+          Offre Pro / Abonnement
+        </Link>
         <button
           onClick={signOut}
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent"

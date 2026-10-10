@@ -41,6 +41,9 @@ function Landing() {
           <span className="font-display text-lg font-semibold tracking-tight">DA-Copilot</span>
         </div>
         <nav className="flex items-center gap-3">
+          <Link to="/pricing" className="rounded-md px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
+            Tarifs
+          </Link>
           <Link to="/login" className="rounded-md px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
             Se connecter
           </Link>
@@ -73,12 +76,12 @@ function Landing() {
               <Upload className="h-4 w-4" />
               Analyser mes données
             </Link>
-            <a
-              href="#tarifs"
+            <Link
+              to="/pricing"
               className="rounded-lg border border-border bg-card px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
             >
               Voir les tarifs
-            </a>
+            </Link>
           </div>
         </div>
       </section>
