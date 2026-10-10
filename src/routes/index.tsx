@@ -112,8 +112,8 @@ function Landing() {
               <h3 className="font-display text-lg font-semibold">Gratuit</h3>
               <p className="mt-2 font-display text-4xl font-bold">0 €</p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <li>• 20 analyses offertes</li>
-                <li>• Téléversement de fichiers CSV</li>
+                <li>• 5 analyses offertes</li>
+                <li>• Fichiers CSV jusqu'à 5 Mo</li>
                 <li>• Historique des conversations</li>
               </ul>
               <Link
@@ -124,27 +124,22 @@ function Landing() {
               </Link>
             </div>
             <div className="rounded-2xl border-2 border-primary bg-background p-8 shadow-sm">
-              <div className="flex items-center justify-between">
-                <h3 className="font-display text-lg font-semibold">Pro</h3>
-                <span className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
-                  Bientôt disponible
-                </span>
-              </div>
+              <h3 className="font-display text-lg font-semibold">Pro</h3>
               <p className="mt-2 font-display text-4xl font-bold">
                 19 €<span className="text-base font-normal text-muted-foreground">/mois</span>
               </p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                 <li>• Analyses illimitées</li>
-                <li>• Jeux de données plus volumineux</li>
-                <li>• Rapports exportables</li>
+                <li>• Fichiers CSV jusqu'à 50 Mo</li>
+                <li>• Historique illimité</li>
                 <li>• Support prioritaire</li>
               </ul>
-              <button
-                disabled
-                className="mt-8 block w-full cursor-not-allowed rounded-lg bg-primary/60 px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground"
+              <Link
+                to="/pricing"
+                className="mt-8 block w-full rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground hover:bg-primary/90"
               >
-                Bientôt disponible
-              </button>
+                Devenir Pro
+              </Link>
             </div>
           </div>
         </div>

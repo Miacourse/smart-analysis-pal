@@ -3,8 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { convertToModelMessages, type UIMessage } from "ai";
 
 import { createResponsesCall } from "@/lib/ai/responses.server";
-
-const FREE_MESSAGE_LIMIT = 20;
+import { getProStatus } from "@/lib/stripe.server";
+import { canAnalyze, FREE_ANALYSIS_LIMIT } from "@/lib/billing";
 
 const SYSTEM_PROMPT = `Tu es DA-Copilot, un agent d'analyse de données rigoureux et pédagogue.
 Tu transformes une question métier et un jeu de données en une réponse claire, chiffrée et vérifiable.
@@ -61,18 +61,25 @@ export const Route = createFileRoute("/api/chat")({
           .maybeSingle();
         if (!thread) return jsonError(403, "Conversation introuvable.");
 
-        // Limite du plan gratuit
+        // Limite de l'essai gratuit
         const { data: sub } = await supabase
           .from("subscriptions")
-          .select("plan, analyses_used")
+          .select("analyses_used")
           .eq("user_id", user.id)
           .maybeSingle();
-        const plan = sub?.plan ?? "free";
         const used = sub?.analyses_used ?? 0;
-        if (plan === "free" && used >= FREE_MESSAGE_LIMIT) {
+        let isPro = false;
+        if (used >= FREE_ANALYSIS_LIMIT && user.email) {
+          try {
+            isPro = (await getProStatus(user.email)).isPro;
+          } catch (e) {
+            console.error("Vérification Stripe impossible", e);
+          }
+        }
+        if (!canAnalyze(isPro, used)) {
           return jsonError(
             402,
-            `Vous avez atteint la limite du plan gratuit (${FREE_MESSAGE_LIMIT} analyses). Passez au plan Pro pour continuer.`,
+            `Vous avez utilisé vos ${FREE_ANALYSIS_LIMIT} analyses gratuites. Passez au plan Pro pour continuer.`,
           );
         }
 
@@ -107,16 +114,13 @@ export const Route = createFileRoute("/api/chat")({
                 .from("threads")
                 .update({ updated_at: new Date().toISOString() })
                 .eq("id", threadId);
-              if (sub) {
-                await supabase
-                  .from("subscriptions")
-                  .update({ analyses_used: used + 1, updated_at: new Date().toISOString() })
-                  .eq("user_id", user.id);
-              } else {
-                await supabase
-                  .from("subscriptions")
-                  .insert({ user_id: user.id, analyses_used: 1 });
-              }
+              const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+              await supabaseAdmin
+                .from("subscriptions")
+                .upsert(
+                  { user_id: user.id, analyses_used: used + 1, updated_at: new Date().toISOString() },
+                  { onConflict: "user_id" },
+                );
             } catch (e) {
               console.error("Erreur de sauvegarde des messages", e);
             }
