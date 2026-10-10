@@ -1,3 +1,5 @@
+import { getBillingStatus } from "@/lib/billing.functions";
+import { FREE_MAX_FILE_MB, PRO_MAX_FILE_MB } from "@/lib/billing";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Paperclip } from "lucide-react";
