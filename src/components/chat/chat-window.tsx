@@ -2,7 +2,7 @@ import { getBillingStatus } from "@/lib/billing.functions";
 import { FREE_MAX_FILE_MB, PRO_MAX_FILE_MB } from "@/lib/billing";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Paperclip } from "lucide-react";
+import { FileDown, FileSpreadsheet, Paperclip } from "lucide-react";
 import Papa from "papaparse";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -123,6 +123,33 @@ function ChatSession({
   });
 
   const busy = status === "submitted" || status === "streaming";
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport(kind: "pdf" | "xlsx") {
+    setExporting(true);
+    try {
+      const { data: thread } = await supabase
+        .from("threads")
+        .select("title, dataset_name, dataset_preview")
+        .eq("id", threadId)
+        .maybeSingle();
+      const input = {
+        title: thread?.title ?? "Analyse",
+        datasetName: thread?.dataset_name ?? datasetName,
+        datasetPreview: thread?.dataset_preview ?? null,
+        messages,
+      };
+      const mod = await import("@/lib/export-report");
+      if (kind === "pdf") await mod.exportPdf(input);
+      else await mod.exportExcel(input);
+      toast.success("Rapport exporté.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Export impossible. Réessayez.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -179,13 +206,31 @@ function ChatSession({
             <span>Aucun fichier associé — téléversez un CSV pour analyser vos données.</span>
           )}
         </div>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
-        >
-          <Paperclip className="h-3.5 w-3.5" />
-          {datasetName ? "Remplacer le fichier" : "Téléverser un CSV"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            disabled={busy || exporting || !messages.some((m) => m.role === "assistant")}
+            onClick={() => handleExport("pdf")}
+            className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
+          >
+            <FileDown className="h-3.5 w-3.5" />
+            PDF
+          </button>
+          <button
+            disabled={busy || exporting || !messages.some((m) => m.role === "assistant")}
+            onClick={() => handleExport("xlsx")}
+            className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" />
+            Excel
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
+          >
+            <Paperclip className="h-3.5 w-3.5" />
+            {datasetName ? "Remplacer le fichier" : "Téléverser un CSV"}
+          </button>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
