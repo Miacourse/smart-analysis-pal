@@ -1,3 +1,5 @@
+import { getBillingStatus } from "@/lib/billing.functions";
+import { FREE_MAX_FILE_MB, PRO_MAX_FILE_MB } from "@/lib/billing";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Paperclip } from "lucide-react";
@@ -127,6 +129,22 @@ function ChatSession({
   }, [threadId, status]);
 
   async function handleCsvUpload(file: File) {
+    if (file.size > PRO_MAX_FILE_MB * 1024 * 1024) {
+      toast.error(`Fichier trop volumineux (max ${PRO_MAX_FILE_MB} Mo).`);
+      return;
+    }
+    if (file.size > FREE_MAX_FILE_MB * 1024 * 1024) {
+      let isPro = false;
+      try {
+        isPro = (await getBillingStatus()).isPro;
+      } catch {}
+      if (!isPro) {
+        toast.error(`L'essai gratuit accepte les fichiers jusqu'à ${FREE_MAX_FILE_MB} Mo. Passez Pro pour aller jusqu'à ${PRO_MAX_FILE_MB} Mo.`, {
+          action: { label: "Voir Pro", onClick: () => (window.location.href = "/pricing") },
+        });
+        return;
+      }
+    }
     Papa.parse(file, {
       preview: MAX_PREVIEW_ROWS + 1,
       complete: async (results) => {
