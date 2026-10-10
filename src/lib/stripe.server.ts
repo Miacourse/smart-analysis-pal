@@ -9,7 +9,7 @@ async function stripe(path: string, init?: { method?: string; body?: Record<stri
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: init?.body ? new URLSearchParams(init.body).toString() : undefined,
+    body: init?.body ? new URLSearchParams(init.body).toString() : null,
   });
   const json = (await res.json()) as any;
   if (!res.ok) throw new Error(json?.error?.message ?? "Erreur Stripe");
@@ -41,8 +41,8 @@ export async function createCheckoutSession(email: string, priceId: string, orig
     success_url: `${origin}/pricing?success=1`,
     cancel_url: `${origin}/pricing?canceled=1`,
   };
-  if (customerId) body.customer = customerId;
-  else body.customer_email = email;
+  if (customerId) body["customer"] = customerId;
+  else body["customer_email"] = email;
   const s = await stripe("checkout/sessions", { method: "POST", body });
   return s.url as string;
 }
