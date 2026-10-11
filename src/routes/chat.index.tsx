@@ -10,6 +10,10 @@ export const Route = createFileRoute("/chat/")({
     meta: [
       { title: "Mes analyses — DA-Copilot" },
       { name: "description", content: "Vos conversations d'analyse de données." },
+      { property: "og:title", content: "Mes analyses — DA-Copilot" },
+      { property: "og:description", content: "Retrouvez votre espace d’analyse de données et vos conversations." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: ChatIndex,

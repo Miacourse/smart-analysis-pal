@@ -133,9 +133,9 @@ function Landing() {
               </p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                 <li>• Analyses illimitées</li>
-                <li>• Fichiers CSV jusqu'à 50 Mo</li>
+                <li>• Fichiers CSV jusqu'à 100 Mo</li>
                 <li>• Historique illimité</li>
-                <li>• Support prioritaire</li>
+                <li>• Exports PDF et Excel</li>
               </ul>
               <Link
                 to="/pricing"

@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { getBillingStatus, startCheckout, openPortal } from "@/lib/billing.functions";
 import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB } from "@/lib/billing";
 import logo from "@/assets/logo.png";
+import { Button } from "@/components/ui/button";
+import { useServerFn } from "@tanstack/react-start";
+import { safeAnalysisError } from "@/lib/analysis-state";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -26,6 +29,9 @@ type Status = { isPro: boolean; periodEnd: string | null; analysesUsed: number }
 
 function PricingPage() {
   const navigate = useNavigate();
+  const billingStatus = useServerFn(getBillingStatus);
+  const checkout = useServerFn(startCheckout);
+  const portal = useServerFn(openPortal);
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
@@ -35,7 +41,7 @@ function PricingPage() {
     setLoggedIn(!!data.session);
     if (data.session) {
       try {
-        setStatus(await getBillingStatus());
+        setStatus(await billingStatus());
       } catch (e) {
         console.error(e);
       }
@@ -53,10 +59,10 @@ function PricingPage() {
     if (!loggedIn) return navigate({ to: "/login" });
     setBusy(true);
     try {
-      const { url } = await startCheckout();
+      const { url } = await checkout();
       window.location.href = url;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Paiement indisponible.");
+      toast.error(safeAnalysisError(e instanceof Error ? e.message : "Paiement indisponible."));
       setBusy(false);
     }
   }
@@ -64,10 +70,10 @@ function PricingPage() {
   async function manage() {
     setBusy(true);
     try {
-      const { url } = await openPortal();
+      const { url } = await portal();
       window.location.href = url;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Portail indisponible.");
+      toast.error(safeAnalysisError(e instanceof Error ? e.message : "Portail indisponible."));
       setBusy(false);
     }
   }
@@ -105,7 +111,7 @@ function PricingPage() {
             <h2 className="font-display text-lg font-semibold">Essai gratuit</h2>
             <p className="mt-2 font-display text-4xl font-bold">0 €</p>
             <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-              {[`${FREE_ANALYSIS_LIMIT} analyses offertes`, `Fichiers CSV jusqu'à ${FREE_MAX_FILE_MB} Mo`, "Historique des conversations"].map((f) => (
+              {[`${FREE_ANALYSIS_LIMIT} analyses offertes`, `Fichiers CSV jusqu'à ${FREE_MAX_FILE_MB} Mo`, "Historique des conversations", "Pas d’export"].map((f) => (
                 <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-primary" />{f}</li>
               ))}
             </ul>
@@ -128,18 +134,18 @@ function PricingPage() {
               19 €<span className="text-base font-normal text-muted-foreground">/mois</span>
             </p>
             <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-              {["Analyses illimitées", `Fichiers CSV jusqu'à ${PRO_MAX_FILE_MB} Mo`, "Historique illimité", "Support prioritaire"].map((f) => (
+              {["Analyses illimitées", `Fichiers CSV jusqu'à ${PRO_MAX_FILE_MB} Mo`, "Historique illimité", "Exports PDF et Excel"].map((f) => (
                 <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-primary" />{f}</li>
               ))}
             </ul>
             {isPro ? (
-              <button onClick={manage} disabled={busy} className="mt-8 w-full rounded-lg border border-border px-4 py-2.5 text-sm font-semibold hover:bg-muted disabled:opacity-60">
+              <Button variant="outline" onClick={manage} disabled={busy} className="mt-8 w-full">
                 Gérer mon abonnement
-              </button>
+              </Button>
             ) : (
-              <button onClick={subscribe} disabled={busy} className="mt-8 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+              <Button onClick={subscribe} disabled={busy} className="mt-8 w-full">
                 {busy ? "Redirection…" : "Devenir Pro"}
-              </button>
+              </Button>
             )}
             {isPro && status?.periodEnd && (
               <p className="mt-3 text-center text-xs text-muted-foreground">
@@ -148,6 +154,7 @@ function PricingPage() {
             )}
           </div>
         </div>
+        <div className="mt-6 text-center"><Button asChild variant="link"><Link to="/pro">Découvrir tous les avantages Pro →</Link></Button></div>
         <p className="mt-8 text-center text-xs text-muted-foreground">Paiement sécurisé par Stripe. Annulation en un clic.</p>
       </main>
     </div>

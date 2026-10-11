@@ -74,7 +74,7 @@ function LoginPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "signin"
               ? "Connectez-vous pour retrouver vos analyses."
-              : "20 analyses offertes, sans carte bancaire."}
+              : "5 analyses offertes, sans carte bancaire."}
           </p>
         </div>
 
