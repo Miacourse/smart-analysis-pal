@@ -5,6 +5,7 @@ import { convertToModelMessages, type UIMessage } from "ai";
 import { createResponsesCall } from "@/lib/ai/responses.server";
 import { getProStatus } from "@/lib/stripe.server";
 import { canAnalyze, FREE_ANALYSIS_LIMIT } from "@/lib/billing";
+import { safeAnalysisError } from "@/lib/analysis-state";
 
 const SYSTEM_PROMPT = `Tu es DA-Copilot, un agent d'analyse de données rigoureux et pédagogue.
 Tu transformes une question métier et un jeu de données en une réponse claire, chiffrée et vérifiable.
@@ -34,20 +35,26 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        try {
         const authHeader = request.headers.get("authorization");
         if (!authHeader) return jsonError(401, "Connexion requise.");
 
+        const url = process.env["SUPABASE_URL"];
+        const key = process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["SUPABASE_ANON_KEY"];
+        if (!url || !key) return jsonError(503, "Le service d’analyse est temporairement indisponible.");
         const supabase = createClient(
-          process.env["SUPABASE_URL"]!,
-          process.env["VITE_SUPABASE_PUBLISHABLE_KEY"]!,
-          { global: { headers: { Authorization: authHeader } } },
+          url,
+          key,
+          { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false, autoRefreshToken: false } },
         );
         const {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) return jsonError(401, "Session invalide. Reconnectez-vous.");
 
-        const body = (await request.json()) as { messages: UIMessage[]; threadId?: string };
+        let body: { messages: UIMessage[]; threadId?: string };
+        try { body = await request.json(); }
+        catch { return jsonError(400, "Requête d’analyse invalide. Relancez votre question."); }
         const { messages, threadId } = body;
         if (!threadId || !Array.isArray(messages) || messages.length === 0) {
           return jsonError(400, "Requête invalide.");
@@ -104,7 +111,9 @@ export const Route = createFileRoute("/api/chat")({
         const response = call.result.toUIMessageStreamResponse({
           originalMessages: messages,
           sendReasoning: true,
-          onFinish: async ({ responseMessage }) => {
+          onError: (error) => safeAnalysisError(error instanceof Error ? error.message : "Le service IA n’a pas pu terminer l’analyse."),
+          onFinish: async ({ responseMessage, isAborted }) => {
+            if (isAborted || !responseMessage.parts.some((p) => p.type === "text" && p.text.trim())) return;
             try {
               await supabase.from("messages").insert([
                 { thread_id: threadId, role: "user", parts: lastUserMessage.parts },
@@ -128,6 +137,11 @@ export const Route = createFileRoute("/api/chat")({
         });
 
         return response;
+        } catch (error) {
+          if (request.signal.aborted) return jsonError(499, "Analyse arrêtée.");
+          console.error("Échec de l’analyse", error);
+          return jsonError(500, "L’analyse n’a pas pu aboutir. Votre conversation est conservée. Relancez l’analyse.");
+        }
       },
     },
   },
