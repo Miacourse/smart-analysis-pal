@@ -25,7 +25,7 @@ export function AnalysisProgress({ phase, startedAt }: { phase: AnalysisPhase; s
         <Progress value={percent} aria-label="Progression estimée de l’analyse" className="mt-3" />
         <div className="mt-3 grid grid-cols-4 gap-2">
           {ANALYSIS_STEPS.map((step, i) => {
-            const Icon = current > i ? Check : icons[i];
+            const Icon = current > i ? Check : (icons[i] ?? Upload);
             return <div key={step.phase} className={`flex flex-col gap-1 text-xs sm:flex-row sm:items-center ${i <= current ? "text-primary" : "text-muted-foreground"}`}><Icon className="size-4 shrink-0" /><span>{step.label}</span></div>;
           })}
         </div>

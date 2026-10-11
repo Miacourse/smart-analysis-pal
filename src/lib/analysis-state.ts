@@ -17,7 +17,7 @@ export function showLongAnalysisNotice(elapsedMs: number) {
   return elapsedMs > 10000;
 }
 
-export function safeAnalysisError(value: string) {
+export function safeAnalysisError(value: string): string {
   if (/<(?:!doctype|html|head|body)\b/i.test(value)) {
     return "L’analyse n’a pas pu aboutir. Votre conversation est conservée. Relancez l’analyse.";
   }

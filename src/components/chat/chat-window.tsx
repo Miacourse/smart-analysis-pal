@@ -1,5 +1,11 @@
 import { getBillingStatus } from "@/lib/billing.functions";
-import { FREE_MAX_FILE_MB, PRO_MAX_FILE_MB } from "@/lib/billing";
+import { canExport, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB } from "@/lib/billing";
+import { useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { analysisFetch, safeAnalysisError, type AnalysisPhase } from "@/lib/analysis-state";
+import { AnalysisProgress } from "./analysis-progress";
+import { AnalysisCharts } from "./analysis-charts";
+import { Button } from "@/components/ui/button";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { FileDown, FileSpreadsheet, Paperclip } from "lucide-react";
@@ -37,8 +43,6 @@ export function ChatWindow({ threadId }: { threadId: string }) {
   const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(null);
   const [datasetName, setDatasetName] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,13 +99,23 @@ function ChatSession({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const navigate = useNavigate();
+  const billingStatus = useServerFn(getBillingStatus);
+  const [processing, setProcessing] = useState<{ phase: AnalysisPhase; startedAt: number } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/chat",
+        fetch: analysisFetch,
         body: { threadId },
-        headers: () => (accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        headers: async () => {
+          const { data } = await supabase.auth.getSession();
+          const token = data.session?.access_token ?? accessToken;
+          return token ? { Authorization: `Bearer ${token}` } : {};
+        },
       }),
     [threadId, accessToken],
   );
@@ -111,23 +125,36 @@ function ChatSession({
     transport,
     messages: initialMessages,
     onError: async (error) => {
-      let msg = "Une erreur est survenue. Réessayez.";
-      try {
-        const parsed = JSON.parse(error.message);
-        if (parsed?.error) msg = parsed.error;
-      } catch {
-        if (error.message) msg = error.message;
-      }
+      const msg = safeAnalysisError(error.message);
+      setAnalysisError(msg);
+      setProcessing(null);
       toast.error(msg);
+    },
+    onFinish: () => {
+      setProcessing((p) => ({ phase: "charts", startedAt: p?.startedAt ?? Date.now() }));
     },
   });
 
   const busy = status === "submitted" || status === "streaming";
   const [exporting, setExporting] = useState(false);
 
+  useEffect(() => {
+    if (status === "error") setProcessing(null);
+    if (status === "ready" && processing?.phase === "charts") {
+      const timer = setTimeout(() => setProcessing(null), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [status, processing?.phase]);
+
   async function handleExport(kind: "pdf" | "xlsx") {
     setExporting(true);
     try {
+      const subscription = await billingStatus();
+      if (!canExport(subscription.isPro)) {
+        toast("Les exports PDF et Excel sont inclus dans Pro.");
+        await navigate({ to: "/pro" });
+        return;
+      }
       const { data: thread } = await supabase
         .from("threads")
         .select("title, dataset_name, dataset_preview")
@@ -163,73 +190,94 @@ function ChatSession({
     if (file.size > FREE_MAX_FILE_MB * 1024 * 1024) {
       let isPro = false;
       try {
-        isPro = (await getBillingStatus()).isPro;
+        isPro = (await billingStatus()).isPro;
       } catch {}
       if (!isPro) {
         toast.error(`L'essai gratuit accepte les fichiers jusqu'à ${FREE_MAX_FILE_MB} Mo. Passez Pro pour aller jusqu'à ${PRO_MAX_FILE_MB} Mo.`, {
-          action: { label: "Voir Pro", onClick: () => (window.location.href = "/pricing") },
+          action: { label: "Voir Pro", onClick: () => { navigate({ to: "/pro" }); } },
         });
         return;
       }
     }
-    Papa.parse(file, {
+    setUploading(true);
+    setProcessing({ phase: "upload", startedAt: Date.now() });
+    setAnalysisError(null);
+    Papa.parse<string[]>(file, {
+      worker: true,
+      skipEmptyLines: "greedy",
       preview: MAX_PREVIEW_ROWS + 1,
       complete: async (results) => {
-        const rows = results.data as string[][];
-        const preview = rows.map((r) => r.join(",")).join("\n");
+        setProcessing((p) => ({ phase: "parsing", startedAt: p?.startedAt ?? Date.now() }));
+        if (results.errors.some((e) => e.type === "Quotes") || results.data.length < 2) {
+          toast.error("Le CSV doit contenir un en-tête et au moins une ligne valide.");
+          setUploading(false);
+          setProcessing(null);
+          return;
+        }
+        const preview = Papa.unparse(results.data);
+        try {
         const { error } = await supabase
           .from("threads")
           .update({ dataset_name: file.name, dataset_preview: preview })
           .eq("id", threadId);
         if (error) {
-          toast.error("Impossible d'associer le fichier à la conversation.");
-          return;
+          throw error;
         }
         onDatasetChange(file.name);
         toast.success(`Fichier « ${file.name} » chargé. Posez votre question !`);
         textareaRef.current?.focus();
+        } catch {
+          toast.error("Impossible d’associer le fichier à la conversation.");
+        } finally {
+          setUploading(false);
+          setProcessing(null);
+        }
       },
-      error: () => toast.error("Lecture du fichier impossible. Utilisez un CSV valide."),
+      error: () => {
+        toast.error("Lecture du fichier impossible. Utilisez un CSV valide.");
+        setUploading(false);
+        setProcessing(null);
+      },
     });
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between border-b border-border px-6 py-3">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {datasetName ? (
             <>
               <Paperclip className="h-4 w-4" />
-              <span className="font-medium text-foreground">{datasetName}</span>
+              <span className="break-all font-medium text-foreground">{datasetName}</span>
             </>
           ) : (
             <span>Aucun fichier associé — téléversez un CSV pour analyser vos données.</span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button variant="outline" size="sm" title="Exporter le rapport PDF — Pro"
             disabled={busy || exporting || !messages.some((m) => m.role === "assistant")}
             onClick={() => handleExport("pdf")}
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
           >
             <FileDown className="h-3.5 w-3.5" />
             PDF
-          </button>
-          <button
+          </Button>
+          <Button variant="outline" size="sm" title="Exporter le rapport Excel — Pro"
             disabled={busy || exporting || !messages.some((m) => m.role === "assistant")}
             onClick={() => handleExport("xlsx")}
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" />
             Excel
-          </button>
-          <button
+          </Button>
+          <Button variant="outline" size="sm" disabled={busy || uploading}
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
           >
             <Paperclip className="h-3.5 w-3.5" />
             {datasetName ? "Remplacer le fichier" : "Téléverser un CSV"}
-          </button>
+          </Button>
         </div>
         <input
           ref={fileInputRef}
@@ -243,6 +291,9 @@ function ChatSession({
           }}
         />
       </div>
+
+      {processing && <AnalysisProgress phase={processing.phase} startedAt={processing.startedAt} />}
+      {analysisError && <div role="alert" className="border-b border-border px-4 py-3 text-sm text-destructive">{analysisError}</div>}
 
       <Conversation className="flex-1">
         <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-4 py-6">
@@ -263,7 +314,7 @@ function ChatSession({
                 {m.parts.map((part, i) => {
                   if (part.type === "text") {
                     return m.role === "assistant" ? (
-                      <MessageResponse key={i}>{part.text}</MessageResponse>
+                      <MessageResponse key={i}>{/<(?:!doctype|html|head|body)\b/i.test(part.text) ? safeAnalysisError(part.text) : part.text}</MessageResponse>
                     ) : (
                       <p key={i} className="whitespace-pre-wrap">
                         {part.text}
@@ -272,6 +323,7 @@ function ChatSession({
                   }
                   return null;
                 })}
+                {m.role === "assistant" && !busy && <AnalysisCharts text={m.parts.filter((p) => p.type === "text").map((p) => p.text).join("\n")} />}
               </MessageContent>
             </Message>
           ))}
@@ -285,17 +337,18 @@ function ChatSession({
         <div className="mx-auto w-full max-w-3xl">
           <PromptInput
             onSubmit={(message) => {
-              if (!message.text.trim() || busy) return;
+              if (!message.text.trim() || busy || uploading) return;
+              setAnalysisError(null);
+              setProcessing({ phase: "ai", startedAt: Date.now() });
               sendMessage({ text: message.text });
             }}
           >
             <PromptInputTextarea
               ref={textareaRef}
               placeholder="Posez votre question sur vos données…"
-              disabled={busy}
             />
             <PromptInputFooter className="justify-end">
-              <PromptInputSubmit status={status} onStop={stop} />
+              <PromptInputSubmit status={status} disabled={uploading} onStop={() => { stop(); setProcessing(null); }} />
             </PromptInputFooter>
           </PromptInput>
           <p className="mt-2 text-center text-xs text-muted-foreground">
