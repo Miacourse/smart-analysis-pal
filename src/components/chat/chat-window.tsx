@@ -144,6 +144,7 @@ function ChatSession({
       const timer = setTimeout(() => setProcessing(null), 500);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [status, processing?.phase]);
 
   async function handleExport(kind: "pdf" | "xlsx") {
