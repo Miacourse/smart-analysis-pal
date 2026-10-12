@@ -8,6 +8,13 @@
       "when": 1791515200213,
       "tag": "0000_create_chat_and_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791766771688,
+      "tag": "0001_admin_roles",
+      "breakpoints": true
     }
   ]
 }
