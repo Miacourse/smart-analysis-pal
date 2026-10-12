@@ -1,4 +1,4 @@
-import { PRO_PRODUCT_ID } from "./billing";
+import { planFromProduct, type Plan } from "./billing";
 
 async function stripe(path: string, init?: { method?: string; body?: Record<string, string> }) {
   const key = process.env["STRIPE_SECRET_KEY"];
@@ -23,13 +23,20 @@ export async function findCustomerId(email: string): Promise<string | null> {
 
 export async function getProStatus(email: string) {
   const customerId = await findCustomerId(email);
-  if (!customerId) return { isPro: false, periodEnd: null as string | null };
+  if (!customerId) return { isPro: false, plan: "free" as Plan, periodEnd: null as string | null };
   const r = await stripe(`subscriptions?customer=${customerId}&status=active&limit=10`);
-  const sub = (r.data ?? []).find((s: any) =>
-    s.items?.data?.some((i: any) => i.price?.product === PRO_PRODUCT_ID),
-  );
-  const end = sub?.items?.data?.[0]?.current_period_end ?? sub?.current_period_end;
-  return { isPro: !!sub, periodEnd: end ? new Date(end * 1000).toISOString() : null };
+  let plan: Plan = "free";
+  let end: number | undefined;
+  for (const s of r.data ?? []) {
+    for (const i of s.items?.data ?? []) {
+      const p = planFromProduct(i.price?.product);
+      if (p === "team" || (p === "pro" && plan === "free")) {
+        plan = p;
+        end = i.current_period_end ?? s.current_period_end;
+      }
+    }
+  }
+  return { isPro: plan !== "free", plan, periodEnd: end ? new Date(end * 1000).toISOString() : null };
 }
 
 export async function createCheckoutSession(email: string, priceId: string, origin: string) {
