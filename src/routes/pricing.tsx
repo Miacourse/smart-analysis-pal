@@ -25,7 +25,12 @@ export const Route = createFileRoute("/pricing")({
   component: PricingPage,
 });
 
-type Status = { isPro: boolean; periodEnd: string | null; analysesUsed: number };
+type Status = { isPro: boolean; plan: "free" | "pro" | "team"; periodEnd: string | null; analysesUsed: number; analysesThisMonth: number };
+
+const PAID = [
+  { id: "pro" as const, name: "Pro", price: 19, highlight: true, features: ["Analyses illimitées", `CSV & Excel jusqu'à ${PRO_MAX_FILE_MB} Mo`, "Historique illimité", "Exports PDF et Excel"] },
+  { id: "team" as const, name: "Team", price: 49, highlight: false, features: ["Tout le plan Pro", `Fichiers jusqu'à ${TEAM_MAX_FILE_MB} Mo`, "Traitement prioritaire", "Support dédié par email"] },
+];
 
 function PricingPage() {
   const navigate = useNavigate();
@@ -51,15 +56,15 @@ function PricingPage() {
   useEffect(() => {
     refresh();
     const p = new URLSearchParams(window.location.search);
-    if (p.get("success")) toast.success("Paiement confirmé ! Bienvenue dans DA-Copilot Pro.");
+    if (p.get("success")) toast.success("Paiement confirmé ! Bienvenue dans votre nouvelle offre.");
     if (p.get("canceled")) toast("Paiement annulé.");
   }, []);
 
-  async function subscribe() {
+  async function subscribe(plan: "pro" | "team") {
     if (!loggedIn) return navigate({ to: "/login" });
     setBusy(true);
     try {
-      const { url } = await checkout();
+      const { url } = await checkout({ data: { plan } });
       window.location.href = url;
     } catch (e) {
       toast.error(safeAnalysisError(e instanceof Error ? e.message : "Paiement indisponible."));
@@ -78,7 +83,8 @@ function PricingPage() {
     }
   }
 
-  const isPro = status?.isPro ?? false;
+  const plan = status?.plan ?? "free";
+  const isPro = plan !== "free";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -95,23 +101,25 @@ function PricingPage() {
         </Link>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 py-14">
+      <main className="mx-auto max-w-6xl px-6 py-14">
         <h1 className="text-center font-display text-4xl font-bold tracking-tight">Tarifs simples</h1>
         <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
-          Essayez gratuitement, passez Pro quand vous êtes prêt. Sans engagement.
+          Essayez gratuitement, passez à l’offre qui vous convient. Sans engagement.
         </p>
-        {status && !isPro && (
+        {status && (
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Essai : {Math.min(status.analysesUsed, FREE_ANALYSIS_LIMIT)} / {FREE_ANALYSIS_LIMIT} analyses utilisées
+            {isPro
+              ? `Offre ${plan === "team" ? "Team" : "Pro"} active · ${status.analysesThisMonth} analyses ce mois-ci`
+              : `Essai : ${Math.min(status.analysesUsed, FREE_ANALYSIS_LIMIT)} / ${FREE_ANALYSIS_LIMIT} analyses utilisées`}
           </p>
         )}
 
-        <div className="mt-12 grid gap-6 sm:grid-cols-2">
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
           <div className="rounded-2xl border border-border bg-card p-8">
             <h2 className="font-display text-lg font-semibold">Essai gratuit</h2>
             <p className="mt-2 font-display text-4xl font-bold">0 €</p>
             <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-              {[`${FREE_ANALYSIS_LIMIT} analyses offertes`, `Fichiers CSV jusqu'à ${FREE_MAX_FILE_MB} Mo`, "Historique des conversations", "Pas d’export"].map((f) => (
+              {[`${FREE_ANALYSIS_LIMIT} analyses offertes`, `CSV & Excel jusqu'à ${FREE_MAX_FILE_MB} Mo`, "Historique des conversations", "Pas d’export"].map((f) => (
                 <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-primary" />{f}</li>
               ))}
             </ul>
@@ -123,36 +131,40 @@ function PricingPage() {
             </Link>
           </div>
 
-          <div className="rounded-2xl border-2 border-primary bg-card p-8 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-lg font-semibold">Pro</h2>
-              {isPro && (
-                <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Votre offre</span>
+          {PAID.map((p) => (
+            <div key={p.id} className={`rounded-2xl bg-card p-8 ${p.highlight ? "border-2 border-primary shadow-sm" : "border border-border"}`}>
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-lg font-semibold">{p.name}</h2>
+                {plan === p.id ? (
+                  <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Votre offre</span>
+                ) : p.highlight ? (
+                  <span className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">Populaire</span>
+                ) : null}
+              </div>
+              <p className="mt-2 font-display text-4xl font-bold">
+                {p.price} €<span className="text-base font-normal text-muted-foreground">/mois</span>
+              </p>
+              <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
+                {p.features.map((f) => (
+                  <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-primary" />{f}</li>
+                ))}
+              </ul>
+              {isPro ? (
+                <Button variant="outline" onClick={manage} disabled={busy} className="mt-8 w-full">
+                  {plan === p.id ? "Gérer mon abonnement" : "Changer d’offre"}
+                </Button>
+              ) : (
+                <Button onClick={() => subscribe(p.id)} disabled={busy} variant={p.highlight ? "default" : "outline"} className="mt-8 w-full">
+                  {busy ? "Redirection…" : `Choisir ${p.name}`}
+                </Button>
+              )}
+              {plan === p.id && status?.periodEnd && (
+                <p className="mt-3 text-center text-xs text-muted-foreground">
+                  Renouvellement le {new Date(status.periodEnd).toLocaleDateString("fr-FR")}
+                </p>
               )}
             </div>
-            <p className="mt-2 font-display text-4xl font-bold">
-              19 €<span className="text-base font-normal text-muted-foreground">/mois</span>
-            </p>
-            <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-              {["Analyses illimitées", `Fichiers CSV jusqu'à ${PRO_MAX_FILE_MB} Mo`, "Historique illimité", "Exports PDF et Excel"].map((f) => (
-                <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-primary" />{f}</li>
-              ))}
-            </ul>
-            {isPro ? (
-              <Button variant="outline" onClick={manage} disabled={busy} className="mt-8 w-full">
-                Gérer mon abonnement
-              </Button>
-            ) : (
-              <Button onClick={subscribe} disabled={busy} className="mt-8 w-full">
-                {busy ? "Redirection…" : "Devenir Pro"}
-              </Button>
-            )}
-            {isPro && status?.periodEnd && (
-              <p className="mt-3 text-center text-xs text-muted-foreground">
-                Renouvellement le {new Date(status.periodEnd).toLocaleDateString("fr-FR")}
-              </p>
-            )}
-          </div>
+          ))}
         </div>
         <div className="mt-6 text-center"><Button asChild variant="link"><Link to="/pro">Découvrir tous les avantages Pro →</Link></Button></div>
         <p className="mt-8 text-center text-xs text-muted-foreground">Paiement sécurisé par Stripe. Annulation en un clic.</p>

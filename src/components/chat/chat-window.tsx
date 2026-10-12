@@ -183,19 +183,37 @@ function ChatSession({
     textareaRef.current?.focus();
   }, [threadId, status]);
 
+  async function saveDataset(file: File, rows: string[][]) {
+    setProcessing((p) => ({ phase: "parsing", startedAt: p?.startedAt ?? Date.now() }));
+    if (rows.length < 2) {
+      toast.error("Le fichier doit contenir un en-tête et au moins une ligne valide.");
+      return;
+    }
+    const preview = Papa.unparse(rows.slice(0, MAX_PREVIEW_ROWS + 1));
+    const { error } = await supabase
+      .from("threads")
+      .update({ dataset_name: file.name, dataset_preview: preview })
+      .eq("id", threadId);
+    if (error) throw error;
+    onDatasetChange(file.name);
+    toast.success(`Fichier « ${file.name} » chargé. Posez votre question !`);
+    textareaRef.current?.focus();
+  }
+
   async function handleCsvUpload(file: File) {
-    if (file.size > PRO_MAX_FILE_MB * 1024 * 1024) {
-      toast.error(`Fichier trop volumineux (max ${PRO_MAX_FILE_MB} Mo).`);
+    const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+    if (file.size > TEAM_MAX_FILE_MB * 1024 * 1024) {
+      toast.error(`Fichier trop volumineux (max ${TEAM_MAX_FILE_MB} Mo).`);
       return;
     }
     if (file.size > FREE_MAX_FILE_MB * 1024 * 1024) {
-      let isPro = false;
+      let plan: Plan = "free";
       try {
-        isPro = (await billingStatus()).isPro;
+        plan = (await billingStatus()).plan;
       } catch {}
-      if (!isPro) {
-        toast.error(`L'essai gratuit accepte les fichiers jusqu'à ${FREE_MAX_FILE_MB} Mo. Passez Pro pour aller jusqu'à ${PRO_MAX_FILE_MB} Mo.`, {
-          action: { label: "Voir Pro", onClick: () => { navigate({ to: "/pro" }); } },
+      if (file.size > maxFileMb(plan) * 1024 * 1024) {
+        toast.error(`Votre offre accepte les fichiers jusqu'à ${maxFileMb(plan)} Mo. Passez à l’offre supérieure (Pro ${PRO_MAX_FILE_MB} Mo, Team ${TEAM_MAX_FILE_MB} Mo).`, {
+          action: { label: "Voir les offres", onClick: () => { navigate({ to: "/pricing" }); } },
         });
         return;
       }
@@ -203,41 +221,40 @@ function ChatSession({
     setUploading(true);
     setProcessing({ phase: "upload", startedAt: Date.now() });
     setAnalysisError(null);
+    const done = () => { setUploading(false); setProcessing(null); };
+    if (isExcel) {
+      try {
+        const XLSX = await import("xlsx");
+        const wb = XLSX.read(await file.arrayBuffer(), { type: "array", sheetRows: MAX_PREVIEW_ROWS + 1 });
+        const sheet = wb.Sheets[wb.SheetNames[0] ?? ""];
+        if (!sheet) throw new Error("empty");
+        const rows = (XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, blankrows: false, defval: "" }) as unknown[][])
+          .map((r) => r.map((c) => String(c ?? "")));
+        await saveDataset(file, rows);
+      } catch {
+        toast.error("Lecture du fichier Excel impossible. Vérifiez qu’il n’est pas protégé.");
+      } finally {
+        done();
+      }
+      return;
+    }
     Papa.parse<string[]>(file, {
       worker: true,
       skipEmptyLines: "greedy",
       preview: MAX_PREVIEW_ROWS + 1,
       complete: async (results) => {
-        setProcessing((p) => ({ phase: "parsing", startedAt: p?.startedAt ?? Date.now() }));
-        if (results.errors.some((e) => e.type === "Quotes") || results.data.length < 2) {
-          toast.error("Le CSV doit contenir un en-tête et au moins une ligne valide.");
-          setUploading(false);
-          setProcessing(null);
-          return;
-        }
-        const preview = Papa.unparse(results.data);
         try {
-        const { error } = await supabase
-          .from("threads")
-          .update({ dataset_name: file.name, dataset_preview: preview })
-          .eq("id", threadId);
-        if (error) {
-          throw error;
-        }
-        onDatasetChange(file.name);
-        toast.success(`Fichier « ${file.name} » chargé. Posez votre question !`);
-        textareaRef.current?.focus();
+          if (results.errors.some((e) => e.type === "Quotes")) throw new Error("quotes");
+          await saveDataset(file, results.data);
         } catch {
-          toast.error("Impossible d’associer le fichier à la conversation.");
+          toast.error("Impossible de lire ou d’associer le fichier.");
         } finally {
-          setUploading(false);
-          setProcessing(null);
+          done();
         }
       },
       error: () => {
         toast.error("Lecture du fichier impossible. Utilisez un CSV valide.");
-        setUploading(false);
-        setProcessing(null);
+        done();
       },
     });
   }

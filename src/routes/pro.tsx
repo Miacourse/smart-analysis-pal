@@ -49,7 +49,7 @@ function ProPage() {
     try {
       const { data } = await supabase.auth.getSession();
       if (!data.session) { await navigate({ to: "/login" }); return; }
-      const { url } = await checkout();
+      const { url } = await checkout({ data: { plan: "pro" } });
       window.location.assign(url);
     } catch (error) { toast.error(safeAnalysisError(error instanceof Error ? error.message : "Paiement indisponible.")); }
     finally { setBusy(false); }
