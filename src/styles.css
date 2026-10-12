@@ -5,6 +5,12 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -50,6 +56,12 @@
   --popover: oklch(0.995 0.004 95);
   --popover-foreground: oklch(0.22 0.03 250);
   --primary: oklch(0.52 0.11 168);
+  --chart-1: oklch(0.55 0.17 255);
+  --chart-2: oklch(0.6 0.14 165);
+  --chart-3: oklch(0.75 0.16 75);
+  --chart-4: oklch(0.55 0.2 300);
+  --chart-5: oklch(0.65 0.19 30);
+  --chart-6: oklch(0.6 0.12 210);
   --primary-foreground: oklch(0.985 0.005 95);
   --secondary: oklch(0.93 0.02 160);
   --secondary-foreground: oklch(0.3 0.06 168);

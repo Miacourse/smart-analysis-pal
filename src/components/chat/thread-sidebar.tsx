@@ -13,9 +13,15 @@ type Thread = {
   updated_at: string;
 };
 
+type Usage = { plan: "free" | "pro" | "team"; analysesUsed: number; analysesThisMonth: number; periodEnd: string | null };
+
 export function ThreadSidebar({ activeThreadId }: { activeThreadId?: string }) {
   const navigate = useNavigate();
   const [threads, setThreads] = useState<Thread[]>([]);
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const billingStatus = useServerFn(getBillingStatus);
+  const adminCheck = useServerFn(getIsAdmin);
 
   async function loadThreads() {
     const { data, error } = await supabase
@@ -31,7 +37,12 @@ export function ThreadSidebar({ activeThreadId }: { activeThreadId?: string }) {
 
   useEffect(() => {
     loadThreads();
+    billingStatus().then(setUsage).catch(() => {});
   }, [activeThreadId]);
+
+  useEffect(() => {
+    adminCheck().then((r) => setIsAdmin(r.isAdmin)).catch(() => {});
+  }, []);
 
   async function createThread() {
     const {
@@ -122,12 +133,39 @@ export function ThreadSidebar({ activeThreadId }: { activeThreadId?: string }) {
       </div>
 
       <div className="space-y-1 border-t border-sidebar-border p-3">
+        {usage && (
+          <div className="mb-2 rounded-lg bg-sidebar-accent/60 px-3 py-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-sidebar-foreground">
+                {usage.plan === "team" ? "Team" : usage.plan === "pro" ? "Pro" : "Essai gratuit"}
+              </span>
+              {usage.plan !== "free" && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">Actif</span>}
+            </div>
+            <p className="mt-1 text-muted-foreground">
+              {usage.plan === "free"
+                ? `${Math.min(usage.analysesUsed, FREE_ANALYSIS_LIMIT)} / ${FREE_ANALYSIS_LIMIT} analyses utilisées`
+                : `${usage.analysesThisMonth} analyses ce mois-ci`}
+            </p>
+            {usage.plan === "free" && (
+              <div className="mt-1.5 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, usage.analysesUsed / FREE_ANALYSIS_LIMIT * 100)}%` }} /></div>
+            )}
+            {usage.plan !== "free" && usage.periodEnd && (
+              <p className="text-muted-foreground">Renouvellement le {new Date(usage.periodEnd).toLocaleDateString("fr-FR")}</p>
+            )}
+          </div>
+        )}
+        {isAdmin && (
+          <Link to="/admin" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent">
+            <Shield className="h-4 w-4" />
+            Administration
+          </Link>
+        )}
         <Link
           to="/pricing"
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-primary hover:bg-sidebar-accent"
         >
           <Sparkles className="h-4 w-4" />
-          Offre Pro / Abonnement
+          Offres / Abonnement
         </Link>
         <button
           onClick={signOut}
