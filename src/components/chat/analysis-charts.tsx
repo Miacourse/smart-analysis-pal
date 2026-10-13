@@ -6,7 +6,7 @@ const num = (v: string) => parseFloat(v.replace(/\s|%/g, "").replace(",", "."));
 export function AnalysisCharts({ text }: { text: string }) {
   const table = extractMarkdownTables(text).find((rows) => rows.length > 2 && rows.slice(1).every((r) => Number.isFinite(num(r[1] ?? ""))));
   if (!table) return null;
-  const data = table.slice(1, 9).map((row) => ({ label: row[0] ?? "", value: num(row[1] ?? "") }));
+  const data = table.slice(1).filter((r) => !/^\**\s*(total|ensemble|somme)/i.test(r[0] ?? "")).slice(0, 8).map((row) => ({ label: row[0] ?? "", value: num(row[1] ?? "") }));
   const max = Math.max(1, ...data.map((d) => Math.abs(d.value)));
   const total = data.reduce((n, d) => n + Math.abs(d.value), 0) || 1;
   let acc = 0;

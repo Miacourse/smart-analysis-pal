@@ -63,3 +63,17 @@ export async function createPortalSession(email: string, origin: string) {
   });
   return s.url as string;
 }
+
+export async function listActivePlansByEmail(): Promise<Map<string, Plan>> {
+  const out = new Map<string, Plan>();
+  const r = await stripe("subscriptions?status=active&limit=100&expand[]=data.customer");
+  for (const sub of r.data ?? []) {
+    const email: string | undefined = sub.customer?.email?.toLowerCase();
+    if (!email) continue;
+    for (const i of sub.items?.data ?? []) {
+      const p = planFromProduct(i.price?.product);
+      if (p === "team" || (p === "pro" && out.get(email) !== "team")) out.set(email, p);
+    }
+  }
+  return out;
+}
