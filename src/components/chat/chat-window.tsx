@@ -1,5 +1,5 @@
 import { getBillingStatus } from "@/lib/billing.functions";
-import { canExport, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB } from "@/lib/billing";
+import { canExport, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB, TEAM_MAX_FILE_MB, maxFileMb, type Plan } from "@/lib/billing";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { analysisFetch, safeAnalysisError, type AnalysisPhase } from "@/lib/analysis-state";

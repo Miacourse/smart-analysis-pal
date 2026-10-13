@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getBillingStatus, startCheckout, openPortal } from "@/lib/billing.functions";
-import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB } from "@/lib/billing";
+import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB, TEAM_MAX_FILE_MB } from "@/lib/billing";
 import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";

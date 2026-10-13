@@ -1,5 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { MessageSquarePlus, Trash2, LogOut, Sparkles } from "lucide-react";
+import { MessageSquarePlus, Trash2, LogOut, Sparkles, Shield } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { getBillingStatus, getIsAdmin } from "@/lib/billing.functions";
+import { FREE_ANALYSIS_LIMIT } from "@/lib/billing";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -41,7 +44,7 @@ export function ThreadSidebar({ activeThreadId }: { activeThreadId?: string }) {
   }, [activeThreadId]);
 
   useEffect(() => {
-    adminCheck().then((r) => setIsAdmin(r.isAdmin)).catch(() => {});
+    adminCheck().then((r: { isAdmin: boolean }) => setIsAdmin(r.isAdmin)).catch(() => {});
   }, []);
 
   async function createThread() {
