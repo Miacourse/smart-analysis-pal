@@ -17,3 +17,17 @@ describe("free trial limits", () => {
     expect(canExport(true)).toBe(true);
   });
 });
+
+import { maxFileMb, planFromProduct, TEAM_PRODUCT_ID, PRO_PRODUCT_ID } from "@/lib/billing";
+describe("plans", () => {
+  it("file caps per plan", () => {
+    expect(maxFileMb("free")).toBe(5);
+    expect(maxFileMb("pro")).toBe(100);
+    expect(maxFileMb("team")).toBe(250);
+  });
+  it("maps products to plans", () => {
+    expect(planFromProduct(TEAM_PRODUCT_ID)).toBe("team");
+    expect(planFromProduct(PRO_PRODUCT_ID)).toBe("pro");
+    expect(planFromProduct("x")).toBe("free");
+  });
+});
