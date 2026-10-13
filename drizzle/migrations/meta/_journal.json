@@ -15,6 +15,13 @@
       "when": 1791766771688,
       "tag": "0001_admin_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791850465594,
+      "tag": "0002_admin_owner_role",
+      "breakpoints": true
     }
   ]
 }
