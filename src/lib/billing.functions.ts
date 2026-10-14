@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { PLAN_PRICES, type PaidPlan } from "./billing";
+import { FREE_ANALYSIS_LIMIT, PLAN_PRICES, type PaidPlan } from "./billing";
 
 function originOf() {
   return getRequestHeader("origin") ?? "https://smart-analysis-pal.lovable.app";
