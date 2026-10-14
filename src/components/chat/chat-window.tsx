@@ -238,25 +238,16 @@ function ChatSession({
       }
       return;
     }
-    Papa.parse<string[]>(file, {
-      worker: true,
-      skipEmptyLines: "greedy",
-      preview: MAX_PREVIEW_ROWS + 1,
-      complete: async (results) => {
-        try {
-          if (results.errors.some((e) => e.type === "Quotes")) throw new Error("quotes");
-          await saveDataset(file, results.data);
-        } catch {
-          toast.error("Impossible de lire ou d’associer le fichier.");
-        } finally {
-          done();
-        }
-      },
-      error: () => {
-        toast.error("Lecture du fichier impossible. Utilisez un CSV valide.");
-        done();
-      },
-    });
+    try {
+      const text = await file.text();
+      const results = Papa.parse<string[]>(text, { skipEmptyLines: "greedy", preview: MAX_PREVIEW_ROWS + 1 });
+      if (results.data.length < 2) throw new Error("empty");
+      await saveDataset(file, results.data);
+    } catch {
+      toast.error("Lecture du fichier impossible. Utilisez un CSV valide.");
+    } finally {
+      done();
+    }
   }
 
   return (
@@ -294,13 +285,13 @@ function ChatSession({
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
           >
             <Paperclip className="h-3.5 w-3.5" />
-            {datasetName ? "Remplacer le fichier" : "Téléverser un CSV"}
+            {datasetName ? "Remplacer le fichier" : "Téléverser CSV / Excel"}
           </Button>
         </div>
         <input
           ref={fileInputRef}
           type="file"
-          accept=".csv,text/csv"
+          accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
