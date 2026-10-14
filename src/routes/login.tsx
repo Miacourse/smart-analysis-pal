@@ -45,7 +45,16 @@ function LoginPage() {
         }
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Une erreur est survenue.");
+      const msg = err instanceof Error ? err.message : "";
+      if (/invalid login credentials/i.test(msg)) {
+        toast.error("Email ou mot de passe incorrect. Si vous vous êtes inscrit avec Google, utilisez « Continuer avec Google ».");
+      } else if (/email not confirmed/i.test(msg)) {
+        toast.error("Confirmez d’abord votre email via le lien reçu.");
+      } else if (/already registered/i.test(msg)) {
+        toast.error("Un compte existe déjà avec cet email. Connectez-vous (ou utilisez Google).");
+      } else {
+        toast.error(msg || "Une erreur est survenue.");
+      }
     } finally {
       setLoading(false);
     }
