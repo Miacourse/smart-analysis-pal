@@ -43,8 +43,11 @@ export function ThreadSidebar({ activeThreadId }: { activeThreadId?: string }) {
     billingStatus().then(setUsage).catch(() => {});
   }, [activeThreadId]);
 
+  const [email, setEmail] = useState<string | null>(null);
+
   useEffect(() => {
     adminCheck().then((r: { isAdmin: boolean }) => setIsAdmin(r.isAdmin)).catch(() => {});
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
   }, []);
 
   async function createThread() {
@@ -170,12 +173,17 @@ export function ThreadSidebar({ activeThreadId }: { activeThreadId?: string }) {
           <Sparkles className="h-4 w-4" />
           Offres / Abonnement
         </Link>
+        {email && (
+          <p className="truncate px-3 pt-2 text-xs text-muted-foreground" title={email}>
+            Connecté : <span className="font-medium text-sidebar-foreground">{email}</span>
+          </p>
+        )}
         <button
           onClick={signOut}
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent"
         >
           <LogOut className="h-4 w-4" />
-          Se déconnecter
+          Se déconnecter / changer de compte
         </button>
       </div>
     </aside>

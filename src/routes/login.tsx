@@ -61,8 +61,11 @@ function LoginPage() {
   }
 
   async function handleGoogle() {
+    // Ferme toute session existante puis force Google à demander quel compte utiliser.
+    await supabase.auth.signOut();
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
+      extraParams: { prompt: "select_account" },
     });
     if (result.error) {
       toast.error("La connexion Google a échoué.");
