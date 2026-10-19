@@ -451,52 +451,39 @@ export function profileSummary(profile: DatasetProfile): string {
   }`;
 }
 
-export function parseCsvFile(file: File): Promise<string[][]> {
+export function parseCsvFile(
+  file: File,
+  onProgress?: (ratio: number) => void,
+): Promise<string[][]> {
   return new Promise((resolve, reject) => {
+    const rows: string[][] = [];
     let settled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const clearTimer = () => {
-      if (timer !== null) {
-        clearTimeout(timer);
-        timer = null;
-      }
-    };
-    const toRows = (rows: unknown[][]) =>
-      rows.map((row) => row.map((cell) => String(cell ?? "")));
-    const finish = (rows: string[][]) => {
+    const toRows = (data: unknown[][]) => data.map((row) => row.map((cell) => String(cell ?? "")));
+    const finish = (fn: () => void) => {
       if (settled) return;
       settled = true;
-      clearTimer();
-      resolve(rows);
+      fn();
     };
-    const fallback = () => {
-      if (settled) return;
-      clearTimer();
-      void file
-        .text()
-        .then((text) => {
-          if (settled) return;
-          const result = Papa.parse<string[]>(text, { skipEmptyLines: "greedy" });
-          finish(toRows(result.data as unknown as unknown[][]));
-        })
-        .catch((error: unknown) => {
-          if (settled) return;
-          settled = true;
-          reject(error);
-        });
-    };
-    // Filet de sécurité : si le worker ne répond pas (CSP, gros fichier), on bascule
-    // sur une lecture directe pour ne jamais laisser la progression bloquée.
-    timer = setTimeout(fallback, 30000);
     try {
+      // Lecture par blocs sur le fil principal : progression réelle et fiable, sans
+      // worker (dont l'échec silencieux bloquait la lecture jusqu'au délai de secours).
       Papa.parse<string[]>(file, {
         skipEmptyLines: "greedy",
-        worker: true,
-        complete: (results) => finish(toRows(results.data as unknown as unknown[][])),
-        error: () => fallback(),
+        chunk: (results) => {
+          rows.push(...toRows(results.data as unknown as unknown[][]));
+          const cursor = results.meta?.cursor;
+          if (onProgress && file.size > 0 && typeof cursor === "number") {
+            onProgress(Math.min(1, cursor / file.size));
+          }
+        },
+        complete: () => finish(() => {
+          onProgress?.(1);
+          resolve(rows);
+        }),
+        error: (error) => finish(() => reject(error)),
       });
-    } catch {
-      fallback();
+    } catch (error) {
+      finish(() => reject(error));
     }
   });
 }

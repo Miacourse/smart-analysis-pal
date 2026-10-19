@@ -17,10 +17,24 @@ export function showLongAnalysisNotice(elapsedMs: number) {
   return elapsedMs > 10000;
 }
 
+const SERVICE_UNAVAILABLE =
+  "Le service d’analyse est momentanément indisponible. Réessayez dans quelques instants.";
+
+// Erreurs du fournisseur d'IA (crédits épuisés, quota, facturation) : on affiche un
+// message clair plutôt qu'un « Payment Required » brut, sans le confondre avec la
+// limite d'analyses gratuites de l'application.
+function isProviderQuotaError(value: string): boolean {
+  if (/analyses gratuites/i.test(value)) return false;
+  return /payment required|insufficient[_ ]?(quota|credits)|exceeded your current quota|out of credits|billing/i.test(
+    value,
+  );
+}
+
 export function safeAnalysisError(value: string): string {
   if (/<(?:!doctype|html|head|body)\b/i.test(value)) {
     return "L’analyse n’a pas pu aboutir. Votre conversation est conservée. Relancez l’analyse.";
   }
+  if (isProviderQuotaError(value)) return SERVICE_UNAVAILABLE;
   try {
     const parsed = JSON.parse(value);
     return typeof parsed.error === "string" ? safeAnalysisError(parsed.error) :

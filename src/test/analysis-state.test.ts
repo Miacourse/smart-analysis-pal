@@ -18,7 +18,9 @@ describe("analysis processing", () => {
       expect(result.status).toBe(500);
       expect(result.headers.get('content-type')).toContain('application/json');
       expect((await result.json()).error).not.toContain('<');
-      expect(safeAnalysisError('{"error":"Insufficient credits"}')).toBe('Insufficient credits');
+      expect(safeAnalysisError('{"error":"Insufficient credits"}')).toContain('indisponible');
+      expect(safeAnalysisError("Payment Required")).toContain('indisponible');
+      expect(safeAnalysisError("Vous avez utilisé vos 5 analyses gratuites. Passez au plan Pro pour continuer.")).toContain('analyses gratuites');
     } finally { vi.unstubAllGlobals(); }
   });
 });

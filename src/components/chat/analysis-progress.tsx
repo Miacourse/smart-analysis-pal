@@ -5,6 +5,31 @@ import { ANALYSIS_STEPS, estimatedProgress, showLongAnalysisNotice, type Analysi
 
 const icons = [Upload, FileSearch, BrainCircuit, ChartColumn];
 
+export function UploadProgress({ progress, fileName }: { progress: number; fileName: string | null }) {
+  const percent = Math.round(Math.min(1, Math.max(0, progress)) * 100);
+  const done = percent >= 100;
+  return (
+    <div className="border-b border-border bg-secondary/40 px-4 py-4" role="status" aria-live="polite">
+      <div className="mx-auto max-w-3xl">
+        <div className="flex items-center justify-between gap-3 text-sm font-medium">
+          <span className="flex items-center gap-2">
+            {done ? <Check className="size-4 text-primary" /> : <LoaderCircle className="size-4 motion-safe:animate-spin" />}
+            {done
+              ? "Fichier prêt"
+              : `Téléversement & lecture du fichier${fileName ? ` « ${fileName} »` : ""}…`}
+          </span>
+          <span className="tabular-nums text-primary">{percent} %</span>
+        </div>
+        <Progress value={percent} aria-label="Progression du téléversement" className="mt-3" />
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+          <FileSearch className="size-4 shrink-0" />
+          <span>Lecture et profilage du fichier (CSV, Excel, JSON, GeoJSON, LAS).</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AnalysisProgress({ phase, startedAt }: { phase: AnalysisPhase; startedAt: number }) {
   const [now, setNow] = useState(Date.now());
   const [phaseStart, setPhaseStart] = useState(Date.now());

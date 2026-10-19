@@ -18,7 +18,7 @@ import {
   profileSummary,
   type DatasetProfile,
 } from "@/lib/dataset-profile";
-import { AnalysisProgress } from "./analysis-progress";
+import { AnalysisProgress, UploadProgress } from "./analysis-progress";
 import { AnalysisCharts } from "./analysis-charts";
 import { AnalysisOverview } from "./analysis-overview";
 import { Button } from "@/components/ui/button";
@@ -153,6 +153,8 @@ function ChatSession({
   const billingStatus = useServerFn(getBillingStatus);
   const [processing, setProcessing] = useState<{ phase: AnalysisPhase; startedAt: number } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadName, setUploadName] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [domain, setDomain] = useState<AnalysisDomainId>("general");
   const [domainOwner, setDomainOwner] = useState(threadId);
@@ -259,7 +261,6 @@ function ChatSession({
   }, [threadId, status]);
 
   async function saveDataset(file: File, rows: string[][], profile: DatasetProfile) {
-    setProcessing((p) => ({ phase: "parsing", startedAt: p?.startedAt ?? Date.now() }));
     if (rows.length < 2) {
       toast.error("Le fichier doit contenir un en-tête et au moins une ligne valide.");
       return;
@@ -305,18 +306,18 @@ function ChatSession({
       return;
     }
     setUploading(true);
-    setProcessing({ phase: "upload", startedAt: Date.now() });
+    setUploadName(file.name);
+    setUploadProgress(0);
     setAnalysisError(null);
-    const done = () => { setUploading(false); setProcessing(null); };
     try {
-      setProcessing({ phase: "parsing", startedAt: Date.now() });
       const rows = isExcel
         ? await parseExcelFile(file)
         : isJson
           ? await parseJsonFile(file)
           : isLas
             ? await parseLasFile(file)
-            : await parseCsvFile(file);
+            : await parseCsvFile(file, (ratio) => setUploadProgress(ratio));
+      setUploadProgress(1);
       if (rows.length < 2) throw new Error("empty");
       const rowCount = rows.length - 1;
       if (rowCount > maxRows(plan)) {
@@ -346,7 +347,11 @@ function ChatSession({
               : "Lecture du fichier impossible. Utilisez un CSV valide.",
       );
     } finally {
-      done();
+      setUploading(false);
+      setTimeout(() => {
+        setUploadProgress(null);
+        setUploadName(null);
+      }, 700);
     }
   }
 
@@ -424,7 +429,8 @@ function ChatSession({
         />
       </div>
 
-      {processing && <AnalysisProgress phase={processing.phase} startedAt={processing.startedAt} />}
+      {uploading && <UploadProgress progress={uploadProgress ?? 0} fileName={uploadName} />}
+      {!uploading && processing && <AnalysisProgress phase={processing.phase} startedAt={processing.startedAt} />}
       {analysisError && (
         <div
           role="alert"
