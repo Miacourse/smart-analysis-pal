@@ -1,5 +1,5 @@
 import { getBillingStatus } from "@/lib/billing.functions";
-import { canExport, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB, TEAM_MAX_FILE_MB, maxFileMb, type Plan } from "@/lib/billing";
+import { canExport, maxFileMb, maxRows, type Plan } from "@/lib/billing";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { analysisFetch, safeAnalysisError, type AnalysisPhase } from "@/lib/analysis-state";
@@ -284,21 +284,25 @@ function ChatSession({
     const isExcel = /\.(xlsx|xls)$/i.test(file.name);
     const isJson = /\.(json|geojson)$/i.test(file.name);
     const isLas = /\.las$/i.test(file.name);
-    if (file.size > TEAM_MAX_FILE_MB * 1024 * 1024) {
-      toast.error(`Fichier trop volumineux (max ${TEAM_MAX_FILE_MB} Mo).`);
-      return;
+    let plan: Plan = "free";
+    try {
+      plan = (await billingStatus()).plan;
+    } catch {
+      plan = "free";
     }
-    if (file.size > FREE_MAX_FILE_MB * 1024 * 1024) {
-      let plan: Plan = "free";
-      try {
-        plan = (await billingStatus()).plan;
-      } catch {}
-      if (file.size > maxFileMb(plan) * 1024 * 1024) {
-        toast.error(`Votre offre accepte les fichiers jusqu'à ${maxFileMb(plan)} Mo. Passez à l’offre supérieure (Pro ${PRO_MAX_FILE_MB} Mo, Team ${TEAM_MAX_FILE_MB} Mo).`, {
-          action: { label: "Voir les offres", onClick: () => { navigate({ to: "/pricing" }); } },
-        });
-        return;
-      }
+    if (file.size > maxFileMb(plan) * 1024 * 1024) {
+      toast.error(
+        `Votre offre accepte les fichiers jusqu'à ${maxFileMb(plan)} Mo. Passez à l’offre supérieure pour les fichiers plus volumineux.`,
+        {
+          action: {
+            label: "Voir les offres",
+            onClick: () => {
+              navigate({ to: "/pricing" });
+            },
+          },
+        },
+      );
+      return;
     }
     setUploading(true);
     setProcessing({ phase: "upload", startedAt: Date.now() });
@@ -314,6 +318,21 @@ function ChatSession({
             ? await parseLasFile(file)
             : await parseCsvFile(file);
       if (rows.length < 2) throw new Error("empty");
+      const rowCount = rows.length - 1;
+      if (rowCount > maxRows(plan)) {
+        toast.error(
+          `Votre offre accepte jusqu'à ${maxRows(plan).toLocaleString("fr-FR")} lignes ; ce fichier en contient ${rowCount.toLocaleString("fr-FR")}. Passez à l’offre supérieure pour les fichiers plus volumineux.`,
+          {
+            action: {
+              label: "Voir les offres",
+              onClick: () => {
+                navigate({ to: "/pricing" });
+              },
+            },
+          },
+        );
+        return;
+      }
       const profile = profileDataset(rows, file.name);
       await saveDataset(file, rows, profile);
     } catch {

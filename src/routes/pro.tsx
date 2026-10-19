@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { startCheckout } from "@/lib/billing.functions";
 import { safeAnalysisError } from "@/lib/analysis-state";
-import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB } from "@/lib/billing";
+import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, FREE_MAX_ROWS, PRO_MAX_FILE_MB, PRO_MAX_ROWS } from "@/lib/billing";
 import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/pro")({
@@ -34,7 +34,7 @@ const examples = [
 const faq = [
   ["Puis-je annuler à tout moment ?", "Oui. Depuis la page Tarifs, cliquez sur « Gérer mon abonnement » pour ouvrir le portail Stripe et annuler votre renouvellement, où que vous soyez."],
   ["Mon CSV est-il sécurisé ?", "Vos conversations sont liées à votre compte et leur accès est protégé. Le fichier original n’est pas conservé : un extrait CSV est enregistré avec votre conversation. Il n’est pas supprimé automatiquement après l’analyse ; vous pouvez supprimer la conversation. Évitez les données personnelles ou sensibles."],
-  ["Ça marche pour les gros fichiers ?", "Pro accepte les CSV jusqu’à 100 Mo, contre 5 Mo pour l’essai gratuit. L’analyse actuelle s’appuie sur les 40 premières lignes de données, pas sur tout le fichier. Les résultats indiquent cette limite."],
+  ["Ça marche pour les gros fichiers ?", "L’essai gratuit accepte jusqu’à 5 Mo et 50 000 lignes ; Pro jusqu’à 100 Mo et 500 000 lignes ; Team jusqu’à 250 Mo et 2 000 000 de lignes. Le profil statistique est calculé sur l’intégralité du fichier, avec un échantillonnage régulier au-delà de 200 000 lignes."],
   ["Puis-je payer depuis l’étranger ?", "Le paiement est traité par Stripe. Les cartes et moyens de paiement proposés dépendent du pays, de votre appareil et de la configuration du compte Stripe. Les options disponibles apparaissent avant de payer."],
   ["Puis-je obtenir un remboursement ?", "Annuler empêche les prochains renouvellements. Cela ne déclenche pas automatiquement un remboursement ; toute demande dépend des conditions applicables et des droits légaux de votre pays."],
   ["L’essai gratuit est-il toujours inclus ?", "Oui, vous pouvez commencer avec 5 analyses gratuites sans carte bancaire. Pro est un abonnement à 19 €/mois dès la souscription ; le paiement affiche le montant avant confirmation. Les exports PDF et Excel sont inclus dans Pro."],
@@ -73,9 +73,9 @@ function ProPage() {
       <section className="mx-auto max-w-5xl px-5 py-14">
         <p className="text-xs font-semibold uppercase text-primary">Votre prochain niveau</p><h2 className="mt-3 font-display text-3xl font-bold">Gratuit pour essayer. Pro pour avancer.</h2>
         <div className="mt-8 overflow-x-auto"><table className="w-full min-w-[340px] text-left text-sm"><thead><tr className="border-b border-border"><th className="py-4">Inclus</th><th className="px-3 py-4">Gratuit</th><th className="bg-secondary px-3 py-4 text-primary">Pro · 19 €/mois</th></tr></thead><tbody>
-          {[["Analyses", `${FREE_ANALYSIS_LIMIT} offertes`, "Illimitées"], ["Taille du CSV", `${FREE_MAX_FILE_MB} Mo`, `${PRO_MAX_FILE_MB} Mo`], ["Rapports", "Pas d’export", "PDF & Excel"], ["Historique", "Oui", "Oui"]].map(([label, free, pro]) => <tr key={label} className="border-b border-border"><th className="py-5 font-medium">{label}</th><td className="px-3 text-muted-foreground">{free}</td><td className="bg-secondary/50 px-3 font-semibold text-primary">{pro}</td></tr>)}
+          {[["Analyses", `${FREE_ANALYSIS_LIMIT} offertes`, "Illimitées"], ["Taille du fichier", `${FREE_MAX_FILE_MB} Mo`, `${PRO_MAX_FILE_MB} Mo`], ["Lignes par fichier", FREE_MAX_ROWS.toLocaleString("fr-FR"), PRO_MAX_ROWS.toLocaleString("fr-FR")], ["Formats", "CSV, Excel, JSON, LAS", "CSV, Excel, JSON, GeoJSON, LAS"], ["Rapports", "Pas d’export", "PDF & Excel"], ["Historique", "Oui", "Oui"]].map(([label, free, pro]) => <tr key={label} className="border-b border-border"><th className="py-5 font-medium">{label}</th><td className="px-3 text-muted-foreground">{free}</td><td className="bg-secondary/50 px-3 font-semibold text-primary">{pro}</td></tr>)}
         </tbody></table></div>
-        <p className="mt-4 text-xs text-muted-foreground">Les analyses portent actuellement sur un extrait de 40 lignes de données. L’offre Pro augmente les limites et débloque les exports.</p>
+        <p className="mt-4 text-xs text-muted-foreground">DA-Copilot profile l’intégralité de votre fichier (échantillonnage régulier au-delà de 200 000 lignes) et détecte les vides, doublons, valeurs non numériques et valeurs aberrantes. L’offre Pro augmente les limites et débloque les exports.</p>
       </section>
       <section className="border-y border-border bg-card"><div className="mx-auto max-w-6xl px-5 py-14">
         <h2 className="font-display text-3xl font-bold">Du CSV brut à une lecture claire.</h2><p className="mt-3 text-muted-foreground">Trois exemples illustratifs. Les graphiques ci-dessous ne sont pas des résultats calculés sur vos fichiers.</p>

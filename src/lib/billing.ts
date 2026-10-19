@@ -6,6 +6,9 @@ export const FREE_ANALYSIS_LIMIT = 5;
 export const FREE_MAX_FILE_MB = 5;
 export const PRO_MAX_FILE_MB = 100;
 export const TEAM_MAX_FILE_MB = 250;
+export const FREE_MAX_ROWS = 50_000;
+export const PRO_MAX_ROWS = 500_000;
+export const TEAM_MAX_ROWS = 2_000_000;
 
 export type Plan = "free" | "pro" | "team";
 export type PaidPlan = Exclude<Plan, "free">;
@@ -38,6 +41,10 @@ export function canAnalyze(isPro: boolean, used: number) {
 
 export function maxFileMb(plan: Plan) {
   return plan === "team" ? TEAM_MAX_FILE_MB : plan === "pro" ? PRO_MAX_FILE_MB : FREE_MAX_FILE_MB;
+}
+
+export function maxRows(plan: Plan) {
+  return plan === "team" ? TEAM_MAX_ROWS : plan === "pro" ? PRO_MAX_ROWS : FREE_MAX_ROWS;
 }
 
 export function maxFileBytes(isPro: boolean, plan?: Plan) {

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getBillingStatus, startCheckout, openPortal } from "@/lib/billing.functions";
-import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB, TEAM_MAX_FILE_MB } from "@/lib/billing";
+import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, FREE_MAX_ROWS, PRO_MAX_FILE_MB, PRO_MAX_ROWS, TEAM_MAX_FILE_MB, TEAM_MAX_ROWS } from "@/lib/billing";
 import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
@@ -28,8 +28,8 @@ export const Route = createFileRoute("/pricing")({
 type Status = { isPro: boolean; plan: "free" | "pro" | "team"; periodEnd: string | null; analysesUsed: number; analysesThisMonth: number; freeLimit?: number };
 
 const PAID = [
-  { id: "pro" as const, name: "Pro", price: 19, highlight: true, features: ["Analyses illimitées", `CSV & Excel jusqu'à ${PRO_MAX_FILE_MB} Mo`, "Historique illimité", "Exports PDF et Excel"] },
-  { id: "team" as const, name: "Team", price: 49, highlight: false, features: ["Tout le plan Pro", `Fichiers jusqu'à ${TEAM_MAX_FILE_MB} Mo`, "Traitement prioritaire", "Support dédié par email"] },
+  { id: "pro" as const, name: "Pro", price: 19, highlight: true, features: ["Analyses illimitées", `Fichiers jusqu'à ${PRO_MAX_FILE_MB} Mo et ${PRO_MAX_ROWS.toLocaleString("fr-FR")} lignes`, "CSV, Excel, JSON, GeoJSON, LAS", "Historique illimité", "Exports PDF et Excel"] },
+  { id: "team" as const, name: "Team", price: 49, highlight: false, features: ["Tout le plan Pro", `Fichiers jusqu'à ${TEAM_MAX_FILE_MB} Mo et ${TEAM_MAX_ROWS.toLocaleString("fr-FR")} lignes`, "Traitement prioritaire", "Support dédié par email"] },
 ];
 
 function PricingPage() {
@@ -119,7 +119,7 @@ function PricingPage() {
             <h2 className="font-display text-lg font-semibold">Essai gratuit</h2>
             <p className="mt-2 font-display text-4xl font-bold">0 €</p>
             <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-              {[`${FREE_ANALYSIS_LIMIT} analyses offertes`, `CSV & Excel jusqu'à ${FREE_MAX_FILE_MB} Mo`, "Historique des conversations", "Pas d’export"].map((f) => (
+              {[`${FREE_ANALYSIS_LIMIT} analyses offertes`, `Fichiers jusqu'à ${FREE_MAX_FILE_MB} Mo et ${FREE_MAX_ROWS.toLocaleString("fr-FR")} lignes`, "Historique des conversations", "Pas d’export"].map((f) => (
                 <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-primary" />{f}</li>
               ))}
             </ul>

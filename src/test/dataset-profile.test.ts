@@ -72,6 +72,33 @@ describe("profileDataset", () => {
     expect(profile.correlations).toHaveLength(1);
     expect(profile.correlations?.[0]?.r).toBeCloseTo(1, 5);
   });
+
+  it("detects invalid numbers, outliers, constants and whitespace", () => {
+    const rows: string[][] = [["Val", "Const", "Spaced"]];
+    for (let i = 0; i < 30; i++) rows.push([String(i), "x ", i % 2 === 0 ? " a" : "b"]);
+    rows.push(["1000", "x ", "c"]);
+    rows.push(["abc", "x ", "d"]);
+    const profile = profileDataset(rows, "qualite.csv");
+
+    const value = profile.columnProfiles.find((column) => column.name === "Val");
+    expect(value?.type).toBe("number");
+    expect(value?.nonNumeric).toBe(1);
+    expect(value?.outliers ?? 0).toBeGreaterThan(0);
+
+    const constant = profile.columnProfiles.find((column) => column.name === "Const");
+    expect(constant?.constant).toBe(true);
+
+    const spaced = profile.columnProfiles.find((column) => column.name === "Spaced");
+    expect(spaced?.whitespace ?? 0).toBeGreaterThan(0);
+  });
+
+  it("samples very large files instead of hanging", () => {
+    const rows: string[][] = [["A"]];
+    for (let i = 0; i < 300_000; i++) rows.push([String(i)]);
+    const profile = profileDataset(rows, "big.csv");
+    expect(profile.rows).toBe(300_000);
+    expect(profile.profiledRows).toBe(200_000);
+  });
 });
 
 describe("jsonToRows", () => {

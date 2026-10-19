@@ -15,14 +15,21 @@ export function AnalysisProgress({ phase, startedAt }: { phase: AnalysisPhase; s
   }, []);
   const current = ANALYSIS_STEPS.findIndex((s) => s.phase === phase);
   const percent = estimatedProgress(phase, Math.max(0, now - phaseStart));
+  const indeterminate = phase === "upload" || phase === "parsing";
   return (
     <div className="border-b border-border bg-secondary/40 px-4 py-4" role="status" aria-live="polite">
       <div className="mx-auto max-w-3xl">
         <div className="flex items-center justify-between gap-3 text-sm font-medium">
           <span className="flex items-center gap-2"><LoaderCircle className="size-4 motion-safe:animate-spin" />{ANALYSIS_STEPS[current]?.label}</span>
-          <span className="tabular-nums text-primary">{percent} %</span>
+          <span className="tabular-nums text-primary">{indeterminate ? "…" : `${percent} %`}</span>
         </div>
-        <Progress value={percent} aria-label="Progression estimée de l’analyse" className="mt-3" />
+        {indeterminate ? (
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div className="h-full w-2/3 motion-safe:animate-pulse rounded-full bg-primary" />
+          </div>
+        ) : (
+          <Progress value={percent} aria-label="Progression estimée de l’analyse" className="mt-3" />
+        )}
         <div className="mt-3 grid grid-cols-4 gap-2">
           {ANALYSIS_STEPS.map((step, i) => {
             const Icon = current > i ? Check : (icons[i] ?? Upload);

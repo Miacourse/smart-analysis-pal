@@ -17,6 +17,10 @@ export interface ColumnProfile {
   minDate?: string;
   maxDate?: string;
   top?: { value: string; count: number }[];
+  nonNumeric?: number;
+  outliers?: number;
+  constant?: boolean;
+  whitespace?: number;
 }
 
 export interface DatasetProfile {
@@ -31,6 +35,7 @@ export interface DatasetProfile {
   sampleRows: string[][];
   histograms?: ColumnHistogram[];
   correlations?: CorrelationCell[];
+  profiledRows?: number;
 }
 
 export interface HistogramBin {
@@ -57,6 +62,7 @@ const MAX_DUPLICATE_TRACKED = 200_000;
 const MAX_CHART_COLUMNS = 8;
 const MAX_CHART_ROWS = 50_000;
 const HISTOGRAM_BINS = 20;
+export const MAX_PROFILE_ROWS = 200_000;
 export const SAMPLE_ROW_COUNT = 40;
 
 export function parseNumeric(raw: string): number | null {
@@ -95,6 +101,16 @@ function median(values: number[]): number | undefined {
   return ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
 }
 
+function quartile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  const position = (sorted.length - 1) * p;
+  const base = Math.floor(position);
+  const rest = position - base;
+  const lower = sorted[base] ?? 0;
+  const upper = sorted[base + 1] ?? lower;
+  return lower + rest * (upper - lower);
+}
+
 export function profileDataset(input: string[][], fileName: string): DatasetProfile {
   const headerCells = input[0] ?? [];
   const columns = headerCells.length;
@@ -103,6 +119,19 @@ export function profileDataset(input: string[][], fileName: string): DatasetProf
   const data = input
     .slice(1)
     .filter((row) => row.some((cell) => String(cell ?? "").trim() !== ""));
+
+  const scannedRows =
+    data.length <= MAX_PROFILE_ROWS
+      ? data
+      : (() => {
+          const step = data.length / MAX_PROFILE_ROWS;
+          const out: string[][] = [];
+          for (let i = 0; i < MAX_PROFILE_ROWS; i++) {
+            const row = data[Math.floor(i * step)];
+            if (row) out.push(row);
+          }
+          return out;
+        })();
 
   const columnProfiles: ColumnProfile[] = [];
   let nullCells = 0;
@@ -126,14 +155,17 @@ export function profileDataset(input: string[][], fileName: string): DatasetProf
     let uniqueOverflow = false;
     const top = new Map<string, number>();
     const numericValues: number[] = [];
+    let whitespace = 0;
 
-    for (const row of data) {
-      const raw = String(row[c] ?? "").trim();
+    for (const row of scannedRows) {
+      const original = String(row[c] ?? "");
+      const raw = original.trim();
       if (!raw) {
         nulls++;
         continue;
       }
       nonNull++;
+      if (original !== raw) whitespace++;
 
       if (!uniqueOverflow) {
         if (unique.size < MAX_TRACKED_UNIQUE) unique.add(raw);
@@ -180,6 +212,9 @@ export function profileDataset(input: string[][], fileName: string): DatasetProf
       unique: uniqueOverflow ? MAX_TRACKED_UNIQUE : unique.size,
     };
 
+    if (nonNull > 0 && !uniqueOverflow && unique.size === 1) profile.constant = true;
+    if (whitespace > 0) profile.whitespace = whitespace;
+
     if (type === "number" && numericCount > 0) {
       const mean = sum / numericCount;
       const variance = Math.max(0, sumSq / numericCount - mean * mean);
@@ -190,6 +225,21 @@ export function profileDataset(input: string[][], fileName: string): DatasetProf
       profile.std = Math.sqrt(variance);
       const med = median(numericValues);
       if (med !== undefined) profile.median = med;
+      const nonNumeric = nonNull - numberCount;
+      if (nonNumeric > 0) profile.nonNumeric = nonNumeric;
+      if (numericValues.length >= 20) {
+        const sorted = [...numericValues].sort((a, b) => a - b);
+        const q1 = quartile(sorted, 0.25);
+        const q3 = quartile(sorted, 0.75);
+        const iqr = q3 - q1;
+        if (iqr > 0) {
+          const low = q1 - 1.5 * iqr;
+          const high = q3 + 1.5 * iqr;
+          let count = 0;
+          for (const value of sorted) if (value < low || value > high) count++;
+          if (count > 0) profile.outliers = count;
+        }
+      }
     }
 
     if (type === "date" && minDate !== null && maxDate !== null) {
@@ -209,7 +259,7 @@ export function profileDataset(input: string[][], fileName: string): DatasetProf
 
   let duplicateRows = 0;
   const seen = new Set<string>();
-  for (const row of data) {
+  for (const row of scannedRows) {
     const key = row.join("\u0001");
     if (seen.has(key)) {
       duplicateRows++;
@@ -246,9 +296,9 @@ export function profileDataset(input: string[][], fileName: string): DatasetProf
       for (let j = i + 1; j < chartColumns.length; j++) pairs.push({ i, j });
     }
     const stats = pairs.map(() => ({ n: 0, sx: 0, sy: 0, sxx: 0, syy: 0, sxy: 0 }));
-    const maxRows = Math.min(data.length, MAX_CHART_ROWS);
+    const maxRows = Math.min(scannedRows.length, MAX_CHART_ROWS);
     for (let r = 0; r < maxRows; r++) {
-      const row = data[r] ?? [];
+      const row = scannedRows[r] ?? [];
       const values = chartColumns.map(({ index }) => parseNumeric(String(row[index] ?? "").trim()));
       values.forEach((value, k) => {
         if (value === null) return;
@@ -313,6 +363,7 @@ export function profileDataset(input: string[][], fileName: string): DatasetProf
     columnProfiles,
     sampleHeader: header,
     sampleRows,
+    profiledRows: scannedRows.length,
     ...(histograms ? { histograms } : {}),
     ...(correlations ? { correlations } : {}),
   };
@@ -342,7 +393,14 @@ export function formatProfileForPrompt(profile: DatasetProfile, maxChars = 24_00
   );
   lines.push(`Cellules vides: ${profile.nullCells}`);
   lines.push("");
-  lines.push("Profil statistique calculé sur l'intégralité du fichier:");
+  const profiled = profile.profiledRows ?? profile.rows;
+  if (profiled >= profile.rows) {
+    lines.push("Profil statistique calculé sur l'intégralité du fichier:");
+  } else {
+    lines.push(
+      `Profil statistique calculé sur un échantillon régulier de ${profiled} lignes réparties sur les ${profile.rows} lignes du fichier:`,
+    );
+  }
   for (const column of profile.columnProfiles) {
     const parts = [
       `- "${column.name}" [${column.type}]`,
@@ -359,10 +417,14 @@ export function formatProfileForPrompt(profile: DatasetProfile, maxChars = 24_00
         `écart-type=${formatNumber(column.std)}`,
         `somme=${formatNumber(column.sum)}`,
       );
+      if (column.nonNumeric) parts.push(`valeurs non numériques=${column.nonNumeric}`);
+      if (column.outliers) parts.push(`valeurs aberrantes(IQR)=${column.outliers}`);
     }
     if (column.type === "date") {
       parts.push(`du ${column.minDate ?? "?"} au ${column.maxDate ?? "?"}`);
     }
+    if (column.constant) parts.push("constante");
+    if (column.whitespace) parts.push(`espaces parasites=${column.whitespace}`);
     if (column.top && column.top.length > 0) {
       parts.push(`top=${column.top.map((t) => `${t.value} (${t.count})`).join(", ")}`);
     }
@@ -392,22 +454,30 @@ export function profileSummary(profile: DatasetProfile): string {
 export function parseCsvFile(file: File): Promise<string[][]> {
   return new Promise((resolve, reject) => {
     let settled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const clearTimer = () => {
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    };
+    const toRows = (rows: unknown[][]) =>
+      rows.map((row) => row.map((cell) => String(cell ?? "")));
     const finish = (rows: string[][]) => {
       if (settled) return;
       settled = true;
+      clearTimer();
       resolve(rows);
     };
     const fallback = () => {
       if (settled) return;
+      clearTimer();
       void file
         .text()
         .then((text) => {
+          if (settled) return;
           const result = Papa.parse<string[]>(text, { skipEmptyLines: "greedy" });
-          finish(
-            (result.data as unknown as string[][]).map((row) =>
-              row.map((cell) => String(cell ?? "")),
-            ),
-          );
+          finish(toRows(result.data as unknown as unknown[][]));
         })
         .catch((error: unknown) => {
           if (settled) return;
@@ -415,17 +485,14 @@ export function parseCsvFile(file: File): Promise<string[][]> {
           reject(error);
         });
     };
+    // Filet de sécurité : si le worker ne répond pas (CSP, gros fichier), on bascule
+    // sur une lecture directe pour ne jamais laisser la progression bloquée.
+    timer = setTimeout(fallback, 30000);
     try {
       Papa.parse<string[]>(file, {
         skipEmptyLines: "greedy",
         worker: true,
-        complete: (results) => {
-          finish(
-            (results.data as unknown as string[][]).map((row) =>
-              row.map((cell) => String(cell ?? "")),
-            ),
-          );
-        },
+        complete: (results) => finish(toRows(results.data as unknown as unknown[][])),
         error: () => fallback(),
       });
     } catch {

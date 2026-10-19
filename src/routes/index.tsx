@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BarChart3, FileSpreadsheet, MessageSquareText, ShieldCheck, TrendingUp, Upload } from "lucide-react";
 
-import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB, PLAN_PRICES } from "@/lib/billing";
+import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, FREE_MAX_ROWS, PRO_MAX_FILE_MB, PRO_MAX_ROWS, PLAN_PRICES } from "@/lib/billing";
 import { ANALYSIS_DOMAINS } from "@/lib/analysis-domains";
 import logo from "@/assets/logo.png";
 
@@ -146,7 +146,7 @@ function Landing() {
               <p className="mt-2 font-display text-4xl font-bold">0 €</p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                 <li>• {FREE_ANALYSIS_LIMIT} analyses offertes</li>
-                <li>• Fichiers jusqu'à {FREE_MAX_FILE_MB} Mo (CSV, Excel, JSON, LAS…)</li>
+                <li>• Fichiers jusqu'à {FREE_MAX_FILE_MB} Mo / {FREE_MAX_ROWS.toLocaleString("fr-FR")} lignes</li>
                 <li>• Historique des conversations</li>
               </ul>
               <Link
@@ -163,7 +163,7 @@ function Landing() {
               </p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                 <li>• Analyses illimitées</li>
-                <li>• Fichiers jusqu'à {PRO_MAX_FILE_MB} Mo (CSV, Excel, JSON, LAS…)</li>
+                <li>• Fichiers jusqu'à {PRO_MAX_FILE_MB} Mo / {PRO_MAX_ROWS.toLocaleString("fr-FR")} lignes</li>
                 <li>• Historique illimité</li>
                 <li>• Exports PDF et Excel</li>
               </ul>

@@ -38,6 +38,19 @@ export function AnalysisOverview({ profile }: { profile: DatasetProfile }) {
     return correlationMap.get(`${a}\u0001${b}`) ?? correlationMap.get(`${b}\u0001${a}`) ?? null;
   };
 
+  const profiledRows = profile.profiledRows ?? profile.rows;
+  const nonNumeric = profile.columnProfiles.reduce((total, column) => total + (column.nonNumeric ?? 0), 0);
+  const outliers = profile.columnProfiles.reduce((total, column) => total + (column.outliers ?? 0), 0);
+  const constants = profile.columnProfiles.filter((column) => column.constant).length;
+  const whitespace = profile.columnProfiles.reduce((total, column) => total + (column.whitespace ?? 0), 0);
+  const issues: { label: string; detail: string }[] = [];
+  if (profile.nullCells > 0) issues.push({ label: `${profile.nullCells.toLocaleString("fr-FR")} cellule(s) vide(s)`, detail: "imputation ou suppression" });
+  if (profile.duplicateRows > 0) issues.push({ label: `${profile.duplicateRows.toLocaleString("fr-FR")} ligne(s) dupliquée(s)`, detail: "dédoublonnage" });
+  if (nonNumeric > 0) issues.push({ label: `${nonNumeric.toLocaleString("fr-FR")} valeur(s) non numérique(s) en colonne numérique`, detail: "conversion ou correction" });
+  if (outliers > 0) issues.push({ label: `${outliers.toLocaleString("fr-FR")} valeur(s) aberrante(s) (IQR 1,5)`, detail: "vérification, plafonnement ou retrait" });
+  if (constants > 0) issues.push({ label: `${constants} colonne(s) constante(s)`, detail: "sans pouvoir discriminant" });
+  if (whitespace > 0) issues.push({ label: `${whitespace.toLocaleString("fr-FR")} valeur(s) avec espaces parasites`, detail: "nettoyage des espaces" });
+
   return (
     <div className="mt-6 w-full max-w-2xl space-y-4 text-left">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -46,6 +59,35 @@ export function AnalysisOverview({ profile }: { profile: DatasetProfile }) {
         <Stat label="Valeurs vides" value={`${(missing * 100).toFixed(1)} %`} />
         <Stat label="Doublons" value={profile.duplicateRows.toLocaleString("fr-FR")} />
       </div>
+
+      <section className="rounded-xl border border-border bg-card p-4">
+        <h3 className="text-sm font-semibold">Qualité des données</h3>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Détection sur{" "}
+          {profiledRows < profile.rows
+            ? `${profiledRows.toLocaleString("fr-FR")} lignes échantillonnées sur ${profile.rows.toLocaleString("fr-FR")}`
+            : `${profile.rows.toLocaleString("fr-FR")} lignes`}
+          .
+        </p>
+        {issues.length === 0 ? (
+          <p className="mt-3 text-xs text-muted-foreground">Aucun problème majeur détecté.</p>
+        ) : (
+          <ul className="mt-3 space-y-1.5 text-xs">
+            {issues.map((issue) => (
+              <li key={issue.label} className="flex items-start gap-2">
+                <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                <span>
+                  <span className="font-medium text-foreground">{issue.label}</span>{" "}
+                  <span className="text-muted-foreground">— {issue.detail}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          L'agent explique chaque problème et propose une correction sans modifier vos données.
+        </p>
+      </section>
 
       {histograms.length > 0 && (
         <section className="rounded-xl border border-border bg-card p-4">

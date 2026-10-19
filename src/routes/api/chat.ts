@@ -142,7 +142,12 @@ export const Route = createFileRoute("/api/chat")({
           try {
             const profile = JSON.parse(thread.dataset_profile) as DatasetProfile;
             const totalRows = thread.dataset_rows ?? profile.rows;
-            instructions += `\n\nJeu de données fourni par l'utilisateur : "${thread.dataset_name ?? "dataset"}".\nL'analyse doit porter sur l'INTÉGRALITÉ du fichier (${totalRows} lignes). Le profil statistique ci-dessous est calculé sur toutes les lignes ; l'échantillon sert uniquement d'illustration. Ne prétends jamais que seules quelques lignes sont disponibles.\n\n\`\`\`\n${formatProfileForPrompt(profile)}\n\`\`\`\n\nAppuie tes calculs sur les statistiques du profil et précise les limites lorsqu'une question exige une vue ligne à ligne.`;
+            const profiled = profile.profiledRows ?? profile.rows;
+            const scope =
+              profiled >= totalRows
+                ? `Le profil statistique couvre l'INTÉGRALITÉ du fichier (${totalRows.toLocaleString("fr-FR")} lignes)`
+                : `Le fichier contient ${totalRows.toLocaleString("fr-FR")} lignes ; le profil statistique est calculé sur un échantillon régulier de ${profiled.toLocaleString("fr-FR")} lignes, et l'extrait ci-dessous sert d'illustration`;
+            instructions += `\n\nJeu de données fourni par l'utilisateur : "${thread.dataset_name ?? "dataset"}". ${scope}. Ne prétends jamais que seules quelques lignes sont disponibles.\n\n\`\`\`\n${formatProfileForPrompt(profile)}\n\`\`\`\n\nQualité des données : appuie-toi sur les indicateurs du profil (cellules vides, doublons, valeurs non numériques, valeurs aberrantes selon l'IQR, colonnes constantes, espaces parasites). Signale chaque problème détecté, chiffre-le, explique son impact et propose une correction (imputation, conversion, plafonnement, dédoublonnage) sans jamais modifier les données en silence. Précise quand une vue ligne à ligne serait nécessaire.`;
             profileApplied = true;
           } catch (error) {
             console.error("Profil de données illisible", error);
