@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { convertToModelMessages, type UIMessage } from "ai";
 
-import { createResponsesCall } from "@/lib/ai/responses.server";
+import { createAnalysisCall } from "@/lib/ai/provider.server";
 import { getProStatus } from "@/lib/stripe.server";
 import { activeCompPlan, FREE_ANALYSIS_LIMIT } from "@/lib/billing";
 import { safeAnalysisError } from "@/lib/analysis-state";
@@ -157,16 +157,12 @@ export const Route = createFileRoute("/api/chat")({
           instructions += `\n\nJeu de données fourni par l'utilisateur : "${thread.dataset_name ?? "dataset"}" (extrait CSV, premières lignes) :\n\`\`\`csv\n${thread.dataset_preview}\n\`\`\`\nBase tes analyses sur cet extrait et précise quand une réponse complète nécessiterait l'ensemble des données.`;
         }
 
-        const apiKey = process.env["LOVABLE_API_KEY"];
-        if (!apiKey) return jsonError(500, "Service IA non configuré.");
-
         const modelMessages = await convertToModelMessages(messages);
-        const call = createResponsesCall(
-          request,
-          { baseURL: "https://ai.gateway.lovable.dev/v1", apiKey, model: "openai/gpt-6-astra" },
-          modelMessages,
-          instructions,
-        );
+        const call = createAnalysisCall(request, modelMessages, instructions);
+        if (!call) {
+          await release?.();
+          return jsonError(500, "Service IA non configuré.");
+        }
 
         const lastUserMessage = messages[messages.length - 1];
         if (!lastUserMessage) return jsonError(400, "Message manquant.");
