@@ -90,10 +90,14 @@ export function createAnalysisCall(
     const baseURL = (process.env["FREE_AI_BASE_URL"] ?? FREE_BASE_URL).replace(/\/+$/, "");
     const free = chatProvider(baseURL, process.env["FREE_AI_API_KEY"] ?? "anonymous", true);
     const model = process.env["FREE_AI_MODEL"] ?? "openai";
+    const maxOutputTokens = Number(process.env["FREE_AI_MAX_TOKENS"] ?? 6000);
     return {
       provider,
       result: streamText({
         model: free.chat(model),
+        // Ce point d'accès plafonne par défaut à ~400 tokens (raisonnement inclus) :
+        // on relève le budget pour ne pas tronquer l'analyse.
+        ...(Number.isFinite(maxOutputTokens) ? { maxOutputTokens } : {}),
         ...(instructions ? { instructions } : {}),
         messages,
         abortSignal: request.signal,
