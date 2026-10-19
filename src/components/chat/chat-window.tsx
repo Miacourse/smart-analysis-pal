@@ -3,6 +3,7 @@ import { canExport, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB, TEAM_MAX_FILE_MB, maxFile
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { analysisFetch, safeAnalysisError, type AnalysisPhase } from "@/lib/analysis-state";
+import { stripChartBlocks } from "@/lib/chart-spec";
 import {
   parseCsvFile,
   parseExcelFile,
@@ -349,7 +350,7 @@ function ChatSession({
                 {m.parts.map((part, i) => {
                   if (part.type === "text") {
                     return m.role === "assistant" ? (
-                      <MessageResponse key={i}>{/<(?:!doctype|html|head|body)\b/i.test(part.text) ? safeAnalysisError(part.text) : part.text}</MessageResponse>
+                      <MessageResponse key={i}>{/<(?:!doctype|html|head|body)\b/i.test(part.text) ? safeAnalysisError(part.text) : stripChartBlocks(part.text)}</MessageResponse>
                     ) : (
                       <p key={i} className="whitespace-pre-wrap">
                         {part.text}

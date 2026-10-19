@@ -23,7 +23,12 @@ Règles :
 - Appuie chaque affirmation sur les données fournies ; cite les chiffres exacts.
 - Si les données sont insuffisantes, dis-le clairement et explique ce qu'il faudrait.
 - Utilise le markdown : titres, listes, tableaux pour les chiffres clés.
-- Reste pédagogue : explique les termes techniques simplement.`;
+- Reste pédagogue : explique les termes techniques simplement.
+- Lorsqu'un graphique éclaire la réponse, ajoute EN PLUS du texte un bloc \`\`\`chart contenant uniquement du JSON valide (30 points maximum, valeurs numériques brutes, sans séparateurs de milliers ni %) :
+\`\`\`chart
+{"type":"bar","title":"Taux de survie par classe","xKey":"Classe","yKeys":["Taux de survie"],"data":[{"Classe":"1","Taux de survie":63},{"Classe":"2","Taux de survie":47},{"Classe":"3","Taux de survie":24}]}
+\`\`\`
+  Types autorisés : bar, line, area, pie, scatter. Pour pie et scatter, mets un seul champ dans yKeys. N'ajoute pas de bloc chart si les données ne s'y prêtent pas.`;
 
 function jsonError(status: number, message: string) {
   return new Response(JSON.stringify({ error: message }), {
