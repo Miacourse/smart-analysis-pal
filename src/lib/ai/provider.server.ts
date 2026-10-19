@@ -4,13 +4,18 @@ import { streamText, type ModelMessage } from "ai";
 import { createResponsesCall } from "./responses.server";
 
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
+const ANTHROPIC_BASE_URL = "https://api.anthropic.com/v1";
 const LOVABLE_BASE_URL = "https://ai.gateway.lovable.dev/v1";
 const FREE_BASE_URL = "https://text.pollinations.ai/openai";
 
-export type AiProvider = "gemini" | "openai" | "free" | "lovable";
+export type AiProvider = "gemini" | "anthropic" | "openai" | "free" | "lovable";
 
 function geminiKey() {
   return process.env["GEMINI_API_KEY"] ?? process.env["GOOGLE_GENERATIVE_AI_API_KEY"] ?? null;
+}
+
+function anthropicKey() {
+  return process.env["ANTHROPIC_API_KEY"] ?? process.env["CLAUDE_API_KEY"] ?? null;
 }
 
 function openaiKey() {
@@ -18,15 +23,17 @@ function openaiKey() {
 }
 
 /**
- * Fournisseur actif : Gemini ou OpenAI si une clé est fournie, sinon un point d'accès
- * gratuit sans clé (dépannage). `AI_PROVIDER=lovable` force la passerelle Lovable.
+ * Fournisseur actif : Gemini, Claude ou OpenAI si une clé est fournie, sinon un point
+ * d'accès gratuit sans clé (dépannage). `AI_PROVIDER` force un fournisseur précis.
  */
 export function activeProvider(): AiProvider {
   const forced = (process.env["AI_PROVIDER"] ?? "").trim().toLowerCase();
   if (forced === "gemini" && geminiKey()) return "gemini";
+  if (forced === "anthropic" && anthropicKey()) return "anthropic";
   if (forced === "openai" && openaiKey()) return "openai";
   if (forced === "lovable" && process.env["LOVABLE_API_KEY"]) return "lovable";
   if (geminiKey()) return "gemini";
+  if (anthropicKey()) return "anthropic";
   if (openaiKey()) return "openai";
   return "free";
 }
@@ -65,6 +72,23 @@ export function createAnalysisCall(
       provider,
       result: streamText({
         model: google.chat(model),
+        ...(instructions ? { instructions } : {}),
+        messages,
+        abortSignal: request.signal,
+      }),
+    };
+  }
+
+  if (provider === "anthropic") {
+    // Couche de compatibilité OpenAI d'Anthropic : même SDK, base URL et clé Claude.
+    const anthropic = chatProvider(ANTHROPIC_BASE_URL, anthropicKey()!);
+    const model = process.env["ANTHROPIC_MODEL"] ?? "claude-sonnet-4-6";
+    const maxOutputTokens = Number(process.env["ANTHROPIC_MAX_TOKENS"] ?? 4096);
+    return {
+      provider,
+      result: streamText({
+        model: anthropic.chat(model),
+        ...(Number.isFinite(maxOutputTokens) ? { maxOutputTokens } : {}),
         ...(instructions ? { instructions } : {}),
         messages,
         abortSignal: request.signal,
