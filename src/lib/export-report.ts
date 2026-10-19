@@ -49,6 +49,56 @@ export function extractMarkdownTables(md: string): string[][][] {
   return tables;
 }
 
+function isTableLine(line: string) {
+  const t = line.trim();
+  return t.startsWith("|") && t.endsWith("|");
+}
+
+function isSeparatorRow(cells: string[]) {
+  return cells.every((c) => /^:?-{2,}:?$/.test(c));
+}
+
+function parseTableRow(line: string): string[] {
+  return line
+    .trim()
+    .slice(1, -1)
+    .split("|")
+    .map((c) => c.trim().replace(/\*\*/g, ""));
+}
+
+export function splitReportBlocks(
+  md: string,
+): Array<{ type: "text"; text: string } | { type: "table"; rows: string[][] }> {
+  const blocks: Array<{ type: "text"; text: string } | { type: "table"; rows: string[][] }> = [];
+  let textBuf: string[] = [];
+  let tableBuf: string[][] = [];
+  const flushText = () => {
+    if (textBuf.length) {
+      blocks.push({ type: "text", text: textBuf.join("\n") });
+      textBuf = [];
+    }
+  };
+  const flushTable = () => {
+    if (tableBuf.length) {
+      const rows = tableBuf.filter((r) => !isSeparatorRow(r));
+      if (rows.length) blocks.push({ type: "table", rows });
+      tableBuf = [];
+    }
+  };
+  for (const line of md.split("\n")) {
+    if (isTableLine(line)) {
+      flushText();
+      tableBuf.push(parseTableRow(line));
+    } else {
+      flushTable();
+      textBuf.push(line);
+    }
+  }
+  flushText();
+  flushTable();
+  return blocks;
+}
+
 export async function exportPdf(input: ReportInput) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -73,21 +123,78 @@ export async function exportPdf(input: ReportInput) {
   y += 24;
   doc.setTextColor(20);
 
+  const renderTable = (rows: string[][]) => {
+    const avail = W - 2 * M;
+    const cols = Math.max(...rows.map((r) => r.length));
+    const weights: number[] = new Array(cols).fill(1);
+    for (const r of rows) {
+      for (let c = 0; c < cols; c++) {
+        weights[c] = Math.max(weights[c]!, (r[c] ?? "").length);
+      }
+    }
+    const totalW = weights.reduce((a, b) => a + b, 0) || 1;
+    const colW: number[] = weights.map((w) => (w / totalW) * avail);
+    const pad = 4;
+    const lineH = 11;
+    const fontH = 9.5;
+    const drawRow = (r: string[], bold: boolean, header: boolean) => {
+      doc.setFont("helvetica", bold ? "bold" : "normal").setFontSize(fontH);
+      const cellLines: string[][] = r.map((cell, c) =>
+        doc.splitTextToSize(cell ?? "", colW[c]! - 2 * pad) as string[],
+      );
+      const rowH = Math.max(1, ...cellLines.map((l) => l.length)) * lineH + 2 * pad;
+      if (y + rowH > H - M) {
+        doc.addPage();
+        y = M;
+      }
+      let x = M;
+      for (let c = 0; c < cols; c++) {
+        if (header) {
+          doc.setFillColor(238, 240, 244);
+          doc.rect(x, y - fontH - 2, colW[c]!, rowH, "F");
+        }
+        doc.setDrawColor(205, 210, 218);
+        doc.rect(x, y - fontH - 2, colW[c]!, rowH);
+        let ty = y + 2;
+        for (const ln of cellLines[c]!) {
+          doc.text(ln, x + pad, ty);
+          ty += lineH;
+        }
+        x += colW[c]!;
+      }
+      y += rowH + 1;
+    };
+    drawRow(rows[0]!, true, true);
+    for (let i = 1; i < rows.length; i++) drawRow(rows[i]!, false, false);
+    y += 8;
+    doc.setDrawColor(20);
+  };
+
   for (const m of input.messages) {
-    const text = stripMd(messageText(m));
-    if (!text.trim()) continue;
+    const md = messageText(m).trim();
+    if (!md) continue;
     ensure(30);
-    doc.setFont("helvetica", "bold").setFontSize(12);
+    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(20);
     doc.text(m.role === "user" ? "Question" : "Analyse", M, y);
     y += 16;
-    doc.setFont("helvetica", "normal").setFontSize(10);
-    const lines = doc.splitTextToSize(text, W - 2 * M) as string[];
-    for (const l of lines) {
-      ensure(13);
-      doc.text(l, M, y);
-      y += 13;
+    for (const block of splitReportBlocks(md)) {
+      if (block.type === "table") {
+        ensure(40);
+        renderTable(block.rows);
+        continue;
+      }
+      const text = stripMd(block.text).replace(/^\s*>\s?/gm, "").trim();
+      if (!text) continue;
+      doc.setFont("helvetica", "normal").setFontSize(10);
+      const lines = doc.splitTextToSize(text, W - 2 * M) as string[];
+      for (const l of lines) {
+        ensure(13);
+        doc.text(l, M, y);
+        y += 13;
+      }
+      y += 6;
     }
-    y += 12;
+    y += 10;
   }
   doc.save(`${fileBase(input)}.pdf`);
 }
