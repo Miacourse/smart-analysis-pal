@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { ThreadSidebar } from "@/components/chat/thread-sidebar";
+import { ChatShell } from "@/components/chat/chat-shell";
 import { ChatWindow } from "@/components/chat/chat-window";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 
@@ -52,9 +52,8 @@ function ChatThreadPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <ThreadSidebar activeThreadId={threadId} />
+    <ChatShell activeThreadId={threadId}>
       <ChatWindow key={threadId} threadId={threadId} />
-    </div>
+    </ChatShell>
   );
 }

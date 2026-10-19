@@ -40,7 +40,14 @@ export const startCheckout = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { createCheckoutSession } = await import("./stripe.server");
     const email = await emailOf(context.supabase);
-    return { url: await createCheckoutSession(email, PLAN_PRICES[data.plan].priceId, originOf()) };
+    return {
+      url: await createCheckoutSession({
+        email,
+        priceId: PLAN_PRICES[data.plan].priceId,
+        origin: originOf(),
+        userId: context.userId,
+      }),
+    };
   });
 
 export const openPortal = createServerFn({ method: "POST" })

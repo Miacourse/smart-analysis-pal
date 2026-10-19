@@ -4,7 +4,7 @@ import { convertToModelMessages, type UIMessage } from "ai";
 
 import { createResponsesCall } from "@/lib/ai/responses.server";
 import { getProStatus } from "@/lib/stripe.server";
-import { canAnalyze, FREE_ANALYSIS_LIMIT } from "@/lib/billing";
+import { FREE_ANALYSIS_LIMIT } from "@/lib/billing";
 import { safeAnalysisError } from "@/lib/analysis-state";
 
 const SYSTEM_PROMPT = `Tu es DA-Copilot, un agent d'analyse de données rigoureux et pédagogue.
@@ -35,6 +35,7 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        let release: (() => Promise<void>) | null = null;
         try {
         const authHeader = request.headers.get("authorization");
         if (!authHeader) return jsonError(401, "Connexion requise.");
@@ -68,7 +69,7 @@ export const Route = createFileRoute("/api/chat")({
           .maybeSingle();
         if (!thread) return jsonError(403, "Conversation introuvable.");
 
-        // Limite de l'essai gratuit
+        // Limite de l'essai gratuit (Stripe interrogé uniquement si le quota gratuit est atteint)
         const { data: sub } = await supabase
           .from("subscriptions")
           .select("analyses_used")
@@ -83,7 +84,22 @@ export const Route = createFileRoute("/api/chat")({
             console.error("Vérification Stripe impossible", e);
           }
         }
-        if (!canAnalyze(isPro, used)) {
+        // Réservation atomique d'une analyse : les requêtes simultanées reçoivent des
+        // compteurs distincts, ce qui empêche de dépasser la limite gratuite.
+        let released = false;
+        release = async () => {
+          if (released) return;
+          released = true;
+          try {
+            await supabase.rpc("release_analysis");
+          } catch (e) {
+            console.error("Libération du quota impossible", e);
+          }
+        };
+        const reserved = await supabase.rpc("consume_analysis");
+        const analysesUsedAfter = typeof reserved.data === "number" ? reserved.data : used + 1;
+        if (!isPro && analysesUsedAfter > FREE_ANALYSIS_LIMIT) {
+          await release();
           return jsonError(
             402,
             `Vous avez utilisé vos ${FREE_ANALYSIS_LIMIT} analyses gratuites. Passez au plan Pro pour continuer.`,
@@ -108,28 +124,33 @@ export const Route = createFileRoute("/api/chat")({
 
         const lastUserMessage = messages[messages.length - 1];
         if (!lastUserMessage) return jsonError(400, "Message manquant.");
+        const lastUserText = lastUserMessage.parts
+          .map((p) => (p.type === "text" ? p.text : ""))
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
         const response = call.result.toUIMessageStreamResponse({
           originalMessages: messages,
           sendReasoning: true,
-          onError: (error) => safeAnalysisError(error instanceof Error ? error.message : "Le service IA n’a pas pu terminer l’analyse."),
+          onError: (error) => {
+            void release?.();
+            return safeAnalysisError(error instanceof Error ? error.message : "Le service IA n’a pas pu terminer l’analyse.");
+          },
           onFinish: async ({ responseMessage, isAborted }) => {
-            if (isAborted || !responseMessage.parts.some((p) => p.type === "text" && p.text.trim())) return;
+            if (isAborted || !responseMessage.parts.some((p) => p.type === "text" && p.text.trim())) {
+              await release?.();
+              return;
+            }
             try {
               await supabase.from("messages").insert([
                 { thread_id: threadId, role: "user", parts: lastUserMessage.parts },
                 { thread_id: threadId, role: "assistant", parts: responseMessage.parts },
               ]);
-              await supabase
-                .from("threads")
-                .update({ updated_at: new Date().toISOString() })
-                .eq("id", threadId);
-              const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-              await supabaseAdmin
-                .from("subscriptions")
-                .upsert(
-                  { user_id: user.id, analyses_used: used + 1, updated_at: new Date().toISOString() },
-                  { onConflict: "user_id" },
-                );
+              const patch: { updated_at: string; title?: string } = { updated_at: new Date().toISOString() };
+              if ((!thread.title || thread.title === "Nouvelle analyse") && lastUserText) {
+                patch.title = lastUserText.slice(0, 80);
+              }
+              await supabase.from("threads").update(patch).eq("id", threadId);
             } catch (e) {
               console.error("Erreur de sauvegarde des messages", e);
             }
@@ -138,8 +159,12 @@ export const Route = createFileRoute("/api/chat")({
 
         return response;
         } catch (error) {
-          if (request.signal.aborted) return jsonError(499, "Analyse arrêtée.");
+          if (request.signal.aborted) {
+            await release?.();
+            return jsonError(499, "Analyse arrêtée.");
+          }
           console.error("Échec de l’analyse", error);
+          await release?.();
           return jsonError(500, "L’analyse n’a pas pu aboutir. Votre conversation est conservée. Relancez l’analyse.");
         }
       },

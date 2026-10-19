@@ -18,7 +18,15 @@ type Thread = {
 
 type Usage = { plan: "free" | "pro" | "team"; analysesUsed: number; analysesThisMonth: number; periodEnd: string | null };
 
-export function ThreadSidebar({ activeThreadId }: { activeThreadId?: string }) {
+export function ThreadSidebar({
+  activeThreadId,
+  className,
+  onNavigate,
+}: {
+  activeThreadId?: string | undefined;
+  className?: string | undefined;
+  onNavigate?: (() => void) | undefined;
+}) {
   const navigate = useNavigate();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null);
@@ -68,9 +76,11 @@ export function ThreadSidebar({ activeThreadId }: { activeThreadId?: string }) {
       return;
     }
     navigate({ to: "/chat/$threadId", params: { threadId: data.id } });
+    onNavigate?.();
   }
 
   async function deleteThread(id: string) {
+    if (!confirm("Supprimer cette conversation et son historique ? Cette action est définitive.")) return;
     const { error } = await supabase.from("threads").delete().eq("id", id);
     if (error) {
       toast.error("Suppression impossible.");
@@ -78,15 +88,19 @@ export function ThreadSidebar({ activeThreadId }: { activeThreadId?: string }) {
     }
     setThreads((prev) => prev.filter((t) => t.id !== id));
     if (id === activeThreadId) navigate({ to: "/chat" });
+    onNavigate?.();
   }
 
   async function signOut() {
     await supabase.auth.signOut();
     navigate({ to: "/" });
+    onNavigate?.();
   }
 
   return (
-    <aside className="flex h-full w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
+    <aside
+      className={`flex h-full w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar ${className ?? ""}`}
+    >
       <div className="flex items-center gap-2 border-b border-sidebar-border px-4 py-4">
         <img src={logo} alt="DA-Copilot" width={28} height={28} className="h-7 w-7" />
         <span className="font-display font-semibold text-sidebar-foreground">DA-Copilot</span>
@@ -115,6 +129,7 @@ export function ThreadSidebar({ activeThreadId }: { activeThreadId?: string }) {
             <Link
               to="/chat/$threadId"
               params={{ threadId: t.id }}
+              onClick={() => onNavigate?.()}
               className="min-w-0 flex-1 truncate px-1 py-1"
             >
               <span className="block truncate font-medium">{t.title}</span>
@@ -155,19 +170,30 @@ export function ThreadSidebar({ activeThreadId }: { activeThreadId?: string }) {
             {usage.plan === "free" && (
               <div className="mt-1.5 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, usage.analysesUsed / FREE_ANALYSIS_LIMIT * 100)}%` }} /></div>
             )}
+            {usage.plan === "free" && usage.analysesUsed >= FREE_ANALYSIS_LIMIT && (
+              <Link
+                to="/pricing"
+                onClick={() => onNavigate?.()}
+                className="mt-2 flex items-center justify-center gap-1.5 rounded-md bg-primary px-2 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <Sparkles className="h-3 w-3" />
+                Passer à Pro — analyses illimitées
+              </Link>
+            )}
             {usage.plan !== "free" && usage.periodEnd && (
               <p className="text-muted-foreground">Renouvellement le {new Date(usage.periodEnd).toLocaleDateString("fr-FR")}</p>
             )}
           </div>
         )}
         {isAdmin && (
-          <Link to="/admin" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent">
+          <Link to="/admin" onClick={() => onNavigate?.()} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent">
             <Shield className="h-4 w-4" />
             Administration
           </Link>
         )}
         <Link
           to="/pricing"
+          onClick={() => onNavigate?.()}
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-primary hover:bg-sidebar-accent"
         >
           <Sparkles className="h-4 w-4" />

@@ -92,7 +92,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Téléversez vos données, posez votre question, recevez une analyse chiffrée et des recommandations actionnables.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://smart-analysis-pal.lovable.app/" },
+      { property: "og:image", content: "https://smart-analysis-pal.lovable.app/favicon.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "https://smart-analysis-pal.lovable.app/favicon.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

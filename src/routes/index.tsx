@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BarChart3, FileSpreadsheet, MessageSquareText, ShieldCheck, TrendingUp, Upload } from "lucide-react";
 
+import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB, PLAN_PRICES } from "@/lib/billing";
 import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
@@ -115,8 +116,8 @@ function Landing() {
               <h3 className="font-display text-lg font-semibold">Gratuit</h3>
               <p className="mt-2 font-display text-4xl font-bold">0 €</p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <li>• 5 analyses offertes</li>
-                <li>• Fichiers CSV jusqu'à 5 Mo</li>
+                <li>• {FREE_ANALYSIS_LIMIT} analyses offertes</li>
+                <li>• Fichiers CSV jusqu'à {FREE_MAX_FILE_MB} Mo</li>
                 <li>• Historique des conversations</li>
               </ul>
               <Link
@@ -129,11 +130,11 @@ function Landing() {
             <div className="rounded-2xl border-2 border-primary bg-background p-8 shadow-sm">
               <h3 className="font-display text-lg font-semibold">Pro</h3>
               <p className="mt-2 font-display text-4xl font-bold">
-                19 €<span className="text-base font-normal text-muted-foreground">/mois</span>
+                {PLAN_PRICES.pro.eur} €<span className="text-base font-normal text-muted-foreground">/mois</span>
               </p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                 <li>• Analyses illimitées</li>
-                <li>• Fichiers CSV jusqu'à 100 Mo</li>
+                <li>• Fichiers CSV jusqu'à {PRO_MAX_FILE_MB} Mo</li>
                 <li>• Historique illimité</li>
                 <li>• Exports PDF et Excel</li>
               </ul>

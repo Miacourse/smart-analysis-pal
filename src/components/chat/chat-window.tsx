@@ -302,7 +302,19 @@ function ChatSession({
       </div>
 
       {processing && <AnalysisProgress phase={processing.phase} startedAt={processing.startedAt} />}
-      {analysisError && <div role="alert" className="border-b border-border px-4 py-3 text-sm text-destructive">{analysisError}</div>}
+      {analysisError && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 text-sm text-destructive"
+        >
+          <span>{analysisError}</span>
+          {/analyses gratuites/i.test(analysisError) && (
+            <Button size="sm" onClick={() => navigate({ to: "/pricing" })} className="shrink-0">
+              Passer à Pro
+            </Button>
+          )}
+        </div>
+      )}
 
       <Conversation className="flex-1">
         <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-4 py-6">

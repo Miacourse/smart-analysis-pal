@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { ThreadSidebar } from "@/components/chat/thread-sidebar";
+import { ChatShell } from "@/components/chat/chat-shell";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 
 export const Route = createFileRoute("/chat/")({
@@ -60,11 +60,10 @@ function ChatIndex() {
   }, [navigate]);
 
   return (
-    <div className="flex h-screen bg-background">
-      <ThreadSidebar />
+    <ChatShell>
       <div className="flex flex-1 items-center justify-center">
         <Shimmer className="text-sm">Ouverture de votre espace d'analyse…</Shimmer>
       </div>
-    </div>
+    </ChatShell>
   );
 }
