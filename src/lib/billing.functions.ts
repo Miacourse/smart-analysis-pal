@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { FREE_ANALYSIS_LIMIT, PLAN_PRICES, type PaidPlan } from "./billing";
+import { activeCompPlan, FREE_ANALYSIS_LIMIT, PLAN_PRICES, type PaidPlan } from "./billing";
 
 function originOf() {
   return getRequestHeader("origin") ?? "https://smart-analysis-pal.lovable.app";
@@ -20,7 +20,7 @@ export const getBillingStatus = createServerFn({ method: "GET" })
     const email = await emailOf(context.supabase);
     const { data: sub } = await context.supabase
       .from("subscriptions")
-      .select("analyses_used")
+      .select("analyses_used, comp_plan, comp_expires_at, bonus_analyses")
       .eq("user_id", context.userId)
       .maybeSingle();
     const { count } = await context.supabase
@@ -28,8 +28,17 @@ export const getBillingStatus = createServerFn({ method: "GET" })
       .select("id, threads!inner(user_id)", { count: "exact", head: true })
       .eq("role", "assistant")
       .gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString());
-    const status = await getProStatus(email);
-    return { ...status, analysesUsed: sub?.analyses_used ?? 0, analysesThisMonth: count ?? 0 };
+    const bonus = sub?.bonus_analyses ?? 0;
+    const compPlan = activeCompPlan(sub?.comp_plan, sub?.comp_expires_at);
+    const status = compPlan
+      ? { isPro: true, plan: compPlan, periodEnd: sub?.comp_expires_at ?? null }
+      : await getProStatus(email);
+    return {
+      ...status,
+      analysesUsed: sub?.analyses_used ?? 0,
+      analysesThisMonth: count ?? 0,
+      freeLimit: FREE_ANALYSIS_LIMIT + bonus,
+    };
   });
 
 export const startCheckout = createServerFn({ method: "POST" })
@@ -80,13 +89,22 @@ export const getAdminStats = createServerFn({ method: "GET" })
     const since30 = new Date(now - 30 * 24 * 3600 * 1000).toISOString();
     const [usersRes, subs, threadsRes, msgs, roles, plans] = await Promise.all([
       supabaseAdmin.auth.admin.listUsers({ perPage: 500 }),
-      supabaseAdmin.from("subscriptions").select("user_id, analyses_used, updated_at"),
+      supabaseAdmin
+        .from("subscriptions")
+        .select("user_id, analyses_used, bonus_analyses, comp_plan, comp_expires_at, updated_at"),
       supabaseAdmin.from("threads").select("id, user_id, title, dataset_name, updated_at").order("updated_at", { ascending: false }).limit(500),
       supabaseAdmin.from("messages").select("created_at, thread_id").eq("role", "assistant").gte("created_at", since30).limit(5000),
       supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin"),
       listActivePlansByEmail().catch(() => new Map<string, "free" | "pro" | "team">()),
     ]);
-    const used = new Map((subs.data ?? []).map((s) => [s.user_id, s.analyses_used]));
+    const subRows = subs.data ?? [];
+    const used = new Map(subRows.map((s) => [s.user_id, s.analyses_used]));
+    const bonusByUser = new Map(subRows.map((s) => [s.user_id, s.bonus_analyses ?? 0]));
+    const compByUser = new Map<string, PaidPlan>();
+    for (const s of subRows) {
+      const comp = activeCompPlan(s.comp_plan, s.comp_expires_at, now);
+      if (comp) compByUser.set(s.user_id, comp);
+    }
     const admins = new Set((roles.data ?? []).map((r) => r.user_id));
     const threads = threadsRes.data ?? [];
     const threadOwner = new Map(threads.map((t) => [t.id, t.user_id]));
@@ -101,20 +119,33 @@ export const getAdminStats = createServerFn({ method: "GET" })
     }
     const authUsers = usersRes.data?.users ?? [];
     const emailOfId = new Map(authUsers.map((u) => [u.id, u.email ?? ""]));
-    const users = authUsers.map((u) => ({
-      id: u.id,
-      email: u.email ?? "",
-      createdAt: u.created_at,
-      lastSignIn: u.last_sign_in_at ?? null,
-      analysesUsed: used.get(u.id) ?? 0,
-      analyses30d: lastMonth.get(u.id) ?? 0,
-      conversations: threads.filter((t) => t.user_id === u.id).length,
-      plan: plans.get((u.email ?? "").toLowerCase()) ?? ("free" as const),
-      isAdmin: admins.has(u.id),
-    }));
+    const users = authUsers.map((u) => {
+      const stripePlan = plans.get((u.email ?? "").toLowerCase()) ?? "free";
+      const compPlan = compByUser.get(u.id) ?? null;
+      return {
+        id: u.id,
+        email: u.email ?? "",
+        createdAt: u.created_at,
+        lastSignIn: u.last_sign_in_at ?? null,
+        analysesUsed: used.get(u.id) ?? 0,
+        analyses30d: lastMonth.get(u.id) ?? 0,
+        conversations: threads.filter((t) => t.user_id === u.id).length,
+        plan: compPlan ?? stripePlan,
+        compPlan,
+        bonus: bonusByUser.get(u.id) ?? 0,
+        paid: stripePlan !== "free",
+        isAdmin: admins.has(u.id),
+      };
+    });
     users.sort((a, b) => b.analysesUsed - a.analysesUsed);
     const pro = users.filter((u) => u.plan === "pro").length;
     const team = users.filter((u) => u.plan === "team").length;
+    let paidPro = 0;
+    let paidTeam = 0;
+    for (const p of plans.values()) {
+      if (p === "team") paidTeam++;
+      else if (p === "pro") paidPro++;
+    }
     const today = new Date(now).toISOString().slice(0, 10);
     return {
       totalUsers: users.length,
@@ -123,8 +154,8 @@ export const getAdminStats = createServerFn({ method: "GET" })
       totalAnalyses: users.reduce((n, u) => n + u.analysesUsed, 0),
       proCount: pro,
       teamCount: team,
-      mrr: pro * PLAN_PRICES.pro.eur + team * PLAN_PRICES.team.eur,
-      nearLimit: users.filter((u) => u.plan === "free" && u.analysesUsed >= FREE_ANALYSIS_LIMIT - 1).length,
+      mrr: paidPro * PLAN_PRICES.pro.eur + paidTeam * PLAN_PRICES.team.eur,
+      nearLimit: users.filter((u) => u.plan === "free" && u.analysesUsed >= FREE_ANALYSIS_LIMIT + u.bonus - 1).length,
       perDay: [...perDay.entries()].map(([day, count]) => ({ day, count })),
       users,
       recentThreads: threads.slice(0, 15).map((t) => ({ id: t.id, title: t.title, dataset: t.dataset_name, updatedAt: t.updated_at, email: emailOfId.get(t.user_id) ?? "" })),

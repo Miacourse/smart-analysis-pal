@@ -49,6 +49,9 @@ export type Database = {
       subscriptions: {
         Row: {
           analyses_used: number
+          bonus_analyses: number
+          comp_expires_at: string | null
+          comp_plan: string | null
           created_at: string
           id: string
           plan: string
@@ -58,6 +61,9 @@ export type Database = {
         }
         Insert: {
           analyses_used?: number
+          bonus_analyses?: number
+          comp_expires_at?: string | null
+          comp_plan?: string | null
           created_at?: string
           id?: string
           plan?: string
@@ -67,6 +73,9 @@ export type Database = {
         }
         Update: {
           analyses_used?: number
+          bonus_analyses?: number
+          comp_expires_at?: string | null
+          comp_plan?: string | null
           created_at?: string
           id?: string
           plan?: string

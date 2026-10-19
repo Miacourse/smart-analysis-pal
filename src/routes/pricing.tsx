@@ -25,7 +25,7 @@ export const Route = createFileRoute("/pricing")({
   component: PricingPage,
 });
 
-type Status = { isPro: boolean; plan: "free" | "pro" | "team"; periodEnd: string | null; analysesUsed: number; analysesThisMonth: number };
+type Status = { isPro: boolean; plan: "free" | "pro" | "team"; periodEnd: string | null; analysesUsed: number; analysesThisMonth: number; freeLimit?: number };
 
 const PAID = [
   { id: "pro" as const, name: "Pro", price: 19, highlight: true, features: ["Analyses illimitées", `CSV & Excel jusqu'à ${PRO_MAX_FILE_MB} Mo`, "Historique illimité", "Exports PDF et Excel"] },
@@ -110,7 +110,7 @@ function PricingPage() {
           <p className="mt-4 text-center text-sm text-muted-foreground">
             {isPro
               ? `Offre ${plan === "team" ? "Team" : "Pro"} active · ${status.analysesThisMonth} analyses ce mois-ci`
-              : `Essai : ${Math.min(status.analysesUsed, FREE_ANALYSIS_LIMIT)} / ${FREE_ANALYSIS_LIMIT} analyses utilisées`}
+              : `Essai : ${Math.min(status.analysesUsed, status.freeLimit ?? FREE_ANALYSIS_LIMIT)} / ${status.freeLimit ?? FREE_ANALYSIS_LIMIT} analyses utilisées`}
           </p>
         )}
 

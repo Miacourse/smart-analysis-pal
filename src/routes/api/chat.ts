@@ -4,7 +4,7 @@ import { convertToModelMessages, type UIMessage } from "ai";
 
 import { createResponsesCall } from "@/lib/ai/responses.server";
 import { getProStatus } from "@/lib/stripe.server";
-import { FREE_ANALYSIS_LIMIT } from "@/lib/billing";
+import { activeCompPlan, FREE_ANALYSIS_LIMIT } from "@/lib/billing";
 import { safeAnalysisError } from "@/lib/analysis-state";
 
 const SYSTEM_PROMPT = `Tu es DA-Copilot, un agent d'analyse de données rigoureux et pédagogue.
@@ -72,12 +72,14 @@ export const Route = createFileRoute("/api/chat")({
         // Limite de l'essai gratuit (Stripe interrogé uniquement si le quota gratuit est atteint)
         const { data: sub } = await supabase
           .from("subscriptions")
-          .select("analyses_used")
+          .select("analyses_used, comp_plan, comp_expires_at, bonus_analyses")
           .eq("user_id", user.id)
           .maybeSingle();
         const used = sub?.analyses_used ?? 0;
-        let isPro = false;
-        if (used >= FREE_ANALYSIS_LIMIT && user.email) {
+        const bonus = sub?.bonus_analyses ?? 0;
+        const freeLimit = FREE_ANALYSIS_LIMIT + bonus;
+        let isPro = activeCompPlan(sub?.comp_plan, sub?.comp_expires_at) !== null;
+        if (!isPro && used >= freeLimit && user.email) {
           try {
             isPro = (await getProStatus(user.email)).isPro;
           } catch (e) {
@@ -98,11 +100,11 @@ export const Route = createFileRoute("/api/chat")({
         };
         const reserved = await supabase.rpc("consume_analysis");
         const analysesUsedAfter = typeof reserved.data === "number" ? reserved.data : used + 1;
-        if (!isPro && analysesUsedAfter > FREE_ANALYSIS_LIMIT) {
+        if (!isPro && analysesUsedAfter > freeLimit) {
           await release();
           return jsonError(
             402,
-            `Vous avez utilisé vos ${FREE_ANALYSIS_LIMIT} analyses gratuites. Passez au plan Pro pour continuer.`,
+            `Vous avez utilisé vos ${freeLimit} analyses gratuites. Passez au plan Pro pour continuer.`,
           );
         }
 

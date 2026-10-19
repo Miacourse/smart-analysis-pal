@@ -21,6 +21,17 @@ export function planFromProduct(productId: string | null | undefined): Plan {
   return "free";
 }
 
+// Plan offert par un administrateur (indépendant de Stripe), s'il est encore valide.
+export function activeCompPlan(
+  compPlan: string | null | undefined,
+  compExpiresAt: string | null | undefined,
+  now: number = Date.now(),
+): PaidPlan | null {
+  if (compPlan !== "pro" && compPlan !== "team") return null;
+  if (compExpiresAt && new Date(compExpiresAt).getTime() <= now) return null;
+  return compPlan;
+}
+
 export function canAnalyze(isPro: boolean, used: number) {
   return isPro || used < FREE_ANALYSIS_LIMIT;
 }

@@ -16,7 +16,7 @@ type Thread = {
   updated_at: string;
 };
 
-type Usage = { plan: "free" | "pro" | "team"; analysesUsed: number; analysesThisMonth: number; periodEnd: string | null };
+type Usage = { plan: "free" | "pro" | "team"; analysesUsed: number; analysesThisMonth: number; periodEnd: string | null; freeLimit?: number };
 
 export function ThreadSidebar({
   activeThreadId,
@@ -164,13 +164,13 @@ export function ThreadSidebar({
             </div>
             <p className="mt-1 text-muted-foreground">
               {usage.plan === "free"
-                ? `${Math.min(usage.analysesUsed, FREE_ANALYSIS_LIMIT)} / ${FREE_ANALYSIS_LIMIT} analyses utilisées`
+                ? `${Math.min(usage.analysesUsed, usage.freeLimit ?? FREE_ANALYSIS_LIMIT)} / ${usage.freeLimit ?? FREE_ANALYSIS_LIMIT} analyses utilisées`
                 : `${usage.analysesThisMonth} analyses ce mois-ci`}
             </p>
             {usage.plan === "free" && (
-              <div className="mt-1.5 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, usage.analysesUsed / FREE_ANALYSIS_LIMIT * 100)}%` }} /></div>
+              <div className="mt-1.5 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, usage.analysesUsed / (usage.freeLimit ?? FREE_ANALYSIS_LIMIT) * 100)}%` }} /></div>
             )}
-            {usage.plan === "free" && usage.analysesUsed >= FREE_ANALYSIS_LIMIT && (
+            {usage.plan === "free" && usage.analysesUsed >= (usage.freeLimit ?? FREE_ANALYSIS_LIMIT) && (
               <Link
                 to="/pricing"
                 onClick={() => onNavigate?.()}

@@ -2,14 +2,23 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { RefreshCw, Search, Users, MessagesSquare, Activity, Euro, Crown, AlertTriangle } from "lucide-react";
+import { RefreshCw, Search, Users, MessagesSquare, Activity, Euro, Crown, AlertTriangle, Gift, MoreHorizontal, Plus, ShieldCheck, ShieldOff, Ban } from "lucide-react";
 
 import { adminResetQuota, getAdminStats } from "@/lib/billing.functions";
+import { adminAddBonus, adminSetComp, adminSetRole } from "@/lib/admin.functions";
 import { FREE_ANALYSIS_LIMIT } from "@/lib/billing";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -34,6 +43,9 @@ const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString("fr-FR") :
 function AdminPage() {
   const fetchStats = useServerFn(getAdminStats);
   const resetQuota = useServerFn(adminResetQuota);
+  const setComp = useServerFn(adminSetComp);
+  const addBonus = useServerFn(adminAddBonus);
+  const setRole = useServerFn(adminSetRole);
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -72,6 +84,39 @@ function AdminPage() {
       load();
     } catch {
       toast.error("Réinitialisation impossible.");
+    }
+  }
+
+  async function setOffer(userId: string, email: string, plan: "pro" | "team" | "none") {
+    const label = plan === "none" ? "retirer l’offre de" : `offrir ${PLAN_LABEL[plan]} à`;
+    if (!confirm(`Voulez-vous ${label} ${email} ?`)) return;
+    try {
+      await setComp({ data: { userId, plan } });
+      toast.success(plan === "none" ? `Offre retirée à ${email}.` : `${PLAN_LABEL[plan]} offert à ${email}.`);
+      load();
+    } catch {
+      toast.error("Mise à jour de l’offre impossible.");
+    }
+  }
+
+  async function grantBonus(userId: string, email: string, delta: number) {
+    try {
+      await addBonus({ data: { userId, delta } });
+      toast.success(`${delta > 0 ? "+" : ""}${delta} analyses pour ${email}.`);
+      load();
+    } catch {
+      toast.error("Mise à jour du quota impossible.");
+    }
+  }
+
+  async function toggleAdmin(userId: string, email: string, isAdmin: boolean) {
+    if (!confirm(isAdmin ? `Retirer les droits admin de ${email} ?` : `Donner les droits admin à ${email} ?`)) return;
+    try {
+      await setRole({ data: { userId, isAdmin } });
+      toast.success(isAdmin ? `${email} n’est plus administrateur.` : `${email} est désormais administrateur.`);
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Action impossible.");
     }
   }
 
@@ -161,13 +206,38 @@ function AdminPage() {
                       {users.map((u) => (
                         <tr key={u.id} className="border-b border-border last:border-0">
                           <td className="p-3 break-all">{u.email}{u.isAdmin && <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold">admin</span>}</td>
-                          <td className="p-3"><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${u.plan === "free" ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"}`}>{PLAN_LABEL[u.plan]}</span></td>
-                          <td className="p-3"><span className={u.plan === "free" && u.analysesUsed >= FREE_ANALYSIS_LIMIT ? "font-semibold text-destructive" : ""}>{u.analysesUsed}{u.plan === "free" ? ` / ${FREE_ANALYSIS_LIMIT}` : ""}</span></td>
+                          <td className="p-3">
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${u.plan === "free" ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"}`}>{PLAN_LABEL[u.plan]}</span>
+                            {u.compPlan && <span className="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold">offert</span>}
+                          </td>
+                          <td className="p-3"><span className={u.plan === "free" && u.analysesUsed >= FREE_ANALYSIS_LIMIT + u.bonus ? "font-semibold text-destructive" : ""}>{u.analysesUsed}{u.plan === "free" ? ` / ${FREE_ANALYSIS_LIMIT + u.bonus}` : ""}</span></td>
                           <td className="p-3">{u.analyses30d}</td>
                           <td className="p-3">{u.conversations}</td>
                           <td className="p-3">{fmt(u.createdAt)}</td>
                           <td className="p-3">{fmt(u.lastSignIn)}</td>
-                          <td className="p-3 text-right"><Button size="sm" variant="ghost" onClick={() => reset(u.id, u.email)}>Remettre à zéro</Button></td>
+                          <td className="p-3 text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="sm" variant="ghost" aria-label="Actions"><MoreHorizontal className="h-4 w-4" /></Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuLabel>Offre</DropdownMenuLabel>
+                                {u.plan !== "pro" && <DropdownMenuItem onClick={() => setOffer(u.id, u.email, "pro")}><Gift className="mr-2 h-4 w-4" />Offrir Pro</DropdownMenuItem>}
+                                {u.plan !== "team" && <DropdownMenuItem onClick={() => setOffer(u.id, u.email, "team")}><Gift className="mr-2 h-4 w-4" />Offrir Team</DropdownMenuItem>}
+                                {u.compPlan && <DropdownMenuItem onClick={() => setOffer(u.id, u.email, "none")}><Ban className="mr-2 h-4 w-4" />Retirer l’offre offerte</DropdownMenuItem>}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel>Quota d’analyses</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => grantBonus(u.id, u.email, 5)}><Plus className="mr-2 h-4 w-4" />Ajouter 5 analyses</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => grantBonus(u.id, u.email, -5)} disabled={u.bonus === 0}><Ban className="mr-2 h-4 w-4" />Retirer 5 analyses</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => reset(u.id, u.email)}>Remettre à zéro</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel>Droits</DropdownMenuLabel>
+                                {u.isAdmin
+                                  ? <DropdownMenuItem onClick={() => toggleAdmin(u.id, u.email, false)}><ShieldOff className="mr-2 h-4 w-4" />Retirer admin</DropdownMenuItem>
+                                  : <DropdownMenuItem onClick={() => toggleAdmin(u.id, u.email, true)}><ShieldCheck className="mr-2 h-4 w-4" />Rendre admin</DropdownMenuItem>}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
                         </tr>
                       ))}
                       {users.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Aucun utilisateur.</td></tr>}
