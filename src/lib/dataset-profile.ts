@@ -29,12 +29,34 @@ export interface DatasetProfile {
   columnProfiles: ColumnProfile[];
   sampleHeader: string[];
   sampleRows: string[][];
+  histograms?: ColumnHistogram[];
+  correlations?: CorrelationCell[];
+}
+
+export interface HistogramBin {
+  from: number;
+  to: number;
+  count: number;
+}
+
+export interface ColumnHistogram {
+  name: string;
+  bins: HistogramBin[];
+}
+
+export interface CorrelationCell {
+  a: string;
+  b: string;
+  r: number;
 }
 
 const MAX_TRACKED_UNIQUE = 50_000;
 const MAX_MEDIAN_VALUES = 200_000;
 const MAX_TOP_KEYS = 20_000;
 const MAX_DUPLICATE_TRACKED = 200_000;
+const MAX_CHART_COLUMNS = 8;
+const MAX_CHART_ROWS = 50_000;
+const HISTOGRAM_BINS = 20;
 export const SAMPLE_ROW_COUNT = 40;
 
 export function parseNumeric(raw: string): number | null {
@@ -196,6 +218,83 @@ export function profileDataset(input: string[][], fileName: string): DatasetProf
     }
   }
 
+  const chartColumns = columnProfiles
+    .map((column, index) => ({ column, index }))
+    .filter(
+      (entry): entry is { column: ColumnProfile; index: number } =>
+        entry.column.type === "number" &&
+        entry.column.min !== undefined &&
+        entry.column.max !== undefined,
+    )
+    .slice(0, MAX_CHART_COLUMNS);
+
+  let histograms: ColumnHistogram[] | undefined;
+  let correlations: CorrelationCell[] | undefined;
+  if (chartColumns.length > 0) {
+    const bins = chartColumns.map(({ column }) => {
+      const min = column.min ?? 0;
+      const max = column.max ?? min;
+      const width = max > min ? (max - min) / HISTOGRAM_BINS : 1;
+      return Array.from({ length: HISTOGRAM_BINS }, (_, i) => ({
+        from: min + i * width,
+        to: i === HISTOGRAM_BINS - 1 ? max : min + (i + 1) * width,
+        count: 0,
+      }));
+    });
+    const pairs: { i: number; j: number }[] = [];
+    for (let i = 0; i < chartColumns.length; i++) {
+      for (let j = i + 1; j < chartColumns.length; j++) pairs.push({ i, j });
+    }
+    const stats = pairs.map(() => ({ n: 0, sx: 0, sy: 0, sxx: 0, syy: 0, sxy: 0 }));
+    const maxRows = Math.min(data.length, MAX_CHART_ROWS);
+    for (let r = 0; r < maxRows; r++) {
+      const row = data[r] ?? [];
+      const values = chartColumns.map(({ index }) => parseNumeric(String(row[index] ?? "").trim()));
+      values.forEach((value, k) => {
+        if (value === null) return;
+        const column = chartColumns[k]?.column;
+        const columnBins = bins[k];
+        if (!column || !columnBins) return;
+        const min = column.min ?? 0;
+        const max = column.max ?? min;
+        const width = max > min ? (max - min) / HISTOGRAM_BINS : 1;
+        let binIndex = Math.floor((value - min) / width);
+        if (binIndex < 0) binIndex = 0;
+        if (binIndex >= HISTOGRAM_BINS) binIndex = HISTOGRAM_BINS - 1;
+        const bin = columnBins[binIndex];
+        if (bin) bin.count++;
+      });
+      pairs.forEach((pair, p) => {
+        const x = values[pair.i];
+        const y = values[pair.j];
+        const entry = stats[p];
+        if (x === null || x === undefined || y === null || y === undefined || !entry) return;
+        entry.n++;
+        entry.sx += x;
+        entry.sy += y;
+        entry.sxx += x * x;
+        entry.syy += y * y;
+        entry.sxy += x * y;
+      });
+    }
+    histograms = chartColumns.map(({ column }, k) => ({
+      name: column.name,
+      bins: bins[k] ?? [],
+    }));
+    correlations = pairs.map((pair, p) => {
+      const entry = stats[p]!;
+      const denominator = Math.sqrt(
+        (entry.n * entry.sxx - entry.sx * entry.sx) * (entry.n * entry.syy - entry.sy * entry.sy),
+      );
+      const r = denominator > 0 ? (entry.n * entry.sxy - entry.sx * entry.sy) / denominator : 0;
+      return {
+        a: chartColumns[pair.i]?.column.name ?? "",
+        b: chartColumns[pair.j]?.column.name ?? "",
+        r: Math.max(-1, Math.min(1, r)),
+      };
+    });
+  }
+
   const sampleRows: string[][] = [];
   if (data.length > 0) {
     const step = Math.max(1, Math.floor(data.length / SAMPLE_ROW_COUNT));
@@ -214,6 +313,8 @@ export function profileDataset(input: string[][], fileName: string): DatasetProf
     columnProfiles,
     sampleHeader: header,
     sampleRows,
+    ...(histograms ? { histograms } : {}),
+    ...(correlations ? { correlations } : {}),
   };
 }
 

@@ -47,4 +47,22 @@ describe("profileDataset", () => {
     expect(prompt).toContain("Profil statistique calculé sur l'intégralité du fichier");
     expect(prompt).toContain("Échantillon de 3 lignes");
   });
+
+  it("computes histograms and correlations on the full file", () => {
+    const profile = profileDataset(
+      [
+        ["X", "Y"],
+        ["1", "2"],
+        ["2", "4"],
+        ["3", "6"],
+        ["4", "8"],
+      ],
+      "corr.csv",
+    );
+    expect(profile.histograms).toHaveLength(2);
+    expect(profile.histograms?.[0]?.bins).toHaveLength(20);
+    expect(profile.histograms?.[0]?.bins.reduce((total, bin) => total + bin.count, 0)).toBe(4);
+    expect(profile.correlations).toHaveLength(1);
+    expect(profile.correlations?.[0]?.r).toBeCloseTo(1, 5);
+  });
 });

@@ -5,6 +5,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { analysisFetch, safeAnalysisError, type AnalysisPhase } from "@/lib/analysis-state";
 import { stripChartBlocks } from "@/lib/chart-spec";
 import {
+  ANALYSIS_DOMAINS,
+  getAnalysisDomain,
+  type AnalysisDomainId,
+} from "@/lib/analysis-domains";
+import {
   parseCsvFile,
   parseExcelFile,
   profileDataset,
@@ -13,10 +18,18 @@ import {
 } from "@/lib/dataset-profile";
 import { AnalysisProgress } from "./analysis-progress";
 import { AnalysisCharts } from "./analysis-charts";
+import { AnalysisOverview } from "./analysis-overview";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { FileDown, FileSpreadsheet, Paperclip } from "lucide-react";
+import { FileDown, FileSpreadsheet, Layers, Paperclip } from "lucide-react";
 import Papa from "papaparse";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -47,10 +60,20 @@ function rowsToUIMessages(rows: { id: string; role: string; parts: unknown }[]):
   }));
 }
 
+function parseStoredProfile(raw: unknown): DatasetProfile | null {
+  if (typeof raw !== "string") return null;
+  try {
+    return JSON.parse(raw) as DatasetProfile;
+  } catch {
+    return null;
+  }
+}
+
 export function ChatWindow({ threadId }: { threadId: string }) {
   const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(null);
   const [datasetName, setDatasetName] = useState<string | null>(null);
   const [datasetRows, setDatasetRows] = useState<number | null>(null);
+  const [datasetProfile, setDatasetProfile] = useState<DatasetProfile | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,12 +86,17 @@ export function ChatWindow({ threadId }: { threadId: string }) {
 
       const [{ data: msgs }, { data: thread }] = await Promise.all([
         supabase.from("messages").select("id, role, parts").eq("thread_id", threadId).order("created_at"),
-        supabase.from("threads").select("dataset_name, dataset_rows").eq("id", threadId).maybeSingle(),
+        supabase
+          .from("threads")
+          .select("dataset_name, dataset_rows, dataset_profile")
+          .eq("id", threadId)
+          .maybeSingle(),
       ]);
       if (cancelled) return;
       setInitialMessages(rowsToUIMessages(msgs ?? []));
       setDatasetName(thread?.dataset_name ?? null);
       setDatasetRows(thread?.dataset_rows ?? null);
+      setDatasetProfile(parseStoredProfile(thread?.dataset_profile));
     })();
     return () => {
       cancelled = true;
@@ -89,10 +117,12 @@ export function ChatWindow({ threadId }: { threadId: string }) {
       initialMessages={initialMessages}
       datasetName={datasetName}
       datasetRows={datasetRows}
+      datasetProfile={datasetProfile}
       accessToken={accessToken}
-      onDatasetChange={(name, rows) => {
+      onDatasetChange={(name, rows, profile) => {
         setDatasetName(name);
         setDatasetRows(rows);
+        setDatasetProfile(profile);
       }}
     />
   );
@@ -103,6 +133,7 @@ function ChatSession({
   initialMessages,
   datasetName,
   datasetRows,
+  datasetProfile,
   accessToken,
   onDatasetChange,
 }: {
@@ -110,8 +141,9 @@ function ChatSession({
   initialMessages: UIMessage[];
   datasetName: string | null;
   datasetRows: number | null;
+  datasetProfile: DatasetProfile | null;
   accessToken: string | null;
-  onDatasetChange: (name: string, rows: number | null) => void;
+  onDatasetChange: (name: string, rows: number | null, profile: DatasetProfile | null) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -120,20 +152,45 @@ function ChatSession({
   const [processing, setProcessing] = useState<{ phase: AnalysisPhase; startedAt: number } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [domain, setDomain] = useState<AnalysisDomainId>("general");
+  const [domainOwner, setDomainOwner] = useState(threadId);
+
+  useEffect(() => {
+    let next: AnalysisDomainId = "general";
+    try {
+      const saved = localStorage.getItem(`dacopilot-domain:${threadId}`);
+      if (saved) next = getAnalysisDomain(saved).id;
+    } catch {
+      // stockage local indisponible
+    }
+    setDomain(next);
+    setDomainOwner(threadId);
+  }, [threadId]);
+
+  useEffect(() => {
+    if (domainOwner !== threadId) return;
+    try {
+      localStorage.setItem(`dacopilot-domain:${threadId}`, domain);
+    } catch {
+      // stockage local indisponible
+    }
+  }, [threadId, domain, domainOwner]);
+
+  const domainMeta = getAnalysisDomain(domain);
 
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/chat",
         fetch: analysisFetch,
-        body: { threadId },
+        body: { threadId, domain },
         headers: async () => {
           const { data } = await supabase.auth.getSession();
           const token = data.session?.access_token ?? accessToken;
           return token ? { Authorization: `Bearer ${token}` } : {};
         },
       }),
-    [threadId, accessToken],
+    [threadId, accessToken, domain],
   );
 
   const { messages, sendMessage, status, stop } = useChat({
@@ -216,7 +273,7 @@ function ChatSession({
       })
       .eq("id", threadId);
     if (error) throw error;
-    onDatasetChange(file.name, profile.rows);
+    onDatasetChange(file.name, profile.rows, profile);
     toast.success(`Fichier « ${file.name} » chargé : ${profileSummary(profile)} analysées.`);
     textareaRef.current?.focus();
   }
@@ -263,20 +320,38 @@ function ChatSession({
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {datasetName ? (
-            <>
-              <Paperclip className="h-4 w-4" />
-              <span className="break-all font-medium text-foreground">{datasetName}</span>
-              {datasetRows !== null && (
-                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                  {datasetRows.toLocaleString("fr-FR")} lignes analysées
-                </span>
-              )}
-            </>
-          ) : (
-            <span>Aucun fichier associé — téléversez un CSV pour analyser vos données.</span>
-          )}
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <Select value={domain} onValueChange={(value) => setDomain(getAnalysisDomain(value).id)}>
+            <SelectTrigger
+              className="h-8 w-auto min-w-[150px] gap-2 border-border bg-card text-xs"
+              title={domainMeta.description}
+            >
+              <Layers className="h-3.5 w-3.5 shrink-0" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-80">
+              {ANALYSIS_DOMAINS.map((item) => (
+                <SelectItem key={item.id} value={item.id} title={item.description}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {datasetName ? (
+              <>
+                <Paperclip className="h-4 w-4" />
+                <span className="break-all font-medium text-foreground">{datasetName}</span>
+                {datasetRows !== null && (
+                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    {datasetRows.toLocaleString("fr-FR")} lignes analysées
+                  </span>
+                )}
+              </>
+            ) : (
+              <span>Aucun fichier associé — téléversez un CSV pour analyser vos données.</span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" title="Exporter le rapport PDF — Pro"
@@ -337,10 +412,18 @@ function ChatSession({
             <div className="flex flex-col items-center py-16 text-center">
               <img src={logo} alt="DA-Copilot" width={56} height={56} className="h-14 w-14" />
               <h2 className="mt-4 font-display text-xl font-semibold">Que voulez-vous analyser ?</h2>
+              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                <Layers className="h-3 w-3" />
+                {domainMeta.label}
+              </span>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">{domainMeta.description}</p>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                Téléversez un fichier CSV, puis posez votre question métier : « Quels sont mes meilleurs
-                produits ? », « Y a-t-il des anomalies dans mes ventes ? »…
+                Téléversez un fichier CSV ou Excel, puis posez votre question métier.
               </p>
+              <p className="mt-3 max-w-lg text-xs text-muted-foreground">
+                Exemples : {domainMeta.examples.join(" · ")}
+              </p>
+              {datasetProfile && <AnalysisOverview profile={datasetProfile} />}
             </div>
           )}
 
@@ -388,7 +471,8 @@ function ChatSession({
             </PromptInputFooter>
           </PromptInput>
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            DA-Copilot base ses réponses sur l'extrait de données fourni. Vérifiez les chiffres clés.
+            DA-Copilot s'appuie sur le profil statistique complet du fichier et un échantillon
+            d'illustration. Vérifiez les chiffres clés.
           </p>
         </div>
       </div>

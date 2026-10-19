@@ -7,6 +7,7 @@ import { getProStatus } from "@/lib/stripe.server";
 import { activeCompPlan, FREE_ANALYSIS_LIMIT } from "@/lib/billing";
 import { safeAnalysisError } from "@/lib/analysis-state";
 import { formatProfileForPrompt, type DatasetProfile } from "@/lib/dataset-profile";
+import { getAnalysisDomain } from "@/lib/analysis-domains";
 
 const SYSTEM_PROMPT = `Tu es DA-Copilot, un agent d'analyse de données rigoureux et pédagogue.
 Tu transformes une question métier et un jeu de données en une réponse claire, chiffrée et vérifiable.
@@ -69,10 +70,10 @@ export const Route = createFileRoute("/api/chat")({
         } = await supabase.auth.getUser();
         if (!user) return jsonError(401, "Session invalide. Reconnectez-vous.");
 
-        let body: { messages: UIMessage[]; threadId?: string };
+        let body: { messages: UIMessage[]; threadId?: string; domain?: string };
         try { body = await request.json(); }
         catch { return jsonError(400, "Requête d’analyse invalide. Relancez votre question."); }
-        const { messages, threadId } = body;
+        const { messages, threadId, domain: domainId } = body;
         if (!threadId || !Array.isArray(messages) || messages.length === 0) {
           return jsonError(400, "Requête invalide.");
         }
@@ -134,6 +135,8 @@ export const Route = createFileRoute("/api/chat")({
         }
 
         let instructions = SYSTEM_PROMPT;
+        const domainConfig = getAnalysisDomain(domainId);
+        instructions += `\n\nMODE D'ANALYSE ACTIF : ${domainConfig.label}.\n${domainConfig.prompt}`;
         let profileApplied = false;
         if (thread.dataset_profile) {
           try {
