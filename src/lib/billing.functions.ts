@@ -29,12 +29,20 @@ export const getBillingStatus = createServerFn({ method: "GET" })
       .eq("role", "assistant")
       .gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString());
     const bonus = sub?.bonus_analyses ?? 0;
+    const { data: adminFlag } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    const isAdmin = adminFlag === true;
     const compPlan = activeCompPlan(sub?.comp_plan, sub?.comp_expires_at);
-    const status = compPlan
-      ? { isPro: true, plan: compPlan, periodEnd: sub?.comp_expires_at ?? null }
-      : await getProStatus(email);
+    const status = isAdmin
+      ? { isPro: true, plan: "team" as const, periodEnd: null }
+      : compPlan
+        ? { isPro: true, plan: compPlan, periodEnd: sub?.comp_expires_at ?? null }
+        : await getProStatus(email);
     return {
       ...status,
+      isAdmin,
       analysesUsed: sub?.analyses_used ?? 0,
       analysesThisMonth: count ?? 0,
       freeLimit: FREE_ANALYSIS_LIMIT + bonus,

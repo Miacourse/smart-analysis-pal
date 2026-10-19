@@ -6,6 +6,7 @@ import { createResponsesCall } from "@/lib/ai/responses.server";
 import { getProStatus } from "@/lib/stripe.server";
 import { activeCompPlan, FREE_ANALYSIS_LIMIT } from "@/lib/billing";
 import { safeAnalysisError } from "@/lib/analysis-state";
+import { formatProfileForPrompt, type DatasetProfile } from "@/lib/dataset-profile";
 
 const SYSTEM_PROMPT = `Tu es DA-Copilot, un agent d'analyse de données rigoureux et pédagogue.
 Tu transformes une question métier et un jeu de données en une réponse claire, chiffrée et vérifiable.
@@ -63,7 +64,7 @@ export const Route = createFileRoute("/api/chat")({
 
         const { data: thread } = await supabase
           .from("threads")
-          .select("id, title, dataset_name, dataset_preview")
+          .select("id, title, dataset_name, dataset_preview, dataset_profile, dataset_rows")
           .eq("id", threadId)
           .eq("user_id", user.id)
           .maybeSingle();
@@ -78,7 +79,13 @@ export const Route = createFileRoute("/api/chat")({
         const used = sub?.analyses_used ?? 0;
         const bonus = sub?.bonus_analyses ?? 0;
         const freeLimit = FREE_ANALYSIS_LIMIT + bonus;
-        let isPro = activeCompPlan(sub?.comp_plan, sub?.comp_expires_at) !== null;
+        // Les administrateurs disposent d'un accès illimité et ne consomment pas de quota.
+        const { data: adminFlag } = await supabase.rpc("has_role", {
+          _user_id: user.id,
+          _role: "admin",
+        });
+        const isAdmin = adminFlag === true;
+        let isPro = isAdmin || activeCompPlan(sub?.comp_plan, sub?.comp_expires_at) !== null;
         if (!isPro && used >= freeLimit && user.email) {
           try {
             isPro = (await getProStatus(user.email)).isPro;
@@ -89,7 +96,7 @@ export const Route = createFileRoute("/api/chat")({
         // Réservation atomique d'une analyse : les requêtes simultanées reçoivent des
         // compteurs distincts, ce qui empêche de dépasser la limite gratuite.
         let released = false;
-        release = async () => {
+        const releaseQuota = async () => {
           if (released) return;
           released = true;
           try {
@@ -98,18 +105,32 @@ export const Route = createFileRoute("/api/chat")({
             console.error("Libération du quota impossible", e);
           }
         };
-        const reserved = await supabase.rpc("consume_analysis");
-        const analysesUsedAfter = typeof reserved.data === "number" ? reserved.data : used + 1;
-        if (!isPro && analysesUsedAfter > freeLimit) {
-          await release();
-          return jsonError(
-            402,
-            `Vous avez utilisé vos ${freeLimit} analyses gratuites. Passez au plan Pro pour continuer.`,
-          );
+        if (!isAdmin) {
+          release = releaseQuota;
+          const reserved = await supabase.rpc("consume_analysis");
+          const analysesUsedAfter = typeof reserved.data === "number" ? reserved.data : used + 1;
+          if (!isPro && analysesUsedAfter > freeLimit) {
+            await release();
+            return jsonError(
+              402,
+              `Vous avez utilisé vos ${freeLimit} analyses gratuites. Passez au plan Pro pour continuer.`,
+            );
+          }
         }
 
         let instructions = SYSTEM_PROMPT;
-        if (thread.dataset_preview) {
+        let profileApplied = false;
+        if (thread.dataset_profile) {
+          try {
+            const profile = JSON.parse(thread.dataset_profile) as DatasetProfile;
+            const totalRows = thread.dataset_rows ?? profile.rows;
+            instructions += `\n\nJeu de données fourni par l'utilisateur : "${thread.dataset_name ?? "dataset"}".\nL'analyse doit porter sur l'INTÉGRALITÉ du fichier (${totalRows} lignes). Le profil statistique ci-dessous est calculé sur toutes les lignes ; l'échantillon sert uniquement d'illustration. Ne prétends jamais que seules quelques lignes sont disponibles.\n\n\`\`\`\n${formatProfileForPrompt(profile)}\n\`\`\`\n\nAppuie tes calculs sur les statistiques du profil et précise les limites lorsqu'une question exige une vue ligne à ligne.`;
+            profileApplied = true;
+          } catch (error) {
+            console.error("Profil de données illisible", error);
+          }
+        }
+        if (!profileApplied && thread.dataset_preview) {
           instructions += `\n\nJeu de données fourni par l'utilisateur : "${thread.dataset_name ?? "dataset"}" (extrait CSV, premières lignes) :\n\`\`\`csv\n${thread.dataset_preview}\n\`\`\`\nBase tes analyses sur cet extrait et précise quand une réponse complète nécessiterait l'ensemble des données.`;
         }
 

@@ -3,6 +3,13 @@ import { canExport, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB, TEAM_MAX_FILE_MB, maxFile
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { analysisFetch, safeAnalysisError, type AnalysisPhase } from "@/lib/analysis-state";
+import {
+  parseCsvFile,
+  parseExcelFile,
+  profileDataset,
+  profileSummary,
+  type DatasetProfile,
+} from "@/lib/dataset-profile";
 import { AnalysisProgress } from "./analysis-progress";
 import { AnalysisCharts } from "./analysis-charts";
 import { Button } from "@/components/ui/button";
@@ -42,6 +49,7 @@ function rowsToUIMessages(rows: { id: string; role: string; parts: unknown }[]):
 export function ChatWindow({ threadId }: { threadId: string }) {
   const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(null);
   const [datasetName, setDatasetName] = useState<string | null>(null);
+  const [datasetRows, setDatasetRows] = useState<number | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,11 +62,12 @@ export function ChatWindow({ threadId }: { threadId: string }) {
 
       const [{ data: msgs }, { data: thread }] = await Promise.all([
         supabase.from("messages").select("id, role, parts").eq("thread_id", threadId).order("created_at"),
-        supabase.from("threads").select("dataset_name").eq("id", threadId).maybeSingle(),
+        supabase.from("threads").select("dataset_name, dataset_rows").eq("id", threadId).maybeSingle(),
       ]);
       if (cancelled) return;
       setInitialMessages(rowsToUIMessages(msgs ?? []));
       setDatasetName(thread?.dataset_name ?? null);
+      setDatasetRows(thread?.dataset_rows ?? null);
     })();
     return () => {
       cancelled = true;
@@ -78,8 +87,12 @@ export function ChatWindow({ threadId }: { threadId: string }) {
       threadId={threadId}
       initialMessages={initialMessages}
       datasetName={datasetName}
+      datasetRows={datasetRows}
       accessToken={accessToken}
-      onDatasetChange={setDatasetName}
+      onDatasetChange={(name, rows) => {
+        setDatasetName(name);
+        setDatasetRows(rows);
+      }}
     />
   );
 }
@@ -88,14 +101,16 @@ function ChatSession({
   threadId,
   initialMessages,
   datasetName,
+  datasetRows,
   accessToken,
   onDatasetChange,
 }: {
   threadId: string;
   initialMessages: UIMessage[];
   datasetName: string | null;
+  datasetRows: number | null;
   accessToken: string | null;
-  onDatasetChange: (name: string) => void;
+  onDatasetChange: (name: string, rows: number | null) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -183,7 +198,7 @@ function ChatSession({
     textareaRef.current?.focus();
   }, [threadId, status]);
 
-  async function saveDataset(file: File, rows: string[][]) {
+  async function saveDataset(file: File, rows: string[][], profile: DatasetProfile) {
     setProcessing((p) => ({ phase: "parsing", startedAt: p?.startedAt ?? Date.now() }));
     if (rows.length < 2) {
       toast.error("Le fichier doit contenir un en-tête et au moins une ligne valide.");
@@ -192,11 +207,16 @@ function ChatSession({
     const preview = Papa.unparse(rows.slice(0, MAX_PREVIEW_ROWS + 1));
     const { error } = await supabase
       .from("threads")
-      .update({ dataset_name: file.name, dataset_preview: preview })
+      .update({
+        dataset_name: file.name,
+        dataset_preview: preview,
+        dataset_profile: JSON.stringify(profile),
+        dataset_rows: profile.rows,
+      })
       .eq("id", threadId);
     if (error) throw error;
-    onDatasetChange(file.name);
-    toast.success(`Fichier « ${file.name} » chargé. Posez votre question !`);
+    onDatasetChange(file.name, profile.rows);
+    toast.success(`Fichier « ${file.name} » chargé : ${profileSummary(profile)} analysées.`);
     textareaRef.current?.focus();
   }
 
@@ -222,29 +242,18 @@ function ChatSession({
     setProcessing({ phase: "upload", startedAt: Date.now() });
     setAnalysisError(null);
     const done = () => { setUploading(false); setProcessing(null); };
-    if (isExcel) {
-      try {
-        const XLSX = await import("xlsx");
-        const wb = XLSX.read(await file.arrayBuffer(), { type: "array", sheetRows: MAX_PREVIEW_ROWS + 1 });
-        const sheet = wb.Sheets[wb.SheetNames[0] ?? ""];
-        if (!sheet) throw new Error("empty");
-        const rows = (XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, blankrows: false, defval: "" }) as unknown[][])
-          .map((r) => r.map((c) => String(c ?? "")));
-        await saveDataset(file, rows);
-      } catch {
-        toast.error("Lecture du fichier Excel impossible. Vérifiez qu’il n’est pas protégé.");
-      } finally {
-        done();
-      }
-      return;
-    }
     try {
-      const text = await file.text();
-      const results = Papa.parse<string[]>(text, { skipEmptyLines: "greedy", preview: MAX_PREVIEW_ROWS + 1 });
-      if (results.data.length < 2) throw new Error("empty");
-      await saveDataset(file, results.data);
+      setProcessing({ phase: "parsing", startedAt: Date.now() });
+      const rows = isExcel ? await parseExcelFile(file) : await parseCsvFile(file);
+      if (rows.length < 2) throw new Error("empty");
+      const profile = profileDataset(rows, file.name);
+      await saveDataset(file, rows, profile);
     } catch {
-      toast.error("Lecture du fichier impossible. Utilisez un CSV valide.");
+      toast.error(
+        isExcel
+          ? "Lecture du fichier Excel impossible. Vérifiez qu’il n’est pas protégé."
+          : "Lecture du fichier impossible. Utilisez un CSV valide.",
+      );
     } finally {
       done();
     }
@@ -258,6 +267,11 @@ function ChatSession({
             <>
               <Paperclip className="h-4 w-4" />
               <span className="break-all font-medium text-foreground">{datasetName}</span>
+              {datasetRows !== null && (
+                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                  {datasetRows.toLocaleString("fr-FR")} lignes analysées
+                </span>
+              )}
             </>
           ) : (
             <span>Aucun fichier associé — téléversez un CSV pour analyser vos données.</span>

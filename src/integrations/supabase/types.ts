@@ -90,6 +90,8 @@ export type Database = {
           created_at: string
           dataset_name: string | null
           dataset_preview: string | null
+          dataset_profile: string | null
+          dataset_rows: number | null
           id: string
           title: string
           updated_at: string
@@ -99,6 +101,8 @@ export type Database = {
           created_at?: string
           dataset_name?: string | null
           dataset_preview?: string | null
+          dataset_profile?: string | null
+          dataset_rows?: number | null
           id?: string
           title?: string
           updated_at?: string
@@ -108,6 +112,8 @@ export type Database = {
           created_at?: string
           dataset_name?: string | null
           dataset_preview?: string | null
+          dataset_profile?: string | null
+          dataset_rows?: number | null
           id?: string
           title?: string
           updated_at?: string
