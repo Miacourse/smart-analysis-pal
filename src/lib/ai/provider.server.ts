@@ -96,8 +96,10 @@ export function createAnalysisCall(
       result: streamText({
         model: free.chat(model),
         // Ce point d'accès plafonne par défaut à ~400 tokens (raisonnement inclus) :
-        // on relève le budget pour ne pas tronquer l'analyse.
+        // on relève le budget et on limite le raisonnement interne pour que le texte
+        // de la réponse ne soit pas coupé.
         ...(Number.isFinite(maxOutputTokens) ? { maxOutputTokens } : {}),
+        providerOptions: { openai: { reasoningEffort: "low" } },
         ...(instructions ? { instructions } : {}),
         messages,
         abortSignal: request.signal,
