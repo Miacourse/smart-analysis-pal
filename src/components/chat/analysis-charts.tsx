@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { Suspense, lazy, useMemo } from "react";
 import {
   Area,
   AreaChart,
@@ -21,6 +21,9 @@ import {
 
 import { extractMarkdownTables } from "@/lib/export-report";
 import { buildChartData, parseChartSpecs, toChartNumber, type ChartSpec } from "@/lib/chart-spec";
+
+const VegaChart = lazy(() => import("./vega-chart"));
+const PlotlyChart = lazy(() => import("./plotly-chart"));
 
 const COLORS = [
   "var(--chart-1)",
@@ -56,19 +59,21 @@ function tooltipNode() {
   );
 }
 
-function ChartBody({ spec }: { spec: ChartSpec }) {
+function RechartsBody({ spec }: { spec: ChartSpec }) {
   const data = useMemo(() => buildChartData(spec), [spec]);
+  const yKeys = spec.yKeys ?? [];
+  const xKey = spec.xKey ?? "x";
   const pieData = useMemo(
     () =>
-      spec.data.map((row, index) => ({
-        name: row[spec.xKey] === undefined ? `#${index + 1}` : String(row[spec.xKey]),
-        value: toChartNumber(row[spec.yKeys[0] ?? ""]) ?? 0,
+      (spec.data ?? []).map((row, index) => ({
+        name: row[xKey] === undefined ? `#${index + 1}` : String(row[xKey]),
+        value: toChartNumber(row[yKeys[0] ?? ""]) ?? 0,
       })),
-    [spec],
+    [spec, xKey, yKeys],
   );
 
   const grid = <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />;
-  const legend = spec.yKeys.length > 1 ? <Legend wrapperStyle={{ fontSize: 12 }} /> : null;
+  const legend = yKeys.length > 1 ? <Legend wrapperStyle={{ fontSize: 12 }} /> : null;
 
   if (spec.type === "pie") {
     return (
@@ -85,11 +90,11 @@ function ChartBody({ spec }: { spec: ChartSpec }) {
   }
 
   if (spec.type === "scatter") {
-    const yKey = spec.yKeys[0] ?? "";
+    const yKey = yKeys[0] ?? "";
     return (
       <ScatterChart margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
         {grid}
-        <XAxis type="number" dataKey={spec.xKey} name={spec.xKey} tick={tickStyle} axisLine={axisLine} tickLine={axisLine} />
+        <XAxis type="number" dataKey={xKey} name={xKey} tick={tickStyle} axisLine={axisLine} tickLine={axisLine} />
         <YAxis type="number" dataKey={yKey} name={yKey} tick={tickStyle} axisLine={axisLine} tickLine={axisLine} width={48} />
         {tooltipNode()}
         <Scatter name={yKey} data={data} fill={colorAt(0)} />
@@ -99,7 +104,7 @@ function ChartBody({ spec }: { spec: ChartSpec }) {
 
   const xAxis = (
     <XAxis
-      dataKey={spec.xKey}
+      dataKey={xKey}
       tick={tickStyle}
       axisLine={axisLine}
       tickLine={axisLine}
@@ -119,7 +124,7 @@ function ChartBody({ spec }: { spec: ChartSpec }) {
         {yAxis}
         {tooltipNode()}
         {legend}
-        {spec.yKeys.map((key, index) => (
+        {yKeys.map((key, index) => (
           <Line
             key={key}
             type="monotone"
@@ -142,7 +147,7 @@ function ChartBody({ spec }: { spec: ChartSpec }) {
         {yAxis}
         {tooltipNode()}
         {legend}
-        {spec.yKeys.map((key, index) => (
+        {yKeys.map((key, index) => (
           <Area
             key={key}
             type="monotone"
@@ -164,7 +169,7 @@ function ChartBody({ spec }: { spec: ChartSpec }) {
       {yAxis}
       {tooltipNode()}
       {legend}
-      {spec.yKeys.map((key, index) => (
+      {yKeys.map((key, index) => (
         <Bar
           key={key}
           dataKey={key}
@@ -177,15 +182,40 @@ function ChartBody({ spec }: { spec: ChartSpec }) {
   );
 }
 
+function ChartLoading() {
+  return (
+    <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
+      Chargement du graphique…
+    </div>
+  );
+}
+
+const DEFAULT_TITLES: Record<ChartSpec["engine"], string> = {
+  recharts: "Graphique",
+  vega: "Graphique statistique",
+  plotly: "Visualisation scientifique",
+};
+
 function SpecChart({ spec }: { spec: ChartSpec }) {
+  const title = spec.title ?? DEFAULT_TITLES[spec.engine];
   return (
     <figure className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <figcaption className="mb-3 text-sm font-semibold">{spec.title ?? "Graphique"}</figcaption>
-      <div className="h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <ChartBody spec={spec} />
-        </ResponsiveContainer>
-      </div>
+      <figcaption className="mb-3 text-sm font-semibold">{title}</figcaption>
+      {spec.engine === "vega" && spec.vegaSpec ? (
+        <Suspense fallback={<ChartLoading />}>
+          <VegaChart spec={spec.vegaSpec} title={spec.title} />
+        </Suspense>
+      ) : spec.engine === "plotly" && spec.traces ? (
+        <Suspense fallback={<ChartLoading />}>
+          <PlotlyChart traces={spec.traces} layout={spec.layout} title={spec.title} />
+        </Suspense>
+      ) : (
+        <div className="h-64 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <RechartsBody spec={spec} />
+          </ResponsiveContainer>
+        </div>
+      )}
     </figure>
   );
 }
@@ -255,7 +285,7 @@ export function AnalysisCharts({ text }: { text: string }) {
     return (
       <div className="mt-5 space-y-5 border-t border-border pt-4">
         {specs.map((spec, index) => (
-          <SpecChart key={`${spec.type}-${spec.title ?? "chart"}-${index}`} spec={spec} />
+          <SpecChart key={`${spec.engine}-${spec.title ?? "chart"}-${index}`} spec={spec} />
         ))}
       </div>
     );

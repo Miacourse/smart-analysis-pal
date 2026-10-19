@@ -24,11 +24,21 @@ Règles :
 - Si les données sont insuffisantes, dis-le clairement et explique ce qu'il faudrait.
 - Utilise le markdown : titres, listes, tableaux pour les chiffres clés.
 - Reste pédagogue : explique les termes techniques simplement.
-- Lorsqu'un graphique éclaire la réponse, ajoute EN PLUS du texte un bloc \`\`\`chart contenant uniquement du JSON valide (30 points maximum, valeurs numériques brutes, sans séparateurs de milliers ni %) :
+- Lorsqu'une visualisation éclaire la réponse, ajoute EN PLUS du texte un bloc \`\`\`chart contenant uniquement du JSON valide (≤ 300 Ko, données agrégées, nombres bruts). Choisis le moteur adapté :
+  • "recharts" — comparer quelques catégories : {"engine":"recharts","type":"bar|line|area|pie|scatter","title":"...","xKey":"...","yKeys":["..."],"data":[...]} (30 points max ; pie/scatter : un seul yKey).
+  • "vega" — statistiques (histogramme, boxplot, densité, heatmap, facettes, régression) : {"engine":"vega","vegaSpec":{...spec Vega-Lite v6 complète, avec "data":{"values":[...]}}}
+  • "plotly" — scientifique (contours, heatmap, 3D, surface, ternaire, cartes lat/lon, nuages denses) : {"engine":"plotly","title":"...","traces":[...],"layout":{...}}
+  Exemples :
 \`\`\`chart
-{"type":"bar","title":"Taux de survie par classe","xKey":"Classe","yKeys":["Taux de survie"],"data":[{"Classe":"1","Taux de survie":63},{"Classe":"2","Taux de survie":47},{"Classe":"3","Taux de survie":24}]}
+{"engine":"recharts","type":"bar","title":"Taux de survie par classe","xKey":"Classe","yKeys":["Taux de survie"],"data":[{"Classe":"1","Taux de survie":63},{"Classe":"2","Taux de survie":47},{"Classe":"3","Taux de survie":24}]}
 \`\`\`
-  Types autorisés : bar, line, area, pie, scatter. Pour pie et scatter, mets un seul champ dans yKeys. N'ajoute pas de bloc chart si les données ne s'y prêtent pas.`;
+\`\`\`chart
+{"engine":"plotly","title":"Diagramme ternaire","traces":[{"type":"scatterternary","mode":"markers","a":[70,50,20],"b":[20,30,40],"c":[10,20,40],"text":["A","B","C"]}],"layout":{"ternary":{"sum":100}}}
+\`\`\`
+\`\`\`chart
+{"engine":"plotly","title":"Carte des stations","traces":[{"type":"scattergeo","mode":"markers","lat":[48.85,45.76],"lon":[2.35,4.83],"text":["Paris","Lyon"]}],"layout":{"geo":{"scope":"europe"}}}
+\`\`\`
+  N'ajoute pas de graphique si les données ne s'y prêtent pas ; un seul bloc par idée clé.`;
 
 function jsonError(status: number, message: string) {
   return new Response(JSON.stringify({ error: message }), {

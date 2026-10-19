@@ -39,6 +39,50 @@ describe("parseChartSpecs", () => {
 \`\`\``);
     expect(specs[0]?.yKeys).toEqual(["A"]);
   });
+
+  it("routes Vega-Lite specs to the vega engine", () => {
+    const block = [
+      "```chart",
+      JSON.stringify({
+        engine: "vega",
+        vegaSpec: {
+          mark: "bar",
+          data: { values: [{ a: "x", b: 1 }] },
+          encoding: { x: { field: "a", type: "nominal" }, y: { field: "b", type: "quantitative" } },
+        },
+      }),
+      "```",
+    ].join("\n");
+    const specs = parseChartSpecs(block);
+    expect(specs[0]?.engine).toBe("vega");
+    expect(specs[0]?.vegaSpec?.["mark"]).toBe("bar");
+  });
+
+  it("routes Plotly traces to the plotly engine", () => {
+    const block = [
+      "```chart",
+      JSON.stringify({
+        engine: "plotly",
+        title: "Diagramme ternaire",
+        traces: [{ type: "scatterternary", a: [1], b: [2], c: [3] }],
+        layout: { ternary: { sum: 100 } },
+      }),
+      "```",
+    ].join("\n");
+    const specs = parseChartSpecs(block);
+    expect(specs[0]?.engine).toBe("plotly");
+    expect(specs[0]?.traces).toHaveLength(1);
+    expect(specs[0]?.title).toBe("Diagramme ternaire");
+  });
+
+  it("defaults tabular specs to recharts", () => {
+    const block = [
+      "```chart",
+      JSON.stringify({ type: "bar", xKey: "A", data: [{ A: "x", B: 1 }] }),
+      "```",
+    ].join("\n");
+    expect(parseChartSpecs(block)[0]?.engine).toBe("recharts");
+  });
 });
 
 describe("stripChartBlocks", () => {
