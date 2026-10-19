@@ -5,8 +5,9 @@ import { createResponsesCall } from "./responses.server";
 
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 const LOVABLE_BASE_URL = "https://ai.gateway.lovable.dev/v1";
+const FREE_BASE_URL = "https://text.pollinations.ai/openai";
 
-export type AiProvider = "gemini" | "openai" | "lovable";
+export type AiProvider = "gemini" | "openai" | "free" | "lovable";
 
 function geminiKey() {
   return process.env["GEMINI_API_KEY"] ?? process.env["GOOGLE_GENERATIVE_AI_API_KEY"] ?? null;
@@ -16,28 +17,49 @@ function openaiKey() {
   return process.env["OPENAI_API_KEY"] ?? null;
 }
 
-/** Fournisseur actif, déterminé par la clé disponible (Gemini prioritaire, puis OpenAI, puis Lovable). */
-export function activeProvider(): AiProvider | null {
+/**
+ * Fournisseur actif : Gemini ou OpenAI si une clé est fournie, sinon un point d'accès
+ * gratuit sans clé (dépannage). `AI_PROVIDER=lovable` force la passerelle Lovable.
+ */
+export function activeProvider(): AiProvider {
+  const forced = (process.env["AI_PROVIDER"] ?? "").trim().toLowerCase();
+  if (forced === "gemini" && geminiKey()) return "gemini";
+  if (forced === "openai" && openaiKey()) return "openai";
+  if (forced === "lovable" && process.env["LOVABLE_API_KEY"]) return "lovable";
   if (geminiKey()) return "gemini";
   if (openaiKey()) return "openai";
-  if (process.env["LOVABLE_API_KEY"]) return "lovable";
-  return null;
+  return "free";
 }
 
-/**
- * Construit l'appel d'analyse avec le fournisseur disponible.
- * Renvoie null si aucune clé n'est configurée.
- */
+function chatProvider(baseURL: string, apiKey: string, rewrite?: boolean) {
+  return createOpenAI({
+    baseURL,
+    apiKey,
+    ...(rewrite
+      ? {
+          fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+            const raw =
+              typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+            // Le point d'accès gratuit expose déjà /openai comme endpoint de chat :
+            // on retire le suffixe ajouté par le SDK.
+            const url = raw.replace(/\/chat\/completions\/?(\?.*)?$/i, "");
+            return fetch(url, init);
+          },
+        }
+      : {}),
+  });
+}
+
+/** Construit l'appel d'analyse avec le fournisseur disponible. */
 export function createAnalysisCall(
   request: Request,
   messages: ModelMessage[],
   instructions?: string,
 ) {
   const provider = activeProvider();
-  if (!provider) return null;
 
   if (provider === "gemini") {
-    const google = createOpenAI({ baseURL: GEMINI_BASE_URL, apiKey: geminiKey()! });
+    const google = chatProvider(GEMINI_BASE_URL, geminiKey()!);
     const model = process.env["GEMINI_MODEL"] ?? "gemini-2.5-flash";
     return {
       provider,
@@ -51,7 +73,7 @@ export function createAnalysisCall(
   }
 
   if (provider === "openai") {
-    const openai = createOpenAI({ apiKey: openaiKey()! });
+    const openai = chatProvider("https://api.openai.com/v1", openaiKey()!);
     const model = process.env["OPENAI_MODEL"] ?? "gpt-4o";
     return {
       provider,
@@ -64,12 +86,31 @@ export function createAnalysisCall(
     };
   }
 
+  if (provider === "free") {
+    const baseURL = (process.env["FREE_AI_BASE_URL"] ?? FREE_BASE_URL).replace(/\/+$/, "");
+    const free = chatProvider(baseURL, process.env["FREE_AI_API_KEY"] ?? "anonymous", true);
+    const model = process.env["FREE_AI_MODEL"] ?? "openai";
+    return {
+      provider,
+      result: streamText({
+        model: free.chat(model),
+        ...(instructions ? { instructions } : {}),
+        messages,
+        abortSignal: request.signal,
+      }),
+    };
+  }
+
   // Passerelle Lovable (comportement historique, avec suivi du run-id).
   return {
     provider,
     result: createResponsesCall(
       request,
-      { baseURL: LOVABLE_BASE_URL, apiKey: process.env["LOVABLE_API_KEY"]!, model: "openai/gpt-6-astra" },
+      {
+        baseURL: LOVABLE_BASE_URL,
+        apiKey: process.env["LOVABLE_API_KEY"]!,
+        model: "openai/gpt-6-astra",
+      },
       messages,
       instructions,
     ).result,
