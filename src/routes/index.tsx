@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { BarChart3, FileSpreadsheet, MessageSquareText, ShieldCheck, TrendingUp, Upload } from "lucide-react";
 
 import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, PRO_MAX_FILE_MB, PLAN_PRICES } from "@/lib/billing";
+import { ANALYSIS_DOMAINS } from "@/lib/analysis-domains";
 import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
@@ -11,7 +12,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Téléversez un fichier CSV, posez votre question métier, et recevez une analyse claire, chiffrée et vérifiable : KPI, tendances, anomalies et recommandations.",
+          "Téléversez un fichier (CSV, Excel, JSON, GeoJSON, LAS…), posez votre question métier, et recevez une analyse claire, chiffrée et vérifiable : KPI, tendances, anomalies et recommandations.",
       },
       { property: "og:title", content: "DA-Copilot — Agent d'analyse de données" },
       {
@@ -60,14 +61,15 @@ function Landing() {
       <section className="bg-grid-paper">
         <div className="mx-auto max-w-4xl px-6 pb-20 pt-16 text-center">
           <p className="mx-auto mb-5 w-fit rounded-full border border-border bg-card px-4 py-1 text-xs font-medium text-muted-foreground">
-            Agent d'analyse de données — EDA, ML, rapports
+            Agent d'analyse de données — 20 modes métier, EDA, ML, rapports
           </p>
           <h1 className="text-balance font-display text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
             Vos données deviennent des <span className="text-primary">décisions</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Téléversez un fichier CSV, posez votre question métier en langage naturel, et recevez une
-            réponse claire, chiffrée et vérifiable : KPI, tendances, anomalies et recommandations actionnables.
+            Téléversez un fichier (CSV, Excel, JSON, GeoJSON, LAS…), posez votre question métier en
+            langage naturel, et recevez une réponse claire, chiffrée et vérifiable : KPI, tendances,
+            anomalies et recommandations actionnables.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -108,6 +110,33 @@ function Landing() {
         </div>
       </section>
 
+      <section className="border-t border-border">
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <h2 className="text-center font-display text-3xl font-bold tracking-tight">
+            Pensé pour le monde des données
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-center text-muted-foreground">
+            Choisissez votre mode d'analyse : l'agent adapte les indicateurs, le vocabulaire et les
+            visualisations à votre métier.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-2">
+            {ANALYSIS_DOMAINS.filter((domain) => domain.id !== "general").map((domain) => (
+              <span
+                key={domain.id}
+                title={domain.description}
+                className="rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground"
+              >
+                {domain.label}
+              </span>
+            ))}
+          </div>
+          <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
+            Visualisations intégrées : Recharts, Vega-Lite et Plotly (coupes, cartes, 3D, ternaires,
+            chandeliers, heatmaps).
+          </p>
+        </div>
+      </section>
+
       <section id="tarifs" className="border-t border-border bg-card">
         <div className="mx-auto max-w-4xl px-6 py-20">
           <h2 className="text-center font-display text-3xl font-bold tracking-tight">Tarifs simples</h2>
@@ -117,7 +146,7 @@ function Landing() {
               <p className="mt-2 font-display text-4xl font-bold">0 €</p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                 <li>• {FREE_ANALYSIS_LIMIT} analyses offertes</li>
-                <li>• Fichiers CSV jusqu'à {FREE_MAX_FILE_MB} Mo</li>
+                <li>• Fichiers jusqu'à {FREE_MAX_FILE_MB} Mo (CSV, Excel, JSON, LAS…)</li>
                 <li>• Historique des conversations</li>
               </ul>
               <Link
@@ -134,7 +163,7 @@ function Landing() {
               </p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                 <li>• Analyses illimitées</li>
-                <li>• Fichiers CSV jusqu'à {PRO_MAX_FILE_MB} Mo</li>
+                <li>• Fichiers jusqu'à {PRO_MAX_FILE_MB} Mo (CSV, Excel, JSON, LAS…)</li>
                 <li>• Historique illimité</li>
                 <li>• Exports PDF et Excel</li>
               </ul>

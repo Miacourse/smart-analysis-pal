@@ -446,3 +446,116 @@ export async function parseExcelFile(file: File): Promise<string[][]> {
   }) as unknown[][];
   return rows.map((row) => row.map((cell) => String(cell ?? "")));
 }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function featureCoordinates(feature: Record<string, unknown>): [number, number] | null {
+  const geometry = isRecord(feature["geometry"]) ? feature["geometry"] : null;
+  const coordinates = geometry?.["coordinates"];
+  if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
+  const [lon, lat] = coordinates;
+  return typeof lon === "number" && typeof lat === "number" ? [lon, lat] : null;
+}
+
+export function jsonToRows(value: unknown): string[][] {
+  let candidate: unknown = value;
+  if (isRecord(value) && Array.isArray(value["features"])) {
+    candidate = value["features"];
+  } else if (isRecord(value)) {
+    const nested = Object.values(value).find(
+      (entry) => Array.isArray(entry) && entry.some((item) => isRecord(item)),
+    );
+    if (nested) candidate = nested;
+  }
+
+  let items: unknown[];
+  if (Array.isArray(candidate)) items = candidate;
+  else if (isRecord(candidate)) items = [candidate];
+  else return [];
+
+  if (items.every((item) => Array.isArray(item))) {
+    return (items as unknown[][]).map((row) => row.map((cell) => String(cell ?? "")));
+  }
+  const objects = items.filter(isRecord);
+  if (objects.length === 0) return [];
+
+  const isFeatureCollection = isRecord(value) && Array.isArray(value["features"]);
+  const keys: string[] = [];
+  for (const object of objects) {
+    const source = isFeatureCollection && isRecord(object["properties"]) ? object["properties"] : object;
+    for (const key of Object.keys(source)) {
+      if (!keys.includes(key) && keys.length < 500) keys.push(key);
+    }
+  }
+  if (isFeatureCollection) {
+    if (!keys.includes("longitude")) keys.push("longitude");
+    if (!keys.includes("latitude")) keys.push("latitude");
+  }
+
+  const rows = objects.map((object) => {
+    const source = isFeatureCollection && isRecord(object["properties"]) ? object["properties"] : object;
+    const coordinates = isFeatureCollection ? featureCoordinates(object) : null;
+    return keys.map((key) => {
+      if (key === "longitude") return coordinates ? String(coordinates[0]) : "";
+      if (key === "latitude") return coordinates ? String(coordinates[1]) : "";
+      const cell = source[key];
+      if (cell === null || cell === undefined) return "";
+      return typeof cell === "object" ? JSON.stringify(cell) : String(cell);
+    });
+  });
+  return [keys, ...rows];
+}
+
+export async function parseJsonFile(file: File): Promise<string[][]> {
+  return jsonToRows(JSON.parse(await file.text()));
+}
+
+export function lasToRows(text: string): string[][] {
+  const lines = text.split(/\r?\n/);
+  let curveNames: string[] = [];
+  let inCurves = false;
+  let dataStart = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = (lines[i] ?? "").trim();
+    if (/^~C/i.test(line)) {
+      inCurves = true;
+      continue;
+    }
+    if (/^~A/i.test(line)) {
+      dataStart = i + 1;
+      break;
+    }
+    if (line.startsWith("~")) {
+      inCurves = false;
+      continue;
+    }
+    if (inCurves && line) {
+      const match = line.match(/^([^.\s:]+)/);
+      if (match?.[1]) curveNames.push(match[1].toUpperCase());
+    }
+  }
+
+  if (dataStart < 0) return [];
+  const rows: string[][] = [];
+  for (let i = dataStart; i < lines.length; i++) {
+    const line = (lines[i] ?? "").trim();
+    if (!line || line.startsWith("#")) continue;
+    rows.push(line.split(/\s+/));
+  }
+  if (rows.length === 0) return [];
+
+  const width = Math.max(...rows.map((row) => row.length));
+  if (curveNames.length !== width) {
+    curveNames = Array.from({ length: width }, (_, index) =>
+      index === 0 ? "DEPT" : `CURVE_${index + 1}`,
+    );
+  }
+  return [curveNames, ...rows];
+}
+
+export async function parseLasFile(file: File): Promise<string[][]> {
+  return lasToRows(await file.text());
+}

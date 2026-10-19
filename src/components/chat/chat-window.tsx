@@ -12,6 +12,8 @@ import {
 import {
   parseCsvFile,
   parseExcelFile,
+  parseJsonFile,
+  parseLasFile,
   profileDataset,
   profileSummary,
   type DatasetProfile,
@@ -280,6 +282,8 @@ function ChatSession({
 
   async function handleCsvUpload(file: File) {
     const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+    const isJson = /\.(json|geojson)$/i.test(file.name);
+    const isLas = /\.las$/i.test(file.name);
     if (file.size > TEAM_MAX_FILE_MB * 1024 * 1024) {
       toast.error(`Fichier trop volumineux (max ${TEAM_MAX_FILE_MB} Mo).`);
       return;
@@ -302,7 +306,13 @@ function ChatSession({
     const done = () => { setUploading(false); setProcessing(null); };
     try {
       setProcessing({ phase: "parsing", startedAt: Date.now() });
-      const rows = isExcel ? await parseExcelFile(file) : await parseCsvFile(file);
+      const rows = isExcel
+        ? await parseExcelFile(file)
+        : isJson
+          ? await parseJsonFile(file)
+          : isLas
+            ? await parseLasFile(file)
+            : await parseCsvFile(file);
       if (rows.length < 2) throw new Error("empty");
       const profile = profileDataset(rows, file.name);
       await saveDataset(file, rows, profile);
@@ -310,7 +320,11 @@ function ChatSession({
       toast.error(
         isExcel
           ? "Lecture du fichier Excel impossible. Vérifiez qu’il n’est pas protégé."
-          : "Lecture du fichier impossible. Utilisez un CSV valide.",
+          : isJson
+            ? "Lecture du fichier JSON/GeoJSON impossible. Vérifiez sa structure."
+            : isLas
+              ? "Lecture du fichier LAS impossible. Vérifiez les sections ~C et ~A."
+              : "Lecture du fichier impossible. Utilisez un CSV valide.",
       );
     } finally {
       done();
@@ -349,7 +363,7 @@ function ChatSession({
                 )}
               </>
             ) : (
-              <span>Aucun fichier associé — téléversez un CSV pour analyser vos données.</span>
+              <span>Aucun fichier associé — téléversez un fichier pour analyser vos données.</span>
             )}
           </div>
         </div>
@@ -375,13 +389,13 @@ function ChatSession({
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
           >
             <Paperclip className="h-3.5 w-3.5" />
-            {datasetName ? "Remplacer le fichier" : "Téléverser CSV / Excel"}
+            {datasetName ? "Remplacer le fichier" : "Téléverser un fichier"}
           </Button>
         </div>
         <input
           ref={fileInputRef}
           type="file"
-          accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+          accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.json,.geojson,application/json,application/geo+json,.las"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
@@ -418,7 +432,7 @@ function ChatSession({
               </span>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">{domainMeta.description}</p>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                Téléversez un fichier CSV ou Excel, puis posez votre question métier.
+                Téléversez un fichier (CSV, Excel, JSON, GeoJSON, LAS…), puis posez votre question métier.
               </p>
               <p className="mt-3 max-w-lg text-xs text-muted-foreground">
                 Exemples : {domainMeta.examples.join(" · ")}

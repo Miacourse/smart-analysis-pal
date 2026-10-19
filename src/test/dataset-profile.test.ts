@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { formatProfileForPrompt, parseNumeric, profileDataset, profileSummary } from "@/lib/dataset-profile";
+import {
+  formatProfileForPrompt,
+  jsonToRows,
+  lasToRows,
+  parseNumeric,
+  profileDataset,
+  profileSummary,
+} from "@/lib/dataset-profile";
 
 describe("parseNumeric", () => {
   it("handles integers, decimals and separators", () => {
@@ -64,5 +71,55 @@ describe("profileDataset", () => {
     expect(profile.histograms?.[0]?.bins.reduce((total, bin) => total + bin.count, 0)).toBe(4);
     expect(profile.correlations).toHaveLength(1);
     expect(profile.correlations?.[0]?.r).toBeCloseTo(1, 5);
+  });
+});
+
+describe("jsonToRows", () => {
+  it("flattens arrays of objects with a union of keys", () => {
+    const rows = jsonToRows([
+      { a: 1, b: "x" },
+      { a: 2, c: true },
+    ]);
+    expect(rows[0]).toEqual(["a", "b", "c"]);
+    expect(rows[1]).toEqual(["1", "x", ""]);
+    expect(rows[2]).toEqual(["2", "", "true"]);
+  });
+
+  it("extracts GeoJSON features and coordinates", () => {
+    const rows = jsonToRows({
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: { name: "Paris" },
+          geometry: { type: "Point", coordinates: [2.35, 48.85] },
+        },
+      ],
+    });
+    expect(rows[0]).toContain("longitude");
+    expect(rows[0]).toContain("latitude");
+    expect(rows[1]).toContain("Paris");
+    expect(rows[1]).toContain("2.35");
+    expect(rows[1]).toContain("48.85");
+  });
+});
+
+describe("lasToRows", () => {
+  it("reads LAS curve names and data rows", () => {
+    const rows = lasToRows(
+      [
+        "~Version",
+        "VERS. 2.0 : CWLS",
+        "~C",
+        "DEPT.M : 1 DEPTH",
+        "GR.GAPI : 2 GAMMA",
+        "~A",
+        "1000 45",
+        "1001 52",
+      ].join("\n"),
+    );
+    expect(rows[0]).toEqual(["DEPT", "GR"]);
+    expect(rows[1]).toEqual(["1000", "45"]);
+    expect(rows[2]).toEqual(["1001", "52"]);
   });
 });
