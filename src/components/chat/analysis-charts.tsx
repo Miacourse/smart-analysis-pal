@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo } from "react";
+﻿import { Suspense, lazy, useMemo } from "react";
 import {
   Area,
   AreaChart,
@@ -59,7 +59,15 @@ function tooltipNode() {
   );
 }
 
-function RechartsBody({ spec }: { spec: ChartSpec }) {
+function RechartsBody({
+  spec,
+  width,
+  height,
+}: {
+  spec: ChartSpec;
+  width?: number | undefined;
+  height?: number | undefined;
+}) {
   const data = useMemo(() => buildChartData(spec), [spec]);
   const yKeys = spec.yKeys ?? [];
   const xKey = spec.xKey ?? "x";
@@ -77,7 +85,7 @@ function RechartsBody({ spec }: { spec: ChartSpec }) {
 
   if (spec.type === "pie") {
     return (
-      <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+      <PieChart width={width ?? 0} height={height ?? 0} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
         {tooltipNode()}
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Pie data={pieData} dataKey="value" nameKey="name" outerRadius="78%" paddingAngle={2}>
@@ -92,7 +100,7 @@ function RechartsBody({ spec }: { spec: ChartSpec }) {
   if (spec.type === "scatter") {
     const yKey = yKeys[0] ?? "";
     return (
-      <ScatterChart margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+      <ScatterChart width={width ?? 0} height={height ?? 0} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
         {grid}
         <XAxis type="number" dataKey={xKey} name={xKey} tick={tickStyle} axisLine={axisLine} tickLine={axisLine} />
         <YAxis type="number" dataKey={yKey} name={yKey} tick={tickStyle} axisLine={axisLine} tickLine={axisLine} width={48} />
@@ -118,7 +126,7 @@ function RechartsBody({ spec }: { spec: ChartSpec }) {
 
   if (spec.type === "line") {
     return (
-      <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+      <LineChart width={width ?? 0} height={height ?? 0} data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
         {grid}
         {xAxis}
         {yAxis}
@@ -141,7 +149,7 @@ function RechartsBody({ spec }: { spec: ChartSpec }) {
 
   if (spec.type === "area") {
     return (
-      <AreaChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+      <AreaChart width={width ?? 0} height={height ?? 0} data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
         {grid}
         {xAxis}
         {yAxis}
@@ -163,7 +171,7 @@ function RechartsBody({ spec }: { spec: ChartSpec }) {
   }
 
   return (
-    <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+    <BarChart width={width ?? 0} height={height ?? 0} data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
       {grid}
       {xAxis}
       {yAxis}
@@ -185,7 +193,7 @@ function RechartsBody({ spec }: { spec: ChartSpec }) {
 function ChartLoading() {
   return (
     <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
-      Chargement du graphique…
+      Chargement du graphiqueâ€¦
     </div>
   );
 }
@@ -223,7 +231,7 @@ function SpecChart({ spec }: { spec: ChartSpec }) {
 const stripNum = (value: string) => {
   const cleaned = value
     .replace(/[\s\u00a0]/g, "")
-    .replace(/[€$£%]/g, "")
+    .replace(/[â‚¬$Â£%]/g, "")
     .replace(",", ".");
   return cleaned === "" ? Number.NaN : Number(cleaned);
 };
@@ -292,7 +300,7 @@ function autoSpecFromPreview(preview: string | null | undefined): ChartSpec | nu
     buckets.set(key, current);
   }
   const numericKey = header[numeric] ?? "Valeur";
-  const categoryKey = header[category] ?? "Catégorie";
+  const categoryKey = header[category] ?? "CatÃ©gorie";
   const data = [...buckets.entries()]
     .map(([key, bucket]) => ({
       [categoryKey]: key,
@@ -349,7 +357,7 @@ function MarkdownTableChart({ text }: { text: string }) {
   return (
     <figure className="mt-5 border-t border-border pt-4">
       <figcaption className="mb-3 text-sm font-semibold">
-        {table[0]?.[valueIndex]} — {table[0]?.[0]}
+        {table[0]?.[valueIndex]} â€” {table[0]?.[0]}
       </figcaption>
       <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto]">
         <div className="space-y-3">
@@ -409,10 +417,13 @@ export function AnalysisCharts({
       <div className="mt-5 space-y-2 border-t border-border pt-4">
         <SpecChart spec={auto} />
         <p className="text-[11px] text-muted-foreground">
-          Graphique généré automatiquement à partir du fichier (moyenne par catégorie).
+          Graphique gÃ©nÃ©rÃ© automatiquement Ã  partir du fichier (moyenne par catÃ©gorie).
         </p>
       </div>
     );
   }
   return <MarkdownTableChart text={text} />;
 }
+
+
+
