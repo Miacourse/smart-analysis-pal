@@ -12,6 +12,8 @@ describe("resolveCountry", () => {
 
   it("ignore les libellés inconnus", () => {
     expect(resolveCountry("Atlantide")).toBeNull();
+    expect(resolveCountry("??")).toBeNull();
+    expect(resolveCountry("")).toBeNull();
   });
 });
 

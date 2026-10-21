@@ -105,10 +105,11 @@ export function resolveCountry(value: string) {
   const direct = BY_ALIAS.get(raw.toLowerCase());
   if (direct) return direct;
   const normalized = normalize(raw);
+  if (normalized.length < 2) return null;
   const exact = BY_ALIAS.get(normalized);
   if (exact) return exact;
   for (const [alias, point] of BY_ALIAS) {
-    if (alias.length < 4) continue;
+    if (alias.length < 4 || normalized.length < 4) continue;
     if (normalized.startsWith(alias) || alias.startsWith(normalized)) return point;
   }
   return null;
