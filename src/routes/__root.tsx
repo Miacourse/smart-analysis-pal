@@ -138,6 +138,11 @@ function RootComponent() {
     // les navigateurs automatisés (tests, prévisualisations) ne sont pas comptés.
     if (navigator.webdriver) return;
     if (window.location.hostname !== "smart-analysis-pal.lovable.app") return;
+    try {
+      if (localStorage.getItem("da-no-track")) return;
+    } catch {
+      /* stockage indisponible : on continue */
+    }
     const key = "da-visit";
     try {
       if (sessionStorage.getItem(key)) return;

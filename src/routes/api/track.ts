@@ -8,7 +8,7 @@ const COUNTRY_HEADERS = [
   "x-appengine-country",
 ];
 
-const BOT = /bot|crawler|spider|preview|lighthouse|headless|curl|wget|python-requests/i;
+const BOT = /bot|crawler|spider|preview|lighthouse|headless|playwright|puppeteer|curl|wget|python-requests/i;
 
 export const Route = createFileRoute("/api/track")({
   server: {
@@ -17,6 +17,9 @@ export const Route = createFileRoute("/api/track")({
         try {
           const ua = request.headers.get("user-agent") ?? "";
           if (BOT.test(ua)) return new Response(null, { status: 204 });
+          if (/headless/i.test(request.headers.get("sec-ch-ua") ?? "")) {
+            return new Response(null, { status: 204 });
+          }
 
           let country: string | null = null;
           for (const header of COUNTRY_HEADERS) {
