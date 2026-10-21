@@ -134,6 +134,10 @@ function RootComponent() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.location.pathname.startsWith("/admin")) return;
+    // Mesure réservée aux visiteurs réels du site de production :
+    // les navigateurs automatisés (tests, prévisualisations) ne sont pas comptés.
+    if (navigator.webdriver) return;
+    if (window.location.hostname !== "smart-analysis-pal.lovable.app") return;
     const key = "da-visit";
     try {
       if (sessionStorage.getItem(key)) return;
