@@ -20,6 +20,8 @@ import {
 } from "recharts";
 
 import { extractMarkdownTables } from "@/lib/export-report";
+import { geoTrafficFromPreview } from "@/lib/geo";
+import { GeoMap } from "@/components/chat/geo-map";
 import { buildChartData, parseChartSpecs, toChartNumber, type ChartSpec } from "@/lib/chart-spec";
 
 const VegaChart = lazy(() => import("./vega-chart"));
@@ -403,21 +405,33 @@ export function AnalysisCharts({
     () => (specs.length > 0 ? null : autoSpecFromPreview(preview)),
     [specs.length, preview],
   );
+  const geo = useMemo(() => geoTrafficFromPreview(preview), [preview]);
+
+  const geoBlock = geo ? (
+    <GeoMap
+      points={geo.points}
+      valueLabel={geo.valueColumn}
+      caption={`Source : colonne ${geo.labelColumn} du fichier, agrégée par ${geo.valueColumn === "Volume" ? "nombre de lignes" : geo.valueColumn}.`}
+    />
+  ) : null;
+
   if (specs.length > 0) {
     return (
       <div className="mt-5 space-y-5 border-t border-border pt-4">
+        {geoBlock}
         {specs.map((spec, index) => (
           <SpecChart key={`${spec.engine}-${spec.title ?? "chart"}-${index}`} spec={spec} />
         ))}
       </div>
     );
   }
-  if (auto) {
+  if (auto || geo) {
     return (
-      <div className="mt-5 space-y-2 border-t border-border pt-4">
-        <SpecChart spec={auto} />
+      <div className="mt-5 space-y-4 border-t border-border pt-4">
+        {geoBlock}
+        {auto && <SpecChart spec={auto} />}
         <p className="text-[11px] text-muted-foreground">
-          Graphique généré automatiquement à partir du fichier (moyenne par catégorie).
+          Graphique généré automatiquement à partir du fichier.
         </p>
       </div>
     );

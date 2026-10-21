@@ -1,6 +1,7 @@
 import type { UIMessage } from "ai";
 
 import { stripChartBlocks } from "@/lib/chart-spec";
+import { geoTrafficFromPreview } from "@/lib/geo";
 
 type ReportInput = {
   title: string;
@@ -600,6 +601,19 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
     }
     y += 8;
   });
+
+  const geo = geoTrafficFromPreview(input.datasetPreview);
+  if (geo) {
+    renderHeading(1, "Répartition géographique");
+    renderTable([
+      [geo.labelColumn || "Pays", geo.valueColumn, "Part"],
+      ...geo.rows.map((row) => [
+        row.label,
+        row.value.toLocaleString("fr-FR", { maximumFractionDigits: 2 }),
+        `${(row.share * 100).toFixed(1)} %`,
+      ]),
+    ]);
+  }
 
   const pages = doc.getNumberOfPages();
   for (let page = 1; page <= pages; page++) {

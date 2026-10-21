@@ -95,7 +95,7 @@ export const getAdminStats = createServerFn({ method: "GET" })
     const { listActivePlansByEmail } = await import("./stripe.server");
     const now = Date.now();
     const since30 = new Date(now - 30 * 24 * 3600 * 1000).toISOString();
-    const [usersRes, subs, threadsRes, msgs, roles, plans] = await Promise.all([
+    const [usersRes, subs, threadsRes, msgs, roles, plans, visitsRes] = await Promise.all([
       supabaseAdmin.auth.admin.listUsers({ perPage: 500 }),
       supabaseAdmin
         .from("subscriptions")
@@ -104,6 +104,13 @@ export const getAdminStats = createServerFn({ method: "GET" })
       supabaseAdmin.from("messages").select("created_at, thread_id").eq("role", "assistant").gte("created_at", since30).limit(5000),
       supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin"),
       listActivePlansByEmail().catch(() => new Map<string, "free" | "pro" | "team">()),
+      (supabaseAdmin as any)
+        .from("app_visits")
+        .select("country, created_at")
+        .gte("created_at", since30)
+        .limit(20000)
+        .then((res: { data: Array<{ country: string | null; created_at: string }> | null; error: unknown }) => res)
+        .catch(() => ({ data: [], error: true })),
     ]);
     const subRows = subs.data ?? [];
     const used = new Map(subRows.map((s) => [s.user_id, s.analyses_used]));
@@ -155,6 +162,17 @@ export const getAdminStats = createServerFn({ method: "GET" })
       else if (p === "pro") paidPro++;
     }
     const today = new Date(now).toISOString().slice(0, 10);
+    const countryCounts = new Map<string, number>();
+    const visitDays = new Map<string, number>();
+    for (let i = 13; i >= 0; i--) {
+      visitDays.set(new Date(now - i * 86400000).toISOString().slice(0, 10), 0);
+    }
+    for (const visit of visitsRes.data ?? []) {
+      const code = (visit.country ?? "??").toUpperCase();
+      countryCounts.set(code, (countryCounts.get(code) ?? 0) + 1);
+      const day = visit.created_at.slice(0, 10);
+      if (visitDays.has(day)) visitDays.set(day, (visitDays.get(day) ?? 0) + 1);
+    }
     return {
       totalUsers: users.length,
       totalThreads: threads.length,
@@ -165,6 +183,13 @@ export const getAdminStats = createServerFn({ method: "GET" })
       mrr: paidPro * PLAN_PRICES.pro.eur + paidTeam * PLAN_PRICES.team.eur,
       nearLimit: users.filter((u) => u.plan === "free" && u.analysesUsed >= FREE_ANALYSIS_LIMIT + u.bonus - 1).length,
       perDay: [...perDay.entries()].map(([day, count]) => ({ day, count })),
+      visitsTotal: visitsRes.data?.length ?? 0,
+      visitsToday: visitDays.get(today) ?? 0,
+      visitsByDay: [...visitDays.entries()].map(([day, count]) => ({ day, count })),
+      visitsByCountry: [...countryCounts.entries()]
+        .map(([country, count]) => ({ country, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 30),
       users,
       recentThreads: threads.slice(0, 15).map((t) => ({ id: t.id, title: t.title, dataset: t.dataset_name, updatedAt: t.updated_at, email: emailOfId.get(t.user_id) ?? "" })),
     };

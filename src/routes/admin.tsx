@@ -8,6 +8,8 @@ import { adminResetQuota, getAdminStats } from "@/lib/billing.functions";
 import { adminAddBonus, adminSetComp, adminSetRole } from "@/lib/admin.functions";
 import { FREE_ANALYSIS_LIMIT } from "@/lib/billing";
 import { supabase } from "@/integrations/supabase/client";
+import { GeoMap } from "@/components/chat/geo-map";
+import { countryName, resolveCountry } from "@/lib/geo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -132,6 +134,16 @@ function AdminPage() {
   }
 
   const maxDay = Math.max(1, ...(stats?.perDay ?? []).map((d) => d.count));
+  const maxVisitDay = Math.max(1, ...(stats?.visitsByDay ?? []).map((d) => d.count));
+  const visitPoints = useMemo(
+    () =>
+      (stats?.visitsByCountry ?? []).flatMap((row): Array<{ label: string; lat: number; lng: number; value: number }> => {
+        const country = resolveCountry(row.country);
+        if (!country) return [];
+        return [{ label: countryName(country.iso), lat: country.lat, lng: country.lng, value: row.count }];
+      }),
+    [stats],
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -181,6 +193,7 @@ function AdminPage() {
             <Tabs defaultValue="users" className="mt-6">
               <TabsList>
                 <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+                <TabsTrigger value="trafic">Trafic</TabsTrigger>
                 <TabsTrigger value="threads">Dernières analyses</TabsTrigger>
               </TabsList>
 
@@ -244,6 +257,58 @@ function AdminPage() {
                     </tbody>
                   </table>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="trafic">
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <Kpi icon={Users} label="Visites (30 j)" value={stats.visitsTotal} />
+                  <Kpi icon={Activity} label="Visites aujourd'hui" value={stats.visitsToday} />
+                  <Kpi icon={Activity} label="Pays détectés" value={visitPoints.length} />
+                </div>
+                <div className="mt-3">
+                  {visitPoints.length > 0 ? (
+                    <GeoMap points={visitPoints} valueLabel="visites" height={360} />
+                  ) : (
+                    <p className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
+                      Aucune visite géolocalisée pour le moment. Les visites sont comptées sans cookie ni adresse IP,
+                      à partir du pays fourni par le réseau.
+                    </p>
+                  )}
+                </div>
+                <div className="mt-3 rounded-xl border border-border bg-card p-5">
+                  <h2 className="text-sm font-semibold">Visites par jour (14 derniers jours)</h2>
+                  <div className="mt-4 flex h-28 items-end gap-1.5">
+                    {stats.visitsByDay.map((d, i) => (
+                      <div key={d.day} className="flex flex-1 flex-col items-center gap-1" title={`${d.day} : ${d.count}`}>
+                        <span className="text-[10px] text-muted-foreground">{d.count || ""}</span>
+                        <div className="w-full rounded-t" style={{ height: `${(d.count / maxVisitDay) * 100}%`, minHeight: 2, background: `var(--chart-${(i % 6) + 1})` }} />
+                        <span className="text-[10px] text-muted-foreground">{d.day.slice(8)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-card">
+                  <table className="w-full min-w-[360px] text-left text-sm">
+                    <thead className="border-b border-border text-xs text-muted-foreground">
+                      <tr><th className="p-3">Pays</th><th className="p-3">Visites</th></tr>
+                    </thead>
+                    <tbody>
+                      {stats.visitsByCountry.map((row) => (
+                        <tr key={row.country} className="border-b border-border last:border-0">
+                          <td className="p-3">{row.country === "??" ? "Inconnu" : (countryName(resolveCountry(row.country)?.iso ?? "") || row.country)}</td>
+                          <td className="p-3 tabular-nums">{row.count}</td>
+                        </tr>
+                      ))}
+                      {stats.visitsByCountry.length === 0 && (
+                        <tr><td colSpan={2} className="p-6 text-center text-muted-foreground">Aucune visite.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Mesure d'audience sans cookie : seul le pays transmis par le réseau, la page et le référent sont
+                  enregistrés. Aucune adresse IP ni donnée personnelle n'est stockée.
+                </p>
               </TabsContent>
 
               <TabsContent value="threads">
