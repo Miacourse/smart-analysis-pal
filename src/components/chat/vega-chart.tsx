@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import embed from "vega-embed";
 
 export default function VegaChart({
@@ -9,10 +9,12 @@ export default function VegaChart({
   title?: string | undefined;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
+    setFailed(false);
     let view: { finalize: () => void } | null = null;
     let cancelled = false;
 
@@ -31,7 +33,7 @@ export default function VegaChart({
         else view = result;
       })
       .catch(() => {
-        // Spec Vega-Lite invalide : on n'affiche rien de plus.
+        if (!cancelled) setFailed(true);
       });
 
     return () => {
@@ -39,6 +41,14 @@ export default function VegaChart({
       view?.finalize();
     };
   }, [spec, title]);
+
+  if (failed) {
+    return (
+      <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
+        Graphique indisponible pour ces données.
+      </div>
+    );
+  }
 
   return <div ref={containerRef} className="w-full overflow-x-auto" />;
 }

@@ -40,11 +40,12 @@ describe("parseChartSpecs", () => {
     expect(specs[0]?.yKeys).toEqual(["A"]);
   });
 
-  it("routes Vega-Lite specs to the vega engine", () => {
+  it("converts simple Vega-Lite specs to a renderable recharts spec", () => {
     const block = [
       "```chart",
       JSON.stringify({
         engine: "vega",
+        title: "Ventes par mois",
         vegaSpec: {
           mark: "bar",
           data: { values: [{ a: "x", b: 1 }] },
@@ -54,8 +55,43 @@ describe("parseChartSpecs", () => {
       "```",
     ].join("\n");
     const specs = parseChartSpecs(block);
-    expect(specs[0]?.engine).toBe("vega");
-    expect(specs[0]?.vegaSpec?.["mark"]).toBe("bar");
+    expect(specs[0]?.engine).toBe("recharts");
+    expect(specs[0]?.type).toBe("bar");
+    expect(specs[0]?.xKey).toBe("a");
+    expect(specs[0]?.yKeys).toEqual(["b"]);
+    expect(specs[0]?.title).toBe("Ventes par mois");
+    expect(specs[0]?.data).toEqual([{ a: "x", b: 1 }]);
+  });
+
+  it("keeps a Vega spec that aggregates data through transforms", () => {
+    const block = [
+      "```chart",
+      JSON.stringify({
+        engine: "vega",
+        vegaSpec: {
+          mark: "bar",
+          data: { values: [{ c: "x", v: 1 }] },
+          transform: [{ aggregate: [{ op: "sum", field: "v", as: "total" }], groupby: ["c"] }],
+          encoding: { x: { field: "c" }, y: { field: "total" } },
+        },
+      }),
+      "```",
+    ].join("\n");
+    const specs = parseChartSpecs(block);
+    expect(specs).toHaveLength(1);
+    expect(["recharts", "vega"]).toContain(specs[0]?.engine);
+  });
+
+  it("drops a Vega spec without inline data", () => {
+    const block = [
+      "```chart",
+      JSON.stringify({
+        engine: "vega",
+        vegaSpec: { mark: "bar", data: { url: "data.csv" } },
+      }),
+      "```",
+    ].join("\n");
+    expect(parseChartSpecs(block)).toHaveLength(0);
   });
 
   it("routes Plotly traces to the plotly engine", () => {
@@ -73,6 +109,33 @@ describe("parseChartSpecs", () => {
     expect(specs[0]?.engine).toBe("plotly");
     expect(specs[0]?.traces).toHaveLength(1);
     expect(specs[0]?.title).toBe("Diagramme ternaire");
+  });
+
+  it("drops Plotly traces without data", () => {
+    const block = [
+      "```chart",
+      JSON.stringify({ engine: "plotly", traces: [{ type: "bar", name: "vide" }] }),
+      "```",
+    ].join("\n");
+    expect(parseChartSpecs(block)).toHaveLength(0);
+  });
+
+  it("derives yKeys when the requested keys are absent from the data", () => {
+    const block = [
+      "```chart",
+      JSON.stringify({
+        type: "bar",
+        xKey: "Canal",
+        yKeys: ["Sessions", "Taux"],
+        data: [
+          { Canal: "Organic", Sessions_Total: 120, Taux_Conversion: 0.4 },
+          { Canal: "Paid", Sessions_Total: 80, Taux_Conversion: 0.2 },
+        ],
+      }),
+      "```",
+    ].join("\n");
+    const specs = parseChartSpecs(block);
+    expect(specs[0]?.yKeys).toEqual(["Sessions_Total", "Taux_Conversion"]);
   });
 
   it("defaults tabular specs to recharts", () => {

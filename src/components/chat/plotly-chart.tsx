@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Plotly from "plotly.js-dist-min";
 
 export default function PlotlyChart({
@@ -11,10 +11,12 @@ export default function PlotlyChart({
   title?: string | undefined;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
+    setFailed(false);
 
     const isDark =
       typeof document !== "undefined" && document.documentElement.classList.contains("dark");
@@ -38,12 +40,22 @@ export default function PlotlyChart({
       responsive: true,
       displaylogo: false,
       modeBarButtonsToRemove: ["lasso2d", "select2d"],
+    }).catch(() => {
+      setFailed(true);
     });
 
     return () => {
       Plotly.purge(element);
     };
   }, [traces, layout, title]);
+
+  if (failed) {
+    return (
+      <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
+        Graphique indisponible pour ces données.
+      </div>
+    );
+  }
 
   return <div ref={containerRef} className="w-full" style={{ minHeight: 360 }} />;
 }

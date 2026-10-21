@@ -86,9 +86,10 @@ function normalizeRecharts(raw: Record<string, unknown>): ChartSpec | null {
   const requestedYKeys = Array.isArray(raw["yKeys"])
     ? raw["yKeys"].filter((key): key is string => typeof key === "string" && key.length > 0)
     : [];
+  const presentYKeys = requestedYKeys.filter((key) => keys.includes(key));
   let yKeys =
-    requestedYKeys.length > 0
-      ? requestedYKeys
+    presentYKeys.length > 0
+      ? presentYKeys
       : keys.filter((key) => key !== xKey && data.some((row) => isNumeric(row[key]))).slice(0, 4);
 
   if (!keys.includes(xKey)) {
@@ -108,6 +109,102 @@ function normalizeRecharts(raw: Record<string, unknown>): ChartSpec | null {
   return spec;
 }
 
+function vegaDataValues(node: unknown): Record<string, unknown>[] | null {
+  if (!isRecord(node)) return null;
+  const values = node["values"];
+  if (Array.isArray(values)) {
+    const rows = values.filter(isRecord);
+    if (rows.length > 0) return rows;
+  }
+  return null;
+}
+
+function extractVegaValues(vegaSpec: Record<string, unknown>): Record<string, unknown>[] | null {
+  const direct = vegaDataValues(vegaSpec["data"]);
+  if (direct) return direct;
+
+  const datasets = vegaSpec["datasets"];
+  if (isRecord(datasets)) {
+    for (const value of Object.values(datasets)) {
+      if (Array.isArray(value)) {
+        const rows = value.filter(isRecord);
+        if (rows.length > 0) return rows;
+      }
+    }
+  }
+
+  for (const key of ["layer", "concat", "hconcat", "vconcat"]) {
+    const children = vegaSpec[key];
+    if (Array.isArray(children)) {
+      for (const child of children) {
+        const rows = vegaDataValues(child) ?? extractVegaValues(isRecord(child) ? child : {});
+        if (rows) return rows;
+      }
+    }
+  }
+
+  if (isRecord(vegaSpec["spec"])) return extractVegaValues(vegaSpec["spec"]);
+  return null;
+}
+
+function encodingField(encoding: unknown, channel: string): string | null {
+  if (!isRecord(encoding)) return null;
+  const channelSpec = encoding[channel];
+  if (!isRecord(channelSpec)) return null;
+  const field = channelSpec["field"];
+  return typeof field === "string" && field.length > 0 ? field : null;
+}
+
+function vegaToRecharts(
+  values: Record<string, unknown>[],
+  vegaSpec: Record<string, unknown>,
+  title: string,
+): ChartSpec | null {
+  const keys = Object.keys(values[0] ?? {});
+  if (keys.length < 2) return null;
+  const numericKeys = keys.filter((key) => values.some((row) => isNumeric(row[key])));
+  if (numericKeys.length === 0) return null;
+
+  const encoding = vegaSpec["encoding"];
+  const xField = encodingField(encoding, "x");
+  const yField = encodingField(encoding, "y");
+
+  let xKey = xField && keys.includes(xField) ? xField : null;
+  if (!xKey) xKey = keys.find((key) => !numericKeys.includes(key)) ?? keys[0]!;
+  if (!xKey) return null;
+
+  let yKeys = yField && keys.includes(yField) && yField !== xKey ? [yField] : [];
+  if (yKeys.length === 0) {
+    const candidate = numericKeys.find((key) => key !== xKey) ?? numericKeys[0]!;
+    if (candidate) yKeys = [candidate];
+  }
+  yKeys = yKeys.filter((key) => keys.includes(key) && key !== xKey);
+  if (yKeys.length === 0) return null;
+
+  const markRaw = vegaSpec["mark"];
+  const mark = typeof markRaw === "string" ? markRaw : isRecord(markRaw) ? markRaw["type"] : null;
+  const type: ChartType =
+    mark === "line"
+      ? "line"
+      : mark === "area"
+        ? "area"
+        : mark === "arc"
+          ? "pie"
+          : mark === "point" || mark === "circle" || mark === "square"
+            ? "scatter"
+            : "bar";
+
+  const spec: ChartSpec = {
+    engine: "recharts",
+    type,
+    xKey,
+    yKeys: yKeys.slice(0, 4),
+    data: values.slice(0, 200).map((row) => ({ ...row })),
+  };
+  if (title) spec.title = title;
+  return spec;
+}
+
 function normalizeVega(raw: Record<string, unknown>): ChartSpec | null {
   const candidate = isRecord(raw["vegaSpec"]) ? raw["vegaSpec"] : raw;
   const vegaSpec: Record<string, unknown> = { ...candidate };
@@ -119,9 +216,6 @@ function normalizeVega(raw: Record<string, unknown>): ChartSpec | null {
     (key) => key in vegaSpec,
   );
   if (!looksLikeVega) return null;
-  if (!("data" in vegaSpec) && !("datasets" in vegaSpec) && !("transform" in vegaSpec) && !("layer" in vegaSpec)) {
-    return null;
-  }
 
   const spec: ChartSpec = { engine: "vega", vegaSpec };
   const title =
@@ -130,6 +224,12 @@ function normalizeVega(raw: Record<string, unknown>): ChartSpec | null {
       : typeof vegaSpec["title"] === "string"
         ? vegaSpec["title"].trim()
         : "";
+
+  const values = extractVegaValues(vegaSpec);
+  if (!values) return null;
+  const converted = vegaToRecharts(values, vegaSpec, title);
+  if (converted) return converted;
+
   if (title) spec.title = title;
   return spec;
 }
@@ -142,7 +242,10 @@ function normalizePlotly(raw: Record<string, unknown>): ChartSpec | null {
       : null;
   if (!rawTraces) return null;
 
-  const traces = rawTraces.filter(isRecord).slice(0, 8);
+  const traces = rawTraces
+    .filter(isRecord)
+    .filter((trace) => Object.values(trace).some((value) => Array.isArray(value)))
+    .slice(0, 8);
   if (traces.length === 0) return null;
 
   const spec: ChartSpec = { engine: "plotly", traces };
