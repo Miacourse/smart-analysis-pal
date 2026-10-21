@@ -37,7 +37,7 @@ describe("geoTrafficFromPreview", () => {
     expect(geo).not.toBeNull();
     expect(geo!.valueColumn).toBe("Sessions");
     expect(geo!.labelColumn).toBe("Pays");
-    expect(geo!.points.map((point) => point.label)).toEqual(["FR", "DE", "US"]);
+    expect(geo!.points.map((point) => point.label)).toEqual(["France", "Allemagne", "États-Unis"]);
     expect(geo!.points[0]!.value).toBe(1200);
   });
 

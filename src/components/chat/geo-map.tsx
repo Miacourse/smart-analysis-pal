@@ -75,10 +75,9 @@ export function GeoMap({
           worldCopyJump: true,
           attributionControl: true,
         });
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-          attribution: '&copy; OpenStreetMap &copy; CARTO',
-          subdomains: "abcd",
-          maxZoom: 12,
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '&copy; OpenStreetMap',
+          maxZoom: 19,
         }).addTo(map);
         for (const point of points) {
           const weight = Math.abs(point.value) / max;

@@ -114,9 +114,36 @@ export function resolveCountry(value: string) {
   return null;
 }
 
+const DISPLAY: Record<string, string> = {
+  US: "États-Unis",
+  GB: "Royaume-Uni",
+  CI: "Côte d'Ivoire",
+  KR: "Corée du Sud",
+  NZ: "Nouvelle-Zélande",
+  GR: "Grèce",
+  SE: "Suède",
+  NO: "Norvège",
+  CZ: "Tchéquie",
+  DZ: "Algérie",
+  EG: "Égypte",
+  SN: "Sénégal",
+  TH: "Thaïlande",
+  ID: "Indonésie",
+  BR: "Brésil",
+  PE: "Pérou",
+  AE: "Émirats arabes unis",
+  ET: "Éthiopie",
+  NL: "Pays-Bas",
+  RU: "Russie",
+};
+
 export function countryName(iso: string) {
+  if (DISPLAY[iso]) return DISPLAY[iso];
   for (const [code, , , ...names] of COUNTRIES) {
-    if (code === iso) return names[0] ?? code;
+    if (code === iso) {
+      const name = names[0] ?? code;
+      return name.replace(/(^|[\s-])([\p{L}])/gu, (_, sep: string, letter: string) => sep + letter.toUpperCase());
+    }
   }
   return iso;
 }
@@ -203,16 +230,21 @@ export function geoTrafficFromPreview(preview: string | null | undefined): GeoTr
 
   const rows = [...buckets.values()].sort((a, b) => b.value - a.value);
   const total = rows.reduce((sum, row) => sum + Math.abs(row.value), 0) || 1;
-  const points: GeoPoint[] = [];
-  const seen = new Set<string>();
+  const byCountry = new Map<string, GeoPoint>();
   for (const row of rows) {
     const country = resolveCountry(row.label);
     if (!country) continue;
-    const existing = points.find((point) => point.label === country.iso);
+    const existing = byCountry.get(country.iso);
     if (existing) existing.value += row.value;
-    else points.push({ label: country.iso, lat: country.lat, lng: country.lng, value: row.value });
-    seen.add(country.iso);
+    else
+      byCountry.set(country.iso, {
+        label: countryName(country.iso),
+        lat: country.lat,
+        lng: country.lng,
+        value: row.value,
+      });
   }
+  const points = [...byCountry.values()];
   if (points.length < 2) return null;
 
   return {
