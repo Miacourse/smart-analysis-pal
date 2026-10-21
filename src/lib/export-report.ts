@@ -610,7 +610,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
       ...geo.rows.map((row) => [
         row.label,
         row.value.toLocaleString("fr-FR", { maximumFractionDigits: 2 }),
-        `${(row.share * 100).toFixed(1)} %`,
+        `${(row.share * 100).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`,
       ]),
     ]);
   }
