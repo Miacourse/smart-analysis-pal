@@ -43,8 +43,41 @@ function stripLatex(input: string): string {
   return s;
 }
 
+const HTML_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+  mdash: "-",
+  ndash: "-",
+  hellip: "...",
+  lsquo: "'",
+  rsquo: "'",
+  ldquo: '"',
+  rdquo: '"',
+  rarr: "->",
+  rightarrow: "->",
+  larr: "<-",
+  leftarrow: "<-",
+  ge: ">=",
+  le: "<=",
+  times: "x",
+  euro: "EUR",
+  percnt: "%",
+};
+
+function decodeEntities(input: string): string {
+  return input.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g, (match, code: string) => {
+    if (/^#x/i.test(code)) return String.fromCodePoint(Number.parseInt(code.slice(2), 16));
+    if (code.startsWith("#")) return String.fromCodePoint(Number.parseInt(code.slice(1), 10));
+    return HTML_ENTITIES[code.toLowerCase()] ?? match;
+  });
+}
+
 export function sanitizeReportText(input: string): string {
-  let s = stripLatex(input.normalize("NFC"));
+  let s = decodeEntities(stripLatex(input.normalize("NFC")));
   s = s.replace(
     /<\/?(?:br|p|div|span|strong|em|b|i|u|ul|ol|li|h[1-6]|table|thead|tbody|tr|td|th|code|pre|sup|sub|a|blockquote)\b[^>]*\/?>/gi,
     " ",
@@ -359,6 +392,14 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
       return { cellLines, height: lines * lineH + 2 * pad };
     };
 
+    const totalHeight =
+      rowMetrics(header, true).height +
+      body.reduce((sum, r) => sum + rowMetrics(r, false).height, 0);
+    const usable = bottom - PAGE_TOP;
+    if (y + totalHeight > bottom && totalHeight <= usable) {
+      newPage();
+    }
+
     const drawRow = (r: string[], bold: boolean, headerRow: boolean, zebra: boolean) => {
       const { cellLines, height } = rowMetrics(r, bold);
       if (y + height > bottom) {
@@ -391,7 +432,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
         setBorder();
         doc.setLineWidth(0.5);
         doc.rect(x, top, colW[c]!, height);
-        doc.setFont("helvetica", bold(headerRow) ? "bold" : "normal").setFontSize(fontSize);
+        doc.setFont("helvetica", bold(headerRow)).setFontSize(fontSize);
         if (headerRow) doc.setTextColor(255, 255, 255);
         else setInk();
         const numeric =

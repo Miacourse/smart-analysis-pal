@@ -83,6 +83,13 @@ describe("sanitizeReportText", () => {
   it("retire les balises HTML résiduelles", () => {
     expect(sanitizeReportText("Ligne<br/>suivante")).toBe("Ligne suivante");
   });
+
+  it("décode les entités HTML", () => {
+    expect(sanitizeReportText("Display &amp; Paid Social &rightarrow; Paid Search &ge; 2")).toBe(
+      "Display & Paid Social -> Paid Search >= 2",
+    );
+    expect(sanitizeReportText("Marge &#8594; hausse")).toBe("Marge -> hausse");
+  });
 });
 
 describe("reportTitle", () => {
