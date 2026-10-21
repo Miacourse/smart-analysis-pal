@@ -671,6 +671,20 @@ export async function exportExcel(input: ReportInput) {
       );
     }
   }
+  const geo = geoTrafficFromPreview(input.datasetPreview);
+  if (geo) {
+    const rows = [
+      [geo.labelColumn, geo.valueColumn, "Part"],
+      ...geo.rows.map((row) => [
+        row.label,
+        row.value,
+        Number((row.share * 100).toFixed(1)),
+      ]),
+    ];
+    const geoSheet = XLSX.utils.aoa_to_sheet(rows);
+    geoSheet["!cols"] = [{ wch: 22 }, { wch: 14 }, { wch: 10 }];
+    XLSX.utils.book_append_sheet(wb, geoSheet, "Géographie");
+  }
   if (input.datasetPreview) {
     const rows = input.datasetPreview.split("\n").map((r) => r.split(","));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Extrait données");
