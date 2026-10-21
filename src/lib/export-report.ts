@@ -76,11 +76,22 @@ function stripMd(s: string) {
     .replace(/!\[[^\]]*]\([^)]*\)/g, "")
     .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
     .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1")
     .replace(/__(.+?)__/g, "$1")
     .replace(/~~(.+?)~~/g, "$1")
     .replace(/`([^`]+)`/g, "$1")
     .replace(/^#{1,6}\s*/gm, "")
     .replace(/^\s*[-*]\s+/gm, "• ");
+}
+
+export function reportTitle(input: Pick<ReportInput, "title" | "datasetName">) {
+  if (input.datasetName) {
+    const name = input.datasetName.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+    if (name) {
+      return `Analyse de ${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+    }
+  }
+  return input.title || "Analyse de données";
 }
 
 function fileBase(input: ReportInput) {
@@ -421,7 +432,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
   doc.setFont("helvetica", "bold").setFontSize(19);
   setInk();
   const allTitleLines = doc.splitTextToSize(
-    sanitizeReportText(input.title || "Analyse de données"),
+    sanitizeReportText(reportTitle(input)),
     contentW,
   ) as string[];
   const titleLines = allTitleLines.slice(0, 3);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   extractMarkdownTables,
+  reportTitle,
   sanitizeReportText,
   splitReportBlocks,
 } from "@/lib/export-report";
@@ -81,5 +82,17 @@ describe("sanitizeReportText", () => {
 
   it("retire les balises HTML résiduelles", () => {
     expect(sanitizeReportText("Ligne<br/>suivante")).toBe("Ligne suivante");
+  });
+});
+
+describe("reportTitle", () => {
+  it("priorise le nom du fichier pour éviter les titres tronqués", () => {
+    expect(reportTitle({ title: "Analyse les sessions par canal d'acqui", datasetName: "ga4-acquisition.csv" })).toBe(
+      "Analyse de Ga4 acquisition",
+    );
+  });
+
+  it("retombe sur le titre sans fichier", () => {
+    expect(reportTitle({ title: "Bilan trimestriel", datasetName: null })).toBe("Bilan trimestriel");
   });
 });
