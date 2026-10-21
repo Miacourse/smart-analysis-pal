@@ -80,11 +80,13 @@ export function createAnalysisCall(
 
   if (provider === "gemini") {
     const google = chatProvider(GEMINI_BASE_URL, geminiKey()!);
-    const model = process.env["GEMINI_MODEL"] ?? "gemini-2.5-flash";
+    const model = process.env["GEMINI_MODEL"] ?? "gemini-3.8-flash";
+    const maxOutputTokens = Number(process.env["GEMINI_MAX_TOKENS"] ?? 8192);
     return {
       provider,
       result: streamText({
         model: google.chat(model),
+        ...(Number.isFinite(maxOutputTokens) ? { maxOutputTokens } : {}),
         ...(instructions ? { instructions } : {}),
         messages,
         abortSignal: request.signal,

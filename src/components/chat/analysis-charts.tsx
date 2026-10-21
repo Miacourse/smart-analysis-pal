@@ -220,18 +220,122 @@ function SpecChart({ spec }: { spec: ChartSpec }) {
   );
 }
 
-const num = (value: string) => parseFloat(value.replace(/\s|%/g, "").replace(",", "."));
+const stripNum = (value: string) => {
+  const cleaned = value
+    .replace(/[\s\u00a0]/g, "")
+    .replace(/[€$£%]/g, "")
+    .replace(",", ".");
+  return cleaned === "" ? Number.NaN : Number(cleaned);
+};
+
+function parseCsvPreview(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          cell += '"';
+          i++;
+        } else quoted = false;
+      } else cell += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ",") {
+      row.push(cell);
+      cell = "";
+    } else if (ch === "\n") {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+    } else if (ch !== "\r") cell += ch;
+  }
+  row.push(cell);
+  if (row.some((value) => value.length > 0)) rows.push(row);
+  return rows;
+}
+
+function autoSpecFromPreview(preview: string | null | undefined): ChartSpec | null {
+  if (!preview || !preview.trim()) return null;
+  const rows = parseCsvPreview(preview);
+  if (rows.length < 3) return null;
+  const header = (rows[0] ?? []).map((name, index) => name.trim() || `Colonne ${index + 1}`);
+  const body = rows.slice(1).filter((row) => row.length === header.length);
+  if (body.length < 2 || header.length < 2) return null;
+
+  let category = -1;
+  let numeric = -1;
+  for (let c = 0; c < header.length; c++) {
+    const values = body.map((row) => (row[c] ?? "").trim()).filter(Boolean);
+    if (values.length === 0) continue;
+    const numbers = values.filter((value) => Number.isFinite(stripNum(value))).length;
+    if (numbers / values.length >= 0.8) {
+      if (numeric < 0) numeric = c;
+      continue;
+    }
+    const distinct = new Set(values);
+    if (category < 0 && distinct.size >= 2 && distinct.size <= 12) category = c;
+  }
+  if (category < 0 || numeric < 0) return null;
+
+  const buckets = new Map<string, { sum: number; count: number }>();
+  for (const row of body) {
+    const key = (row[category] ?? "").trim();
+    const value = stripNum(row[numeric] ?? "");
+    if (!key || !Number.isFinite(value)) continue;
+    const current = buckets.get(key) ?? { sum: 0, count: 0 };
+    current.sum += value;
+    current.count += 1;
+    buckets.set(key, current);
+  }
+  const numericKey = header[numeric] ?? "Valeur";
+  const categoryKey = header[category] ?? "Catégorie";
+  const data = [...buckets.entries()]
+    .map(([key, bucket]) => ({
+      [categoryKey]: key,
+      [numericKey]: Number((bucket.sum / bucket.count).toFixed(2)),
+    }))
+    .slice(0, 12);
+  if (data.length < 2) return null;
+  return {
+    engine: "recharts",
+    type: "bar",
+    title: `${numericKey} moyen par ${categoryKey}`,
+    xKey: categoryKey,
+    yKeys: [numericKey],
+    data,
+  };
+}
+
+function num(value: string) {
+  return stripNum(value);
+}
 
 function MarkdownTableChart({ text }: { text: string }) {
-  const table = extractMarkdownTables(text).find(
-    (rows) => rows.length > 2 && rows.slice(1).every((r) => Number.isFinite(num(r[1] ?? ""))),
-  );
+  const tables = extractMarkdownTables(text);
+  let table: string[][] | undefined;
+  let valueIndex = 1;
+  for (const rows of tables) {
+    if (rows.length < 3) continue;
+    const width = rows[0]?.length ?? 0;
+    for (let c = 1; c < width; c++) {
+      if (rows.slice(1).every((row) => Number.isFinite(stripNum(row[c] ?? "")))) {
+        table = rows;
+        valueIndex = c;
+        break;
+      }
+    }
+    if (table) break;
+  }
   if (!table) return null;
   const data = table
     .slice(1)
     .filter((r) => !/^\**\s*(total|ensemble|somme)/i.test(r[0] ?? ""))
     .slice(0, 12)
-    .map((row) => ({ label: row[0] ?? "", value: num(row[1] ?? "") }));
+    .map((row) => ({ label: row[0] ?? "", value: num(row[valueIndex] ?? "") }));
   const max = Math.max(1, ...data.map((d) => Math.abs(d.value)));
   const total = data.reduce((n, d) => n + Math.abs(d.value), 0) || 1;
   let accumulated = 0;
@@ -245,7 +349,7 @@ function MarkdownTableChart({ text }: { text: string }) {
   return (
     <figure className="mt-5 border-t border-border pt-4">
       <figcaption className="mb-3 text-sm font-semibold">
-        {table[0]?.[1]} — {table[0]?.[0]}
+        {table[0]?.[valueIndex]} — {table[0]?.[0]}
       </figcaption>
       <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto]">
         <div className="space-y-3">
@@ -279,14 +383,34 @@ function MarkdownTableChart({ text }: { text: string }) {
   );
 }
 
-export function AnalysisCharts({ text }: { text: string }) {
+export function AnalysisCharts({
+  text,
+  preview,
+}: {
+  text: string;
+  preview?: string | null;
+}) {
   const specs = useMemo(() => parseChartSpecs(text), [text]);
+  const auto = useMemo(
+    () => (specs.length > 0 ? null : autoSpecFromPreview(preview)),
+    [specs.length, preview],
+  );
   if (specs.length > 0) {
     return (
       <div className="mt-5 space-y-5 border-t border-border pt-4">
         {specs.map((spec, index) => (
           <SpecChart key={`${spec.engine}-${spec.title ?? "chart"}-${index}`} spec={spec} />
         ))}
+      </div>
+    );
+  }
+  if (auto) {
+    return (
+      <div className="mt-5 space-y-2 border-t border-border pt-4">
+        <SpecChart spec={auto} />
+        <p className="text-[11px] text-muted-foreground">
+          Graphique généré automatiquement à partir du fichier (moyenne par catégorie).
+        </p>
       </div>
     );
   }

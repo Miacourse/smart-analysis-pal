@@ -76,6 +76,7 @@ export function ChatWindow({ threadId }: { threadId: string }) {
   const [datasetName, setDatasetName] = useState<string | null>(null);
   const [datasetRows, setDatasetRows] = useState<number | null>(null);
   const [datasetProfile, setDatasetProfile] = useState<DatasetProfile | null>(null);
+  const [datasetPreview, setDatasetPreview] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -90,7 +91,7 @@ export function ChatWindow({ threadId }: { threadId: string }) {
         supabase.from("messages").select("id, role, parts").eq("thread_id", threadId).order("created_at"),
         supabase
           .from("threads")
-          .select("dataset_name, dataset_rows, dataset_profile")
+          .select("dataset_name, dataset_rows, dataset_profile, dataset_preview")
           .eq("id", threadId)
           .maybeSingle(),
       ]);
@@ -99,6 +100,7 @@ export function ChatWindow({ threadId }: { threadId: string }) {
       setDatasetName(thread?.dataset_name ?? null);
       setDatasetRows(thread?.dataset_rows ?? null);
       setDatasetProfile(parseStoredProfile(thread?.dataset_profile));
+      setDatasetPreview(thread?.dataset_preview ?? null);
     })();
     return () => {
       cancelled = true;
@@ -120,11 +122,13 @@ export function ChatWindow({ threadId }: { threadId: string }) {
       datasetName={datasetName}
       datasetRows={datasetRows}
       datasetProfile={datasetProfile}
+      datasetPreview={datasetPreview}
       accessToken={accessToken}
-      onDatasetChange={(name, rows, profile) => {
+      onDatasetChange={(name, rows, profile, preview) => {
         setDatasetName(name);
         setDatasetRows(rows);
         setDatasetProfile(profile);
+        setDatasetPreview(preview);
       }}
     />
   );
@@ -136,6 +140,7 @@ function ChatSession({
   datasetName,
   datasetRows,
   datasetProfile,
+  datasetPreview,
   accessToken,
   onDatasetChange,
 }: {
@@ -144,8 +149,14 @@ function ChatSession({
   datasetName: string | null;
   datasetRows: number | null;
   datasetProfile: DatasetProfile | null;
+  datasetPreview: string | null;
   accessToken: string | null;
-  onDatasetChange: (name: string, rows: number | null, profile: DatasetProfile | null) => void;
+  onDatasetChange: (
+    name: string,
+    rows: number | null,
+    profile: DatasetProfile | null,
+    preview: string | null,
+  ) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -276,7 +287,7 @@ function ChatSession({
       })
       .eq("id", threadId);
     if (error) throw error;
-    onDatasetChange(file.name, profile.rows, profile);
+    onDatasetChange(file.name, profile.rows, profile, preview);
     toast.success(`Fichier « ${file.name} » chargé : ${profileSummary(profile)} analysées.`);
     textareaRef.current?.focus();
   }
@@ -481,7 +492,12 @@ function ChatSession({
                   }
                   return null;
                 })}
-                {m.role === "assistant" && !busy && <AnalysisCharts text={m.parts.filter((p) => p.type === "text").map((p) => p.text).join("\n")} />}
+                {m.role === "assistant" && !busy && (
+                  <AnalysisCharts
+                    text={m.parts.filter((p) => p.type === "text").map((p) => p.text).join("\n")}
+                    preview={datasetPreview}
+                  />
+                )}
               </MessageContent>
             </Message>
           ))}
