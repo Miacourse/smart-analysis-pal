@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BarChart3, FileSpreadsheet, MessageSquareText, ShieldCheck, TrendingUp, Upload } from "lucide-react";
 
-import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, FREE_MAX_ROWS, PRO_MAX_FILE_MB, PRO_MAX_ROWS, PLAN_PRICES } from "@/lib/billing";
+import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, FREE_MAX_ROWS, PRO_MAX_FILE_MB, PRO_MAX_ROWS, TEAM_MAX_FILE_MB, TEAM_MAX_ROWS, PLAN_PRICES } from "@/lib/billing";
 import { ANALYSIS_DOMAINS } from "@/lib/analysis-domains";
 import logo from "@/assets/logo.png";
 
@@ -138,9 +138,9 @@ function Landing() {
       </section>
 
       <section id="tarifs" className="border-t border-border bg-card">
-        <div className="mx-auto max-w-4xl px-6 py-20">
+        <div className="mx-auto max-w-5xl px-6 py-20">
           <h2 className="text-center font-display text-3xl font-bold tracking-tight">Tarifs simples</h2>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2">
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
             <div className="rounded-2xl border border-border bg-background p-8">
               <h3 className="font-display text-lg font-semibold">Gratuit</h3>
               <p className="mt-2 font-display text-4xl font-bold">0 €</p>
@@ -174,7 +174,28 @@ function Landing() {
                 Devenir Pro
               </Link>
             </div>
+            <div className="rounded-2xl border border-border bg-background p-8">
+              <h3 className="font-display text-lg font-semibold">Team</h3>
+              <p className="mt-2 font-display text-4xl font-bold">
+                {PLAN_PRICES.team.eur} €<span className="text-base font-normal text-muted-foreground">/mois</span>
+              </p>
+              <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
+                <li>• Tout Pro, sans compromis</li>
+                <li>• Fichiers jusqu'à {TEAM_MAX_FILE_MB} Mo / {TEAM_MAX_ROWS.toLocaleString("fr-FR")} lignes</li>
+                <li>• Analyses illimitées</li>
+                <li>• Exports PDF et Excel</li>
+              </ul>
+              <Link
+                to="/pricing"
+                className="mt-8 block w-full rounded-lg border border-primary bg-background px-4 py-2.5 text-center text-sm font-semibold text-primary hover:bg-primary/5"
+              >
+                Découvrir Team
+              </Link>
+            </div>
           </div>
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            Comparez les offres en détail sur la <Link to="/pricing" className="font-semibold text-primary hover:underline">page Tarifs</Link>.
+          </p>
         </div>
       </section>
 
