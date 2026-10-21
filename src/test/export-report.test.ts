@@ -68,4 +68,18 @@ describe("sanitizeReportText", () => {
       "Décision stratégique à l'été",
     );
   });
+
+  it("convertit le LaTeX brut en texte lisible", () => {
+    const input =
+      "Taux = $\\frac{\\text{Key events}}{\\text{Sessions}} \\times 100$ et \\approx 2,4\\%";
+    const output = sanitizeReportText(input);
+    expect(output).not.toMatch(/\\|\$|\{|\}/);
+    expect(output).toContain("(Key events) / (Sessions)");
+    expect(output).toContain("x 100");
+    expect(output).toContain("environ 2,4%");
+  });
+
+  it("retire les balises HTML résiduelles", () => {
+    expect(sanitizeReportText("Ligne<br/>suivante")).toBe("Ligne suivante");
+  });
 });

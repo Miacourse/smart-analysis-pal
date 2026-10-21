@@ -27,8 +27,28 @@ function messageText(m: UIMessage) {
 
 const EMOJI_RE = /\p{Extended_Pictographic}/gu;
 
+function stripLatex(input: string): string {
+  let s = input.replace(/\$\$?([\s\S]*?)\$\$?/g, "$1");
+  s = s.replace(/\\text\{([^{}]*)\}/g, "$1");
+  s = s.replace(/\\mathrm\{([^{}]*)\}/g, "$1");
+  s = s.replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, "($1) / ($2)");
+  s = s.replace(/\\times/g, "x");
+  s = s.replace(/\\approx/g, "environ");
+  s = s.replace(/\\leq/g, "<=").replace(/\\geq/g, ">=");
+  s = s.replace(/\\%/g, "%");
+  s = s.replace(/\\[,;:!]/g, " ");
+  s = s.replace(/\\[a-zA-Z]+/g, " ");
+  s = s.replace(/[{}]/g, "");
+  s = s.replace(/\\/g, "");
+  return s;
+}
+
 export function sanitizeReportText(input: string): string {
-  let s = input.normalize("NFC");
+  let s = stripLatex(input.normalize("NFC"));
+  s = s.replace(
+    /<\/?(?:br|p|div|span|strong|em|b|i|u|ul|ol|li|h[1-6]|table|thead|tbody|tr|td|th|code|pre|sup|sub|a|blockquote)\b[^>]*\/?>/gi,
+    " ",
+  );
   s = s.replace(/[\u200B-\u200D\uFEFF]/g, "");
   s = s.replace(/[\u00A0\u2007\u202F]/g, " ");
   s = s.replace(/\u2026/g, "...");
@@ -52,6 +72,7 @@ export function sanitizeReportText(input: string): string {
 function stripMd(s: string) {
   return s
     .replace(/```[a-z]*\n?/gi, "")
+    .replace(/<[^>]+>/g, " ")
     .replace(/!\[[^\]]*]\([^)]*\)/g, "")
     .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
     .replace(/\*\*(.+?)\*\*/g, "$1")
@@ -274,13 +295,47 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
       for (let c = 0; c < cols; c++) maxLen[c] = Math.max(maxLen[c]!, Math.min(38, r[c]!.length));
     }
     const weightTotal = maxLen.reduce((a, b) => a + b, 0) || 1;
-    let colW = maxLen.map((w) => Math.max(40, (w / weightTotal) * contentW));
-    const sumW = colW.reduce((a, b) => a + b, 0);
-    if (sumW > contentW) colW = colW.map((w) => (w * contentW) / sumW);
 
     const pad = 5;
     const lineH = 11.2;
-    const fontSize = 8.8;
+
+    const minWidthsFor = (fs: number) => {
+      doc.setFontSize(fs);
+      const mins = new Array(cols).fill(0) as number[];
+      for (let ri = 0; ri < cleaned.length; ri++) {
+        doc.setFont("helvetica", ri === 0 ? "bold" : "normal");
+        for (let c = 0; c < cols; c++) {
+          for (const word of cleaned[ri]![c]!.split(/\s+/)) {
+            if (word) mins[c] = Math.max(mins[c]!, doc.getTextWidth(word));
+          }
+        }
+      }
+      return mins.map((w) => w + 2 * pad + 2);
+    };
+
+    let fontSize = 8.8;
+    let minWidths = minWidthsFor(fontSize);
+    let totalMin = minWidths.reduce((a, b) => a + b, 0);
+    while (totalMin > contentW && fontSize > 7) {
+      fontSize -= 0.4;
+      minWidths = minWidthsFor(fontSize);
+      totalMin = minWidths.reduce((a, b) => a + b, 0);
+    }
+
+    let colW = maxLen.map((w, i) => Math.max(minWidths[i]!, (w / weightTotal) * contentW));
+    const sumW = colW.reduce((a, b) => a + b, 0);
+    if (sumW > contentW) {
+      const excess = sumW - contentW;
+      const slack = colW.map((w, i) => w - minWidths[i]!);
+      const slackTotal = slack.reduce((a, b) => a + b, 0) || 1;
+      colW = colW.map((w, i) => w - excess * (slack[i]! / slackTotal));
+    } else if (sumW < contentW) {
+      const extra = contentW - sumW;
+      colW = colW.map((w, i) => w + extra * (minWidths[i]! / (totalMin || 1)));
+    }
+    const finalW = colW.reduce((a, b) => a + b, 0);
+    if (finalW > contentW + 0.5) colW = colW.map((w) => (w * contentW) / finalW);
+
     const header = cleaned[0]!;
     const body = cleaned.slice(1);
 
@@ -365,11 +420,16 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
 
   doc.setFont("helvetica", "bold").setFontSize(19);
   setInk();
-  const titleLines = doc.splitTextToSize(
+  const allTitleLines = doc.splitTextToSize(
     sanitizeReportText(input.title || "Analyse de données"),
     contentW,
   ) as string[];
-  for (const line of titleLines.slice(0, 2)) {
+  const titleLines = allTitleLines.slice(0, 3);
+  if (allTitleLines.length > titleLines.length && titleLines.length > 0) {
+    const last = titleLines.length - 1;
+    titleLines[last] = `${titleLines[last]!.replace(/\s+\S*$/, "")}...`;
+  }
+  for (const line of titleLines) {
     doc.text(line, M, y);
     y += 24;
   }
