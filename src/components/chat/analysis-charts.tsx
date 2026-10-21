@@ -1,4 +1,4 @@
-﻿import { Suspense, lazy, useMemo } from "react";
+import { Suspense, lazy, useMemo } from "react";
 import {
   Area,
   AreaChart,
@@ -193,7 +193,7 @@ function RechartsBody({
 function ChartLoading() {
   return (
     <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
-      Chargement du graphiqueâ€¦
+      Chargement du graphique…
     </div>
   );
 }
@@ -231,7 +231,7 @@ function SpecChart({ spec }: { spec: ChartSpec }) {
 const stripNum = (value: string) => {
   const cleaned = value
     .replace(/[\s\u00a0]/g, "")
-    .replace(/[â‚¬$Â£%]/g, "")
+    .replace(/[€$£%]/g, "")
     .replace(",", ".");
   return cleaned === "" ? Number.NaN : Number(cleaned);
 };
@@ -300,7 +300,7 @@ function autoSpecFromPreview(preview: string | null | undefined): ChartSpec | nu
     buckets.set(key, current);
   }
   const numericKey = header[numeric] ?? "Valeur";
-  const categoryKey = header[category] ?? "CatÃ©gorie";
+  const categoryKey = header[category] ?? "Catégorie";
   const data = [...buckets.entries()]
     .map(([key, bucket]) => ({
       [categoryKey]: key,
@@ -357,7 +357,7 @@ function MarkdownTableChart({ text }: { text: string }) {
   return (
     <figure className="mt-5 border-t border-border pt-4">
       <figcaption className="mb-3 text-sm font-semibold">
-        {table[0]?.[valueIndex]} â€” {table[0]?.[0]}
+        {table[0]?.[valueIndex]} — {table[0]?.[0]}
       </figcaption>
       <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto]">
         <div className="space-y-3">
@@ -417,13 +417,14 @@ export function AnalysisCharts({
       <div className="mt-5 space-y-2 border-t border-border pt-4">
         <SpecChart spec={auto} />
         <p className="text-[11px] text-muted-foreground">
-          Graphique gÃ©nÃ©rÃ© automatiquement Ã  partir du fichier (moyenne par catÃ©gorie).
+          Graphique généré automatiquement à partir du fichier (moyenne par catégorie).
         </p>
       </div>
     );
   }
   return <MarkdownTableChart text={text} />;
 }
+
 
 
 

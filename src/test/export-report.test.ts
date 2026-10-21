@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { extractMarkdownTables, splitReportBlocks } from "@/lib/export-report";
+import {
+  extractMarkdownTables,
+  sanitizeReportText,
+  splitReportBlocks,
+} from "@/lib/export-report";
 
 describe("extractMarkdownTables", () => {
   it("extrait un tableau et ignore la ligne de séparation", () => {
@@ -45,5 +49,23 @@ describe("splitReportBlocks", () => {
       expect(table.rows[0]![0]).toBe("Gras");
       expect(table.rows[1]![0]).toBe("a");
     }
+  });
+});
+
+describe("sanitizeReportText", () => {
+  it("neutralise les artefacts typographiques IA", () => {
+    const input = "Résultat — clé → action ✨ ✅ “optimal” … 12 %\u00A0de marge";
+    const output = sanitizeReportText(input);
+    expect(output).not.toMatch(/[—→✨✅“”…]/);
+    expect(output).toContain("->");
+    expect(output).toContain('"optimal"');
+    expect(output).toContain("...");
+    expect(output).not.toContain("\u00A0");
+  });
+
+  it("conserve les accents français", () => {
+    expect(sanitizeReportText("Décision stratégique à l'été")).toBe(
+      "Décision stratégique à l'été",
+    );
   });
 });

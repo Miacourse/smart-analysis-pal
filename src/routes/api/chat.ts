@@ -24,6 +24,7 @@ Règles :
 - Appuie chaque affirmation sur les données fournies ; cite les chiffres exacts.
 - Si les données sont insuffisantes, dis-le clairement et explique ce qu'il faudrait.
 - Utilise le markdown : titres, listes, tableaux pour les chiffres clés.
+- Style de rapport professionnel : phrases complètes, ponctuation simple, ton factuel. N'utilise ni tiret long (—), ni flèche (→), ni émoji, ni symbole décoratif (✨, ✅, ⚠️), ni guillemets courbes.
 - Reste pédagogue : explique les termes techniques simplement.
 - OBLIGATOIRE : dès que le fichier contient au moins une colonne numérique, ajoute EN PLUS du texte au moins un bloc \`\`\`chart contenant uniquement du JSON valide (≤ 300 Ko, données agrégées, nombres bruts). Un tableau markdown ne remplace pas le graphique. Choisis le moteur adapté :
   • "recharts" — comparer quelques catégories : {"engine":"recharts","type":"bar|line|area|pie|scatter","title":"...","xKey":"...","yKeys":["..."],"data":[...]} (30 points max ; pie/scatter : un seul yKey).
@@ -39,7 +40,7 @@ Règles :
 \`\`\`chart
 {"engine":"plotly","title":"Carte des stations","traces":[{"type":"scattergeo","mode":"markers","lat":[48.85,45.76],"lon":[2.35,4.83],"text":["Paris","Lyon"]}],"layout":{"geo":{"scope":"europe"}}}
 \`\`\`
-  N'ajoute pas de graphique seulement si aucune colonne numérique n'existe. Un à trois blocs maximum, un par idée clé.`;
+  N'ajoute pas de graphique seulement si aucune colonne numérique n'existe. Produis autant de blocs que l'analyse le justifie (classement, tendance, répartition, corrélation, anomalie), un par idée clé et sans doublon, dans la limite de 8 blocs. Chaque bloc doit contenir uniquement du JSON valide, sans commentaire autour du JSON.`;
 
 function jsonError(status: number, message: string) {
   return new Response(JSON.stringify({ error: message }), {

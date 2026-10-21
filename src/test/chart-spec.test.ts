@@ -138,6 +138,23 @@ describe("parseChartSpecs", () => {
     expect(specs[0]?.yKeys).toEqual(["Sessions_Total", "Taux_Conversion"]);
   });
 
+  it("keeps several useful charts per answer", () => {
+    const block = (i: number) =>
+      [
+        "```chart",
+        JSON.stringify({
+          type: "bar",
+          title: `Graphique ${i}`,
+          xKey: "A",
+          yKeys: ["B"],
+          data: [{ A: "x", B: i }],
+        }),
+        "```",
+      ].join("\n");
+    const text = Array.from({ length: 6 }, (_, i) => block(i)).join("\n");
+    expect(parseChartSpecs(text)).toHaveLength(6);
+  });
+
   it("defaults tabular specs to recharts", () => {
     const block = [
       "```chart",
