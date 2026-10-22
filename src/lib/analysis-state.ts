@@ -30,11 +30,20 @@ function isProviderQuotaError(value: string): boolean {
   );
 }
 
+// Erreurs techniques du fournisseur (clé refusée, API désactivée, 5xx, échec après
+// plusieurs tentatives) : on évite d'exposer « Failed after 3 attempts… » à l'utilisateur.
+function isProviderRequestError(value: string): boolean {
+  return /failed after \d+ attempts|AI_APICallError|APICallError|AI_RetryError|response error|internal error encountered|permission_denied|referrer_blocked|generative language api/i.test(
+    value,
+  );
+}
+
 export function safeAnalysisError(value: string): string {
   if (/<(?:!doctype|html|head|body)\b/i.test(value)) {
     return "L’analyse n’a pas pu aboutir. Votre conversation est conservée. Relancez l’analyse.";
   }
   if (isProviderQuotaError(value)) return SERVICE_UNAVAILABLE;
+  if (isProviderRequestError(value)) return SERVICE_UNAVAILABLE;
   try {
     const parsed = JSON.parse(value);
     return typeof parsed.error === "string" ? safeAnalysisError(parsed.error) :

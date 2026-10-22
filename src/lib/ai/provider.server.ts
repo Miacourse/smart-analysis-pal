@@ -44,6 +44,8 @@ export function activeProvider(): AiProvider {
   if (forced === "openrouter" && openrouterKey()) return "openrouter";
   if (forced === "openai" && openaiKey()) return "openai";
   if (forced === "lovable" && process.env["LOVABLE_API_KEY"]) return "lovable";
+  // Le point d'accès gratuit ne demande aucune clé : on peut le forcer explicitement.
+  if (forced === "free") return "free";
   if (geminiKey()) return "gemini";
   if (anthropicKey()) return "anthropic";
   if (openrouterKey()) return "openrouter";

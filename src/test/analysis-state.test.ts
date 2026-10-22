@@ -23,4 +23,10 @@ describe("analysis processing", () => {
       expect(safeAnalysisError("Vous avez utilisé vos 5 analyses gratuites. Passez au plan Pro pour continuer.")).toContain('analyses gratuites');
     } finally { vi.unstubAllGlobals(); }
   });
+
+  it("replaces raw provider retry errors with a clear message", () => {
+    expect(safeAnalysisError("Failed after 3 attempts. Last error: AI_APICallError: <none>")).toContain("indisponible");
+    expect(safeAnalysisError("AI_APICallError: Internal error encountered")).toContain("indisponible");
+    expect(safeAnalysisError("PERMISSION_DENIED: API_KEY_HTTP_REFERRER_BLOCKED")).toContain("indisponible");
+  });
 });
