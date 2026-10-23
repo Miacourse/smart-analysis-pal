@@ -37,8 +37,26 @@ async function svgToChartDataUrl(svg: SVGSVGElement): Promise<ReportChart["dataU
   clone.setAttribute("width", String(width));
   clone.setAttribute("height", String(height));
   if (!clone.getAttribute("viewBox")) clone.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  clone.querySelectorAll("text").forEach((node) => {
-    node.setAttribute("font-family", "Helvetica, Arial, sans-serif");
+
+  // Les couleurs Recharts reposent sur des variables CSS (var(--chart-1)) : on les
+  // remplace par leur valeur calculée, sinon le SVG isolé s'affiche en noir.
+  const originals = [svg, ...Array.from(svg.querySelectorAll("*"))];
+  const copies = [clone, ...Array.from(clone.querySelectorAll("*"))];
+  originals.forEach((source, index) => {
+    const target = copies[index];
+    if (!target) return;
+    const style = window.getComputedStyle(source);
+    if (style.fill) target.setAttribute("fill", style.fill);
+    if (style.stroke && style.stroke !== "none") {
+      target.setAttribute("stroke", style.stroke);
+      if (style.strokeWidth) target.setAttribute("stroke-width", style.strokeWidth);
+    }
+    if (style.opacity && style.opacity !== "1") target.setAttribute("opacity", style.opacity);
+    if (source.tagName.toLowerCase() === "text") {
+      target.setAttribute("font-family", "Helvetica, Arial, sans-serif");
+      if (style.fontSize) target.setAttribute("font-size", style.fontSize);
+      if (style.fontWeight) target.setAttribute("font-weight", style.fontWeight);
+    }
   });
 
   const xml = new XMLSerializer().serializeToString(clone);

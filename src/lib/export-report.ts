@@ -606,7 +606,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
 
   const geo = geoTrafficFromPreview(input.datasetPreview);
   if (input.charts?.length) {
-    renderHeading(1, "Graphiques");
+    renderHeading(1, "Graphiques de l'analyse");
     for (const chart of input.charts) {
       const ratio = chart.width > 0 && chart.height > 0 ? chart.width / chart.height : 2.5;
       const maxHeight = 300;
