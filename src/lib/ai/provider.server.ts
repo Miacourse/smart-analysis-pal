@@ -53,6 +53,33 @@ export function activeProvider(): AiProvider {
   return "free";
 }
 
+/**
+ * Le point d'accès gratuit est partagé et renvoie fréquemment 429/5xx.
+ * On réessaie avec un délai progressif avant de laisser remonter l'erreur.
+ */
+async function fetchWithRetry(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  attempts = 4,
+): Promise<Response> {
+  let lastResponse: Response | null = null;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const response = await fetch(input, init);
+    const retryable = response.status === 429 || response.status >= 500;
+    if (!retryable || attempt === attempts - 1) return response;
+    lastResponse = response;
+    await response.body?.cancel().catch(() => {});
+    if (init?.signal?.aborted) break;
+    const retryAfter = Number(response.headers.get("retry-after"));
+    const delay =
+      Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : 1200 * 2 ** attempt;
+    await new Promise((resolve) => setTimeout(resolve, Math.min(delay, 8000)));
+  }
+  return lastResponse ?? fetch(input, init);
+}
+
 function chatProvider(baseURL: string, apiKey: string, rewrite?: boolean) {
   return createOpenAI({
     baseURL,
@@ -65,7 +92,7 @@ function chatProvider(baseURL: string, apiKey: string, rewrite?: boolean) {
             // Le point d'accès gratuit expose déjà /openai comme endpoint de chat :
             // on retire le suffixe ajouté par le SDK.
             const url = raw.replace(/\/chat\/completions\/?(\?.*)?$/i, "");
-            return fetch(url, init);
+            return fetchWithRetry(url, init);
           },
         }
       : {}),
