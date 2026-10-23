@@ -256,8 +256,13 @@ function ChatSession({
         messages,
       };
       const mod = await import("@/lib/export-report");
-      if (kind === "pdf") await mod.exportPdf(input);
-      else await mod.exportExcel(input);
+      if (kind === "pdf") {
+        const { captureChartImages } = await import("@/lib/chart-capture");
+        const charts = await captureChartImages();
+        await mod.exportPdf({ ...input, charts });
+      } else {
+        await mod.exportExcel(input);
+      }
       toast.success("Rapport exporté.");
     } catch (e) {
       console.error(e);

@@ -1,6 +1,7 @@
 import type { UIMessage } from "ai";
 
 import { stripChartBlocks } from "@/lib/chart-spec";
+import type { ReportChart } from "@/lib/chart-capture";
 import { geoTrafficFromPreview } from "@/lib/geo";
 
 type ReportInput = {
@@ -8,6 +9,7 @@ type ReportInput = {
   datasetName: string | null;
   datasetPreview: string | null;
   messages: UIMessage[];
+  charts?: ReportChart[];
 };
 
 const INK = [17, 24, 39] as const;
@@ -603,6 +605,30 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
   });
 
   const geo = geoTrafficFromPreview(input.datasetPreview);
+  if (input.charts?.length) {
+    renderHeading(1, "Graphiques");
+    for (const chart of input.charts) {
+      const ratio = chart.width > 0 && chart.height > 0 ? chart.width / chart.height : 2.5;
+      const maxHeight = 300;
+      let width = contentW;
+      let height = width / ratio;
+      if (height > maxHeight) {
+        height = maxHeight;
+        width = height * ratio;
+      }
+      const titleHeight = chart.title ? 16 : 0;
+      ensure(titleHeight + height + 18);
+      if (chart.title) {
+        doc.setFont("helvetica", "bold").setFontSize(10);
+        setInk();
+        doc.text(sanitizeReportText(chart.title), M, y);
+        y += 14;
+      }
+      doc.addImage(chart.dataUrl, "PNG", M, y, width, height);
+      y += height + 16;
+    }
+    y += 4;
+  }
   if (geo) {
     renderHeading(1, "Répartition géographique");
     renderTable([
