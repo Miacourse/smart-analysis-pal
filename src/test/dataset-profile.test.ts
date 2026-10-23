@@ -3,6 +3,7 @@ import {
   formatProfileForPrompt,
   jsonToRows,
   lasToRows,
+  normalizeDatasetRows,
   parseNumeric,
   profileDataset,
   profileSummary,
@@ -26,6 +27,25 @@ describe("profileDataset", () => {
     ["Bob", "25", "Lyon", "non"],
     ["Carla", "", "Paris", "oui"],
   ];
+
+  it("ignores the commented preamble of Analytics exports", () => {
+    const exportRows = [
+      ["# ----------------------------------------"],
+      ["# Acquisition de trafic : Canaux"],
+      ["# Compte : Visit The Vale"],
+      ["# "],
+      ["# Tous les utilisateurs"],
+      ["Canal", "Ville", "Sessions"],
+      ["Organic Search", "London", "33862"],
+      ["Direct", "London", "12955"],
+    ];
+    const normalized = normalizeDatasetRows(exportRows);
+    expect(normalized[0]).toEqual(["Canal", "Ville", "Sessions"]);
+    const profile = profileDataset(exportRows, "analytics.csv");
+    expect(profile.columns).toBe(3);
+    expect(profile.rows).toBe(2);
+    expect(profile.columnProfiles.find((c) => c.name === "Sessions")?.type).toBe("number");
+  });
 
   it("profiles every row and column", () => {
     const profile = profileDataset(rows, "test.csv");

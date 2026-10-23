@@ -261,12 +261,58 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
     }
   };
 
+  // Découpe le texte en lignes qui tiennent dans `width`, y compris les jetons
+  // insécables (URLs, chemins, extraits de code) qui sinon débordent du cadre.
+  const wrapText = (text: string, width: number): string[] => {
+    const words = text.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return [""];
+    const lines: string[] = [];
+    let current = "";
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (doc.getTextWidth(candidate) <= width) {
+        current = candidate;
+        continue;
+      }
+      if (current) {
+        lines.push(current);
+        current = "";
+      }
+      if (doc.getTextWidth(word) <= width) {
+        current = word;
+        continue;
+      }
+      let chunk = "";
+      for (const char of Array.from(word)) {
+        if (chunk && doc.getTextWidth(chunk + char) > width) {
+          // Coupe de préférence après un séparateur lisible (_, -, /, ., ,).
+          let cut = chunk.length;
+          const separator = Math.max(
+            chunk.lastIndexOf("_"),
+            chunk.lastIndexOf("-"),
+            chunk.lastIndexOf("/"),
+            chunk.lastIndexOf("."),
+            chunk.lastIndexOf(","),
+          );
+          if (separator > Math.floor(chunk.length * 0.4)) cut = separator + 1;
+          lines.push(chunk.slice(0, cut));
+          chunk = chunk.slice(cut) + char;
+        } else {
+          chunk += char;
+        }
+      }
+      current = chunk;
+    }
+    if (current) lines.push(current);
+    return lines.length > 0 ? lines : [""];
+  };
+
   const renderParagraph = (text: string) => {
     const clean = sanitizeReportText(stripMd(text)).replace(/^\s*>\s?/gm, "");
     if (!clean) return;
     doc.setFont("helvetica", "normal").setFontSize(10);
     setInk();
-    const lines = doc.splitTextToSize(clean, contentW) as string[];
+    const lines = wrapText(clean, contentW);
     lines.forEach((line, index) => {
       ensure(14.5);
       if (index < lines.length - 1) justify(line, M, contentW);
@@ -304,7 +350,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
     if (!clean) return;
     const indent = label ? 20 : 14;
     doc.setFont("helvetica", "normal").setFontSize(10);
-    const lines = doc.splitTextToSize(clean, contentW - indent) as string[];
+    const lines = wrapText(clean, contentW - indent);
     ensure(lines.length * 13.5 + 4);
     if (label) {
       doc.setFont("helvetica", "bold").setFontSize(9.5);
@@ -353,7 +399,11 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
         doc.setFont("helvetica", ri === 0 ? "bold" : "normal");
         for (let c = 0; c < cols; c++) {
           for (const word of cleaned[ri]![c]!.split(/\s+/)) {
-            if (word) mins[c] = Math.max(mins[c]!, doc.getTextWidth(word));
+            // Les jetons très longs sont coupés par wrapText : on plafonne leur
+            // largeur minimale pour ne pas écraser les autres colonnes.
+            if (word) {
+              mins[c] = Math.max(mins[c]!, Math.min(doc.getTextWidth(word), contentW * 0.4));
+            }
           }
         }
       }
@@ -389,7 +439,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
     const rowMetrics = (r: string[], bold: boolean) => {
       doc.setFont("helvetica", bold ? "bold" : "normal").setFontSize(fontSize);
       const cellLines = r.map(
-        (cell, c) => doc.splitTextToSize(cell, Math.max(12, colW[c]! - 2 * pad)) as string[],
+        (cell, c) => wrapText(cell, Math.max(12, colW[c]! - 2 * pad)),
       );
       const lines = Math.max(1, ...cellLines.map((l) => l.length));
       return { cellLines, height: lines * lineH + 2 * pad };
@@ -457,7 +507,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
     ensure(rowMetrics(header, true).height + 40);
     drawRow(header, true, true, false);
     body.forEach((r, index) => drawRow(r, false, false, index % 2 === 1));
-    y += 10;
+    y += 18;
     doc.setLineWidth(0.4);
   };
 
@@ -475,10 +525,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
 
   doc.setFont("helvetica", "bold").setFontSize(19);
   setInk();
-  const allTitleLines = doc.splitTextToSize(
-    sanitizeReportText(reportTitle(input)),
-    contentW,
-  ) as string[];
+  const allTitleLines = wrapText(sanitizeReportText(reportTitle(input)), contentW);
   const titleLines = allTitleLines.slice(0, 3);
   if (allTitleLines.length > titleLines.length && titleLines.length > 0) {
     const last = titleLines.length - 1;
@@ -500,20 +547,38 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
     ],
     ["Échanges", `${input.messages.length} message(s)`],
   ];
-  const boxH = 20 + meta.length * 16;
+  const metaLabelW = 68;
+  const metaValueX = M + 14 + metaLabelW;
+  const metaValueW = contentW - 14 - metaLabelW - 14;
+  doc.setFont("helvetica", "normal").setFontSize(9.4);
+  const metaRows = meta.map(([label, value]) => {
+    const all = wrapText(value, metaValueW);
+    const lines = all.slice(0, 2);
+    if (all.length > 2 && lines.length === 2) {
+      let second = lines[1]!;
+      while (second && doc.getTextWidth(`${second}...`) > metaValueW) {
+        second = second.slice(0, -1);
+      }
+      lines[1] = `${second}...`;
+    }
+    return { label, lines };
+  });
+  const boxH = 20 + metaRows.reduce((sum, row) => sum + Math.max(1, row.lines.length) * 13 + 5, 0);
   doc.setFillColor(SURFACE[0], SURFACE[1], SURFACE[2]);
   setBorder();
   doc.setLineWidth(0.6);
   doc.roundedRect(M, y, contentW, boxH, 6, 6, "FD");
   let my = y + 19;
-  for (const [label, value] of meta) {
+  for (const row of metaRows) {
     doc.setFont("helvetica", "bold").setFontSize(8.2);
     setMuted();
-    doc.text(label.toUpperCase(), M + 14, my);
+    doc.text(row.label.toUpperCase(), M + 14, my);
     doc.setFont("helvetica", "normal").setFontSize(9.4);
     setInk();
-    doc.text(value, M + 82, my);
-    my += 16;
+    row.lines.forEach((line, index) => {
+      doc.text(line, metaValueX, my + index * 13);
+    });
+    my += Math.max(1, row.lines.length) * 13 + 5;
   }
   y += boxH + 26;
   doc.setLineWidth(0.5);
@@ -540,7 +605,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
     if (m.role === "user") {
       doc.setFont("helvetica", "italic").setFontSize(10.5);
       setMuted();
-      const lines = doc.splitTextToSize(sanitizeReportText(stripMd(md)), contentW) as string[];
+      const lines = wrapText(sanitizeReportText(stripMd(md)), contentW);
       for (const line of lines) {
         ensure(14.5);
         doc.text(line, M, y);
@@ -616,13 +681,22 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
         height = maxHeight;
         width = height * ratio;
       }
-      const titleHeight = chart.title ? 16 : 0;
+      const titleLines = chart.title
+        ? (() => {
+            doc.setFont("helvetica", "bold").setFontSize(10);
+            return wrapText(sanitizeReportText(chart.title), contentW);
+          })()
+        : [];
+      const titleHeight = titleLines.length * 13;
       ensure(titleHeight + height + 18);
-      if (chart.title) {
+      if (titleLines.length > 0) {
         doc.setFont("helvetica", "bold").setFontSize(10);
         setInk();
-        doc.text(sanitizeReportText(chart.title), M, y);
-        y += 14;
+        for (const line of titleLines) {
+          doc.text(line, M, y);
+          y += 13;
+        }
+        y += 1;
       }
       doc.addImage(chart.dataUrl, "PNG", M, y, width, height);
       y += height + 16;

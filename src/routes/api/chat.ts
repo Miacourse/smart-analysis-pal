@@ -40,7 +40,7 @@ Règles :
 \`\`\`chart
 {"engine":"plotly","title":"Carte des stations","traces":[{"type":"scattergeo","mode":"markers","lat":[48.85,45.76],"lon":[2.35,4.83],"text":["Paris","Lyon"]}],"layout":{"geo":{"scope":"europe"}}}
 \`\`\`
-  N'ajoute pas de graphique seulement si aucune colonne numérique n'existe. Produis autant de blocs que l'analyse le justifie (classement, tendance, répartition, corrélation, anomalie), un par idée clé et sans doublon, dans la limite de 8 blocs. Chaque bloc doit contenir uniquement du JSON valide, sans commentaire autour du JSON.`;
+  N'ajoute pas de graphique seulement si aucune colonne numérique n'existe. Produis autant de blocs que l'analyse le justifie (classement, tendance, répartition, corrélation, anomalie, comparaison, saisonnalité), un par idée clé et sans doublon : le nombre de graphiques dépend des données et des questions, pas d'un plafond fixe. Le titre de chaque graphique doit être explicite et issu de la compréhension des données, du métier et de la question : cite l'indicateur et la dimension analysés (par exemple « Sessions par ville, top 10 » ou « Taux d'engagement par canal »), jamais un titre générique comme « Graphique 1 ». Chaque bloc doit contenir uniquement du JSON valide, sans commentaire autour du JSON.`;
 
 function jsonError(status: number, message: string) {
   return new Response(JSON.stringify({ error: message }), {

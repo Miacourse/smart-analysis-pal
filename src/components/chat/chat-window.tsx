@@ -10,6 +10,7 @@ import {
   type AnalysisDomainId,
 } from "@/lib/analysis-domains";
 import {
+  normalizeDatasetRows,
   parseCsvFile,
   parseExcelFile,
   parseJsonFile,
@@ -326,13 +327,14 @@ function ChatSession({
     setUploadProgress(0);
     setAnalysisError(null);
     try {
-      const rows = isExcel
+      const parsedRows = isExcel
         ? await parseExcelFile(file)
         : isJson
           ? await parseJsonFile(file)
           : isLas
             ? await parseLasFile(file)
             : await parseCsvFile(file, (ratio) => setUploadProgress(ratio));
+      const rows = normalizeDatasetRows(parsedRows);
       setUploadProgress(1);
       if (rows.length < 2) throw new Error("empty");
       const rowCount = rows.length - 1;

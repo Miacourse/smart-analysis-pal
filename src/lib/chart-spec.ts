@@ -270,7 +270,7 @@ function normalizeChartSpec(raw: unknown): ChartSpec | null {
   return normalizeRecharts(raw);
 }
 
-export function parseChartSpecs(text: string, maxSpecs = 8): ChartSpec[] {
+export function parseChartSpecs(text: string, maxSpecs = 24): ChartSpec[] {
   const specs: ChartSpec[] = [];
   if (!text) return specs;
   CHART_BLOCK_RE.lastIndex = 0;

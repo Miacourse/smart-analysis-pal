@@ -97,7 +97,7 @@ function canvasToChartDataUrl(canvas: HTMLCanvasElement): ReportChart["dataUrl"]
  */
 export async function captureChartImages(
   root: ParentNode = document,
-  max = 8,
+  max = 24,
 ): Promise<ReportChart[]> {
   const figures = Array.from(root.querySelectorAll("figure"));
   const charts: ReportChart[] = [];

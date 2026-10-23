@@ -111,12 +111,32 @@ function quartile(sorted: number[], p: number): number {
   return lower + rest * (upper - lower);
 }
 
+const isPreambleRow = (row: string[] | undefined): boolean => {
+  const cells = (row ?? [])
+    .map((cell) => String(cell ?? "").trim())
+    .filter(Boolean);
+  if (cells.length === 0) return true;
+  return cells.length === 1 && cells[0]!.startsWith("#");
+};
+
+/**
+ * Certains exports (Google Analytics, Search Console, etc.) commencent par un
+ * préambule de lignes commentées `# ...`. Sans ce nettoyage, la première ligne
+ * devient l'en-tête et tout le fichier est vu comme une seule colonne texte.
+ */
+export function normalizeDatasetRows(rows: string[][]): string[][] {
+  let start = 0;
+  while (start < rows.length && isPreambleRow(rows[start])) start++;
+  return start > 0 ? rows.slice(start) : rows;
+}
+
 export function profileDataset(input: string[][], fileName: string): DatasetProfile {
-  const headerCells = input[0] ?? [];
+  const rows = normalizeDatasetRows(input);
+  const headerCells = rows[0] ?? [];
   const columns = headerCells.length;
   const header = headerCells.map((h, i) => String(h ?? "").trim() || `Colonne ${i + 1}`);
 
-  const data = input
+  const data = rows
     .slice(1)
     .filter((row) => row.some((cell) => String(cell ?? "").trim() !== ""));
 
