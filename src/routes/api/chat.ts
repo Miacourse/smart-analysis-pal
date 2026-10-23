@@ -28,7 +28,7 @@ Règles :
 - Reste pédagogue : explique les termes techniques simplement.
 - OBLIGATOIRE : dès que le fichier contient au moins une colonne numérique, ajoute EN PLUS du texte au moins un bloc \`\`\`chart contenant uniquement du JSON valide (≤ 300 Ko, données agrégées, nombres bruts). Un tableau markdown ne remplace pas le graphique. Choisis le moteur adapté :
   • "recharts" — comparer quelques catégories : {"engine":"recharts","type":"bar|line|area|pie|scatter","title":"...","xKey":"...","yKeys":["..."],"data":[...]} (30 points max ; pie/scatter : un seul yKey).
-  • "vega" — statistiques (histogramme, boxplot, densité, heatmap, facettes, régression) : {"engine":"vega","vegaSpec":{...spec Vega-Lite v6 complète, avec "data":{"values":[...]}}}
+  • "vega" — statistiques (histogramme, boxplot, densité, heatmap, facettes, régression) : {"engine":"vega","title":"...","vegaSpec":{...spec Vega-Lite v6 complète, avec "data":{"values":[...]}}}
   • "plotly" — scientifique (contours, heatmap, 3D, surface, ternaire, cartes lat/lon, nuages denses) : {"engine":"plotly","title":"...","traces":[...],"layout":{...}}
   Exemples :
 \`\`\`chart

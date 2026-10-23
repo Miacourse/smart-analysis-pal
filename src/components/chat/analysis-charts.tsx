@@ -206,8 +206,57 @@ const DEFAULT_TITLES: Record<ChartSpec["engine"], string> = {
   plotly: "Visualisation scientifique",
 };
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function fieldLabel(field: unknown): string | null {
+  if (typeof field === "string" && field.trim()) return field.trim();
+  const def = asRecord(field);
+  if (!def) return null;
+  const direct = def["field"];
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+  const nested = asRecord(direct);
+  return nested && typeof nested["field"] === "string" ? nested["field"].trim() : null;
+}
+
+/** Titre explicite même quand le modèle a oublié le champ `title`. */
+function displayTitle(spec: ChartSpec): string {
+  if (spec.title?.trim()) return spec.title.trim();
+  if (spec.engine === "recharts") {
+    const measures = (spec.yKeys ?? []).filter((key) => key.trim().length > 0);
+    if (spec.xKey && measures.length > 0) return `${measures.join(", ")} par ${spec.xKey}`;
+  }
+  if (spec.engine === "vega" && spec.vegaSpec) {
+    const rawTitle = spec.vegaSpec["title"];
+    if (typeof rawTitle === "string" && rawTitle.trim()) return rawTitle.trim();
+    const titleObject = asRecord(rawTitle);
+    if (titleObject && typeof titleObject["text"] === "string" && titleObject["text"].trim()) {
+      return titleObject["text"].trim();
+    }
+    const encoding = asRecord(spec.vegaSpec["encoding"]);
+    if (encoding) {
+      const xField = fieldLabel(encoding["x"]);
+      const yField = fieldLabel(encoding["y"]);
+      if (xField && yField) return `${yField} par ${xField}`;
+      if (xField) return `Distribution de ${xField}`;
+    }
+  }
+  if (spec.engine === "plotly" && spec.layout) {
+    const layoutTitle = spec.layout["title"];
+    if (typeof layoutTitle === "string" && layoutTitle.trim()) return layoutTitle.trim();
+    const titleObject = asRecord(layoutTitle);
+    if (titleObject && typeof titleObject["text"] === "string" && titleObject["text"].trim()) {
+      return titleObject["text"].trim();
+    }
+  }
+  return DEFAULT_TITLES[spec.engine];
+}
+
 function SpecChart({ spec }: { spec: ChartSpec }) {
-  const title = spec.title ?? DEFAULT_TITLES[spec.engine];
+  const title = displayTitle(spec);
   return (
     <figure className="rounded-xl border border-border bg-card p-4 shadow-sm">
       <figcaption className="mb-3 text-sm font-semibold">{title}</figcaption>
