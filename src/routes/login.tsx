@@ -113,6 +113,10 @@ function LoginPage() {
   }
 
   async function handleGoogle() {
+    if (["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)) {
+      toast.error("La connexion Google n'est disponible que sur le site Lovable (preview ou publié). En local, utilisez email + mot de passe.");
+      return;
+    }
     // Ferme toute session existante puis force Google à demander quel compte utiliser.
     await supabase.auth.signOut();
     const result = await lovable.auth.signInWithOAuth("google", {

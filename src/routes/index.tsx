@@ -26,7 +26,7 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-const DISPLAYED_DOMAIN_COUNT = ANALYSIS_DOMAINS.filter((domain) => domain.id !== "general").length;
+const DISPLAYED_DOMAIN_COUNT = ANALYSIS_DOMAINS.length;
 
 const steps = [
   { icon: FileSpreadsheet, title: "Profilage", text: "Structure, qualité, valeurs manquantes et doublons passés au crible." },
@@ -122,7 +122,7 @@ function Landing() {
             visualisations à votre métier.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-2">
-            {ANALYSIS_DOMAINS.filter((domain) => domain.id !== "general").map((domain) => (
+            {ANALYSIS_DOMAINS.map((domain) => (
               <span
                 key={domain.id}
                 title={domain.description}
