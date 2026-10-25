@@ -79,13 +79,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "DA-Copilot — Agent d'analyse de données" },
+      { title: "DA-Copilot — Agent d’analyse de données" },
       {
         name: "description",
         content:
           "DA-Copilot transforme vos questions métier et vos fichiers CSV en analyses claires, chiffrées et actionnables : KPI, tendances, anomalies et recommandations.",
       },
-      { property: "og:title", content: "DA-Copilot — Agent d'analyse de données" },
+      { property: "og:site_name", content: "DA-Copilot" },
+      { property: "og:title", content: "DA-Copilot — Agent d’analyse de données" },
       {
         property: "og:description",
         content:
@@ -93,13 +94,37 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://da-copilot.lovable.app/" },
-      { property: "og:image", content: "https://da-copilot.lovable.app/og-image.png" },
+      {
+        property: "og:image",
+        content: "https://da-copilot.lovable.app/og-image-v2.png",
+      },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      {
+        property: "og:image:alt",
+        content: "Logo DA-Copilot et accroche : vos données deviennent des décisions.",
+      },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "https://da-copilot.lovable.app/og-image.png" },
+      { name: "twitter:title", content: "DA-Copilot — Agent d’analyse de données" },
+      {
+        name: "twitter:description",
+        content:
+          "Téléversez vos données, posez votre question, recevez une analyse chiffrée et des recommandations actionnables.",
+      },
+      {
+        name: "twitter:image",
+        content: "https://da-copilot.lovable.app/og-image-v2.png",
+      },
+      {
+        name: "twitter:image:alt",
+        content: "Logo DA-Copilot et accroche : vos données deviennent des décisions.",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

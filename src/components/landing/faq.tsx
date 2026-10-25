@@ -19,7 +19,7 @@ const faq = [
   {
     question: "Mes données sont-elles conservées ?",
     answer:
-      "Le fichier original n'est pas conservé. Un extrait CSV de 40 lignes et le profil statistique sont enregistrés avec votre conversation, ainsi que les messages. Vous pouvez supprimer la conversation depuis la barre latérale, ce qui supprime aussi son historique. Évitez les données personnelles ou sensibles.",
+      "Le fichier d'origine n'est jamais conservé. Pour réafficher votre jeu de données dans la conversation, nous gardons uniquement un aperçu des 40 premières lignes au format CSV, un résumé statistique (colonnes, types, valeurs manquantes) et les messages échangés. Vous pouvez supprimer la conversation depuis la barre latérale, ce qui supprime aussi cet historique. Évitez les données personnelles ou sensibles.",
   },
   {
     question: "Puis-je exporter mes résultats ?",

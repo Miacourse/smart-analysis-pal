@@ -13,13 +13,13 @@ import logo from "@/assets/logo.png";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "DA-Copilot — Agent d'analyse de données" },
+      { title: "DA-Copilot — Agent d’analyse de données" },
       {
         name: "description",
         content:
           "Téléversez un fichier (CSV, Excel, JSON, GeoJSON, LAS…), posez votre question métier, et recevez une analyse claire, chiffrée et vérifiable : KPI, tendances, anomalies et recommandations.",
       },
-      { property: "og:title", content: "DA-Copilot — Agent d'analyse de données" },
+      { property: "og:title", content: "DA-Copilot — Agent d’analyse de données" },
       {
         property: "og:description",
         content: "Vos données deviennent des décisions : analyses chiffrées et recommandations actionnables par IA.",
