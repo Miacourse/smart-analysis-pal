@@ -146,7 +146,7 @@ export function createAnalysisCall(
       apiKey: openrouterKey()!,
       headers: {
         "HTTP-Referer":
-          process.env["OPENROUTER_SITE_URL"] ?? "https://smart-analysis-pal.lovable.app",
+          process.env["OPENROUTER_SITE_URL"] ?? "https://da-copilot.lovable.app",
         "X-Title": "DA-Copilot",
       },
     });

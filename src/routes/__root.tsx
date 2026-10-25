@@ -92,10 +92,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Téléversez vos données, posez votre question, recevez une analyse chiffrée et des recommandations actionnables.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://smart-analysis-pal.lovable.app/" },
-      { property: "og:image", content: "https://smart-analysis-pal.lovable.app/favicon.png" },
+      { property: "og:url", content: "https://da-copilot.lovable.app/" },
+      { property: "og:image", content: "https://da-copilot.lovable.app/og-image.png" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "https://smart-analysis-pal.lovable.app/favicon.png" },
+      { name: "twitter:image", content: "https://da-copilot.lovable.app/og-image.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -137,7 +137,7 @@ function RootComponent() {
     // Mesure réservée aux visiteurs réels du site de production :
     // les navigateurs automatisés (tests, prévisualisations) ne sont pas comptés.
     if (navigator.webdriver) return;
-    if (window.location.hostname !== "smart-analysis-pal.lovable.app") return;
+    if (window.location.hostname !== "da-copilot.lovable.app") return;
     try {
       if (localStorage.getItem("da-no-track")) return;
     } catch {

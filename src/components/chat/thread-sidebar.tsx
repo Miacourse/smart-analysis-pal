@@ -51,6 +51,12 @@ export function ThreadSidebar({
     billingStatus().then(setUsage).catch(() => {});
   }, [activeThreadId]);
 
+  useEffect(() => {
+    const reload = () => loadThreads();
+    window.addEventListener("da-thread-updated", reload);
+    return () => window.removeEventListener("da-thread-updated", reload);
+  }, []);
+
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {

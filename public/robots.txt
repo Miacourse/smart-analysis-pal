@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /chat
 
-Sitemap: https://smart-analysis-pal.lovable.app/sitemap.xml
+Sitemap: https://da-copilot.lovable.app/sitemap.xml

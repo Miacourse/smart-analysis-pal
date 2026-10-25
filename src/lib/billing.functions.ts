@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { activeCompPlan, FREE_ANALYSIS_LIMIT, PLAN_PRICES, type PaidPlan } from "./billing";
 
 function originOf() {
-  return getRequestHeader("origin") ?? "https://smart-analysis-pal.lovable.app";
+  return getRequestHeader("origin") ?? "https://da-copilot.lovable.app";
 }
 
 async function emailOf(supabase: any): Promise<string> {

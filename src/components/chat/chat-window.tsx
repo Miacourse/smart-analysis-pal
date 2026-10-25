@@ -221,6 +221,7 @@ function ChatSession({
     },
     onFinish: () => {
       setProcessing((p) => ({ phase: "charts", startedAt: p?.startedAt ?? Date.now() }));
+      window.dispatchEvent(new Event("da-thread-updated"));
     },
   });
 

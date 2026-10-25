@@ -26,6 +26,7 @@ Règles :
 - Utilise le markdown : titres, listes, tableaux pour les chiffres clés.
 - Style de rapport professionnel : phrases complètes, ponctuation simple, ton factuel. N'utilise ni tiret long (—), ni flèche (→), ni émoji, ni symbole décoratif (✨, ✅, ⚠️), ni guillemets courbes.
 - Reste pédagogue : explique les termes techniques simplement.
+- Ne joins jamais de section « Note sur l'exportation PDF » et ne demande jamais d'utiliser Ctrl+P : les exports PDF et Excel se font uniquement via les boutons de l'interface.
 - OBLIGATOIRE : dès que le fichier contient au moins une colonne numérique, ajoute EN PLUS du texte au moins un bloc \`\`\`chart contenant uniquement du JSON valide (≤ 300 Ko, données agrégées, nombres bruts). Un tableau markdown ne remplace pas le graphique. Choisis le moteur adapté :
   • "recharts" — comparer quelques catégories : {"engine":"recharts","type":"bar|line|area|pie|scatter","title":"...","xKey":"...","yKeys":["..."],"data":[...]} (30 points max ; pie/scatter : un seul yKey).
   • "vega" — statistiques (histogramme, boxplot, densité, heatmap, facettes, régression) : {"engine":"vega","title":"...","vegaSpec":{...spec Vega-Lite v6 complète, avec "data":{"values":[...]}}}
@@ -135,6 +136,19 @@ export const Route = createFileRoute("/api/chat")({
           }
         }
 
+        const firstUserText = messages
+          .find((message) => message.role === "user")
+          ?.parts.map((p) => (p.type === "text" ? p.text : ""))
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if ((!thread.title || thread.title === "Nouvelle analyse") && firstUserText) {
+          await supabase
+            .from("threads")
+            .update({ title: firstUserText.slice(0, 50) })
+            .eq("id", threadId);
+        }
+
         let instructions = SYSTEM_PROMPT;
         const domainConfig = getAnalysisDomain(domainId);
         instructions += `\n\nMODE D'ANALYSE ACTIF : ${domainConfig.label}.\n${domainConfig.prompt}`;
@@ -167,11 +181,6 @@ export const Route = createFileRoute("/api/chat")({
 
         const lastUserMessage = messages[messages.length - 1];
         if (!lastUserMessage) return jsonError(400, "Message manquant.");
-        const lastUserText = lastUserMessage.parts
-          .map((p) => (p.type === "text" ? p.text : ""))
-          .join(" ")
-          .replace(/\s+/g, " ")
-          .trim();
         const response = call.result.toUIMessageStreamResponse({
           originalMessages: messages,
           sendReasoning: true,
@@ -189,11 +198,10 @@ export const Route = createFileRoute("/api/chat")({
                 { thread_id: threadId, role: "user", parts: lastUserMessage.parts },
                 { thread_id: threadId, role: "assistant", parts: responseMessage.parts },
               ]);
-              const patch: { updated_at: string; title?: string } = { updated_at: new Date().toISOString() };
-              if ((!thread.title || thread.title === "Nouvelle analyse") && lastUserText) {
-                patch.title = lastUserText.slice(0, 80);
-              }
-              await supabase.from("threads").update(patch).eq("id", threadId);
+              await supabase
+                .from("threads")
+                .update({ updated_at: new Date().toISOString() })
+                .eq("id", threadId);
             } catch (e) {
               console.error("Erreur de sauvegarde des messages", e);
             }

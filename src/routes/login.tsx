@@ -14,7 +14,7 @@ export const Route = createFileRoute("/login")({
       { property: "og:title", content: "Connexion — DA-Copilot" },
       { property: "og:description", content: "Accédez à votre assistant d'analyse de données." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: LoginPage,

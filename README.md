@@ -4,7 +4,7 @@ Here is the Agent that I have create, How can I transform this into an app that 
 
 This project was built with [Lovable](https://lovable.dev).
 
-**Live app**: https://smart-analysis-pal.lovable.app
+**Live app**: https://da-copilot.lovable.app
 
 ## Build with Lovable
 

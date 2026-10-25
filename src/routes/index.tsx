@@ -20,11 +20,13 @@ export const Route = createFileRoute("/")({
         content: "Vos données deviennent des décisions : analyses chiffrées et recommandations actionnables par IA.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Landing,
 });
+
+const DISPLAYED_DOMAIN_COUNT = ANALYSIS_DOMAINS.filter((domain) => domain.id !== "general").length;
 
 const steps = [
   { icon: FileSpreadsheet, title: "Profilage", text: "Structure, qualité, valeurs manquantes et doublons passés au crible." },
@@ -53,7 +55,7 @@ function Landing() {
             to="/chat"
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Essayer gratuitement
+            Analyser mes données
           </Link>
         </nav>
       </header>
@@ -61,13 +63,13 @@ function Landing() {
       <section className="bg-grid-paper">
         <div className="mx-auto max-w-4xl px-6 pb-20 pt-16 text-center">
           <p className="mx-auto mb-5 w-fit rounded-full border border-border bg-card px-4 py-1 text-xs font-medium text-muted-foreground">
-            Agent d'analyse de données — 20 modes métier, EDA, ML, rapports
+            {`Agent d'analyse de données — ${DISPLAYED_DOMAIN_COUNT} modes métier, rapports prêts à partager`}
           </p>
           <h1 className="text-balance font-display text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
             Vos données deviennent des <span className="text-primary">décisions</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Téléversez un fichier (CSV, Excel, JSON, GeoJSON, LAS…), posez votre question métier en
+            Téléversez un fichier (CSV, Excel, JSON…), posez votre question métier en
             langage naturel, et recevez une réponse claire, chiffrée et vérifiable : KPI, tendances,
             anomalies et recommandations actionnables.
           </p>
@@ -145,7 +147,7 @@ function Landing() {
               <h3 className="font-display text-lg font-semibold">Gratuit</h3>
               <p className="mt-2 font-display text-4xl font-bold">0 €</p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <li>• {FREE_ANALYSIS_LIMIT} analyses offertes</li>
+                <li>• {FREE_ANALYSIS_LIMIT} analyses offertes pour découvrir (une seule fois)</li>
                 <li>• Fichiers jusqu'à {FREE_MAX_FILE_MB} Mo / {FREE_MAX_ROWS.toLocaleString("fr-FR")} lignes</li>
                 <li>• Historique des conversations</li>
               </ul>

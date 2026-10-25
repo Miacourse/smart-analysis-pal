@@ -31,7 +31,7 @@ export const Route = createFileRoute("/admin")({
       { property: "og:title", content: "Administration — DA-Copilot" },
       { property: "og:description", content: "Statistiques internes des utilisateurs, abonnements et analyses." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: "robots", content: "noindex" },
     ],
   }),

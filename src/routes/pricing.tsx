@@ -19,7 +19,7 @@ export const Route = createFileRoute("/pricing")({
       { property: "og:title", content: "Tarifs — DA-Copilot" },
       { property: "og:description", content: "Essai gratuit puis Pro à 19 €/mois, sans engagement." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: PricingPage,
@@ -119,7 +119,7 @@ function PricingPage() {
             <h2 className="font-display text-lg font-semibold">Essai gratuit</h2>
             <p className="mt-2 font-display text-4xl font-bold">0 €</p>
             <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-              {[`${FREE_ANALYSIS_LIMIT} analyses offertes`, `Fichiers jusqu'à ${FREE_MAX_FILE_MB} Mo et ${FREE_MAX_ROWS.toLocaleString("fr-FR")} lignes`, "Historique des conversations", "Pas d’export"].map((f) => (
+              {[`${FREE_ANALYSIS_LIMIT} analyses offertes pour découvrir (une seule fois)`, `Fichiers jusqu'à ${FREE_MAX_FILE_MB} Mo et ${FREE_MAX_ROWS.toLocaleString("fr-FR")} lignes`, "Historique des conversations", "Pas d’export"].map((f) => (
                 <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-primary" />{f}</li>
               ))}
             </ul>

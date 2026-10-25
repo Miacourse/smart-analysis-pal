@@ -13,7 +13,7 @@ export const Route = createFileRoute("/chat/")({
       { property: "og:title", content: "Mes analyses — DA-Copilot" },
       { property: "og:description", content: "Retrouvez votre espace d’analyse de données et vos conversations." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ChatIndex,

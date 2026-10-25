@@ -14,7 +14,7 @@ export const Route = createFileRoute("/chat/$threadId")({
       { property: "og:title", content: "Votre analyse — DA-Copilot" },
       { property: "og:description", content: "Analysez votre CSV et retrouvez vos rapports DA-Copilot." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ChatThreadPage,

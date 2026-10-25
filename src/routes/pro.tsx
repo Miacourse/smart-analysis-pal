@@ -16,7 +16,7 @@ export const Route = createFileRoute("/pro")({
     { name: "description", content: "Passez en Pro : analyses illimitées, CSV jusqu’à 100 Mo, rapports PDF et Excel. Découvrez les exemples et les réponses à vos questions." },
     { property: "og:title", content: "DA-Copilot Pro — Votre analyse, sans limites" },
     { property: "og:description", content: "19 €/mois, sans engagement. Analysez vos CSV et partagez vos rapports PDF et Excel." },
-    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }),
   component: ProPage,
 });
