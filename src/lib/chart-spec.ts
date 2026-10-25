@@ -25,7 +25,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isNumeric(value: unknown): boolean {
   if (typeof value === "number") return Number.isFinite(value);
   if (typeof value === "string") {
-    const cleaned = value.trim().replace(/[\s\u00a0]/g, "").replace("%", "").replace(",", ".");
+    const cleaned = value
+      .trim()
+      .replace(/[\s\u00a0]/g, "")
+      .replace("%", "")
+      .replace(",", ".");
     return cleaned !== "" && Number.isFinite(Number(cleaned));
   }
   return false;
@@ -57,7 +61,9 @@ function detectEngine(raw: Record<string, unknown>): ChartEngine {
   if (
     isRecord(raw["layout"]) &&
     Array.isArray(raw["data"]) &&
-    (raw["data"] as unknown[]).every((trace) => isRecord(trace) && typeof trace["type"] === "string")
+    (raw["data"] as unknown[]).every(
+      (trace) => isRecord(trace) && typeof trace["type"] === "string",
+    )
   ) {
     return "plotly";
   }
@@ -291,7 +297,11 @@ export function parseChartSpecs(text: string, maxSpecs = 24): ChartSpec[] {
 export function toChartNumber(value: unknown): number | null {
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
   if (typeof value === "string") {
-    const cleaned = value.trim().replace(/[\s\u00a0]/g, "").replace("%", "").replace(",", ".");
+    const cleaned = value
+      .trim()
+      .replace(/[\s\u00a0]/g, "")
+      .replace("%", "")
+      .replace(",", ".");
     if (!cleaned) return null;
     const parsed = Number(cleaned);
     return Number.isFinite(parsed) ? parsed : null;
@@ -317,4 +327,3 @@ export function buildChartData(spec: ChartSpec): Record<string, string | number>
     return output;
   });
 }
-

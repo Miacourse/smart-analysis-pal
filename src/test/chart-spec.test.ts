@@ -30,7 +30,7 @@ describe("parseChartSpecs", () => {
 
   it("ignores invalid blocks", () => {
     expect(parseChartSpecs("```chart\n{not json}\n```")).toHaveLength(0);
-    expect(parseChartSpecs("```chart\n{\"type\":\"pie\",\"data\":[]}\n```")).toHaveLength(0);
+    expect(parseChartSpecs('```chart\n{"type":"pie","data":[]}\n```')).toHaveLength(0);
   });
 
   it("keeps a single series for pie and scatter", () => {

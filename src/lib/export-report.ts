@@ -94,7 +94,10 @@ export function sanitizeReportText(input: string): string {
   s = s.replace(/[\u2014\u2013]/g, "-");
   s = s.replace(/\u2192/g, " -> ").replace(/\u2190/g, " <- ");
   s = s.replace(/\u2248/g, "environ ");
-  s = s.replace(/\u2264/g, "<=").replace(/\u2265/g, ">=").replace(/\u2260/g, "!=");
+  s = s
+    .replace(/\u2264/g, "<=")
+    .replace(/\u2265/g, ">=")
+    .replace(/\u2260/g, "!=");
   s = s.replace(/€/g, "EUR");
   s = s.replace(/[\uFE0E\uFE0F]/g, "");
   s = s.replace(EMOJI_RE, "");
@@ -122,7 +125,10 @@ function stripMd(s: string) {
 
 export function reportTitle(input: Pick<ReportInput, "title" | "datasetName">) {
   if (input.datasetName) {
-    const name = input.datasetName.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+    const name = input.datasetName
+      .replace(/\.[^.]+$/, "")
+      .replace(/[-_]+/g, " ")
+      .trim();
     if (name) {
       return `Analyse de ${name.charAt(0).toUpperCase()}${name.slice(1)}`;
     }
@@ -382,7 +388,9 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
   const renderTable = (rows: string[][]) => {
     if (rows.length === 0) return;
     const cols = Math.max(...rows.map((r) => r.length));
-    const cleaned = rows.map((r) => Array.from({ length: cols }, (_, c) => sanitizeCell(r[c] ?? "")));
+    const cleaned = rows.map((r) =>
+      Array.from({ length: cols }, (_, c) => sanitizeCell(r[c] ?? "")),
+    );
     const maxLen = new Array(cols).fill(8) as number[];
     for (const r of cleaned) {
       for (let c = 0; c < cols; c++) maxLen[c] = Math.max(maxLen[c]!, Math.min(38, r[c]!.length));
@@ -438,9 +446,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
 
     const rowMetrics = (r: string[], bold: boolean) => {
       doc.setFont("helvetica", bold ? "bold" : "normal").setFontSize(fontSize);
-      const cellLines = r.map(
-        (cell, c) => wrapText(cell, Math.max(12, colW[c]! - 2 * pad)),
-      );
+      const cellLines = r.map((cell, c) => wrapText(cell, Math.max(12, colW[c]! - 2 * pad)));
       const lines = Math.max(1, ...cellLines.map((l) => l.length));
       return { cellLines, height: lines * lineH + 2 * pad };
     };
@@ -489,9 +495,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
         if (headerRow) doc.setTextColor(255, 255, 255);
         else setInk();
         const numeric =
-          !headerRow &&
-          /^[-+]?[\d\s.,%$£]+(?: EUR)?$/.test(r[c]!) &&
-          /\d/.test(r[c]!);
+          !headerRow && /^[-+]?[\d\s.,%$£]+(?: EUR)?$/.test(r[c]!) && /\d/.test(r[c]!);
         const lines = cellLines[c]!;
         let ty = top + pad + fontSize;
         for (const line of lines) {
@@ -775,11 +779,7 @@ export async function exportExcel(input: ReportInput) {
   if (geo) {
     const rows = [
       [geo.labelColumn, geo.valueColumn, "Part"],
-      ...geo.rows.map((row) => [
-        row.label,
-        row.value,
-        Number((row.share * 100).toFixed(1)),
-      ]),
+      ...geo.rows.map((row) => [row.label, row.value, Number((row.share * 100).toFixed(1))]),
     ];
     const geoSheet = XLSX.utils.aoa_to_sheet(rows);
     geoSheet["!cols"] = [{ wch: 22 }, { wch: 14 }, { wch: 10 }];

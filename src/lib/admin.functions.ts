@@ -1,10 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 
-type AdminContext = { supabase: any; userId: string };
+type AdminContext = { supabase: SupabaseClient<Database>; userId: string };
 
 async function assertAdmin(context: AdminContext) {
-  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+  const { data } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "admin",
+  });
   if (data !== true) throw new Error("Accès réservé à l’administrateur.");
 }
 
@@ -38,7 +43,8 @@ export const adminAddBonus = createServerFn({ method: "POST" })
   .inputValidator((d: { userId: string; delta: number }) => {
     if (!USER_ID.test(d?.userId ?? "")) throw new Error("Utilisateur invalide.");
     const delta = Math.trunc(Number(d?.delta));
-    if (!Number.isFinite(delta) || delta === 0 || Math.abs(delta) > 1000) throw new Error("Valeur invalide.");
+    if (!Number.isFinite(delta) || delta === 0 || Math.abs(delta) > 1000)
+      throw new Error("Valeur invalide.");
     return { userId: d.userId, delta };
   })
   .handler(async ({ context, data }) => {
@@ -50,10 +56,12 @@ export const adminAddBonus = createServerFn({ method: "POST" })
       .eq("user_id", data.userId)
       .maybeSingle();
     const next = Math.max(0, (row?.bonus_analyses ?? 0) + data.delta);
-    const { error } = await supabaseAdmin.from("subscriptions").upsert(
-      { user_id: data.userId, bonus_analyses: next, updated_at: new Date().toISOString() },
-      { onConflict: "user_id" },
-    );
+    const { error } = await supabaseAdmin
+      .from("subscriptions")
+      .upsert(
+        { user_id: data.userId, bonus_analyses: next, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" },
+      );
     if (error) throw new Error("Mise à jour du quota impossible.");
     return { ok: true, bonus: next };
   });

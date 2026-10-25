@@ -71,7 +71,7 @@ function RechartsBody({
   height?: number | undefined;
 }) {
   const data = useMemo(() => buildChartData(spec), [spec]);
-  const yKeys = spec.yKeys ?? [];
+  const yKeys = useMemo(() => spec.yKeys ?? [], [spec.yKeys]);
   const xKey = spec.xKey ?? "x";
   const pieData = useMemo(
     () =>
@@ -87,7 +87,11 @@ function RechartsBody({
 
   if (spec.type === "pie") {
     return (
-      <PieChart width={width ?? 0} height={height ?? 0} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+      <PieChart
+        width={width ?? 0}
+        height={height ?? 0}
+        margin={{ top: 8, right: 8, bottom: 8, left: 8 }}
+      >
         {tooltipNode()}
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Pie data={pieData} dataKey="value" nameKey="name" outerRadius="78%" paddingAngle={2}>
@@ -102,10 +106,29 @@ function RechartsBody({
   if (spec.type === "scatter") {
     const yKey = yKeys[0] ?? "";
     return (
-      <ScatterChart width={width ?? 0} height={height ?? 0} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+      <ScatterChart
+        width={width ?? 0}
+        height={height ?? 0}
+        margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
+      >
         {grid}
-        <XAxis type="number" dataKey={xKey} name={xKey} tick={tickStyle} axisLine={axisLine} tickLine={axisLine} />
-        <YAxis type="number" dataKey={yKey} name={yKey} tick={tickStyle} axisLine={axisLine} tickLine={axisLine} width={48} />
+        <XAxis
+          type="number"
+          dataKey={xKey}
+          name={xKey}
+          tick={tickStyle}
+          axisLine={axisLine}
+          tickLine={axisLine}
+        />
+        <YAxis
+          type="number"
+          dataKey={yKey}
+          name={yKey}
+          tick={tickStyle}
+          axisLine={axisLine}
+          tickLine={axisLine}
+          width={48}
+        />
         {tooltipNode()}
         <Scatter name={yKey} data={data} fill={colorAt(0)} />
       </ScatterChart>
@@ -128,7 +151,12 @@ function RechartsBody({
 
   if (spec.type === "line") {
     return (
-      <LineChart width={width ?? 0} height={height ?? 0} data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+      <LineChart
+        width={width ?? 0}
+        height={height ?? 0}
+        data={data}
+        margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
+      >
         {grid}
         {xAxis}
         {yAxis}
@@ -151,7 +179,12 @@ function RechartsBody({
 
   if (spec.type === "area") {
     return (
-      <AreaChart width={width ?? 0} height={height ?? 0} data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+      <AreaChart
+        width={width ?? 0}
+        height={height ?? 0}
+        data={data}
+        margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
+      >
         {grid}
         {xAxis}
         {yAxis}
@@ -173,7 +206,12 @@ function RechartsBody({
   }
 
   return (
-    <BarChart width={width ?? 0} height={height ?? 0} data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+    <BarChart
+      width={width ?? 0}
+      height={height ?? 0}
+      data={data}
+      margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
+    >
       {grid}
       {xAxis}
       {yAxis}
@@ -413,9 +451,15 @@ function MarkdownTableChart({ text }: { text: string }) {
       <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto]">
         <div className="space-y-3">
           {data.map((d, i) => (
-            <div key={`${d.label}-${i}`} className="grid grid-cols-[minmax(70px,1fr)_2fr_60px] items-center gap-3 text-xs">
+            <div
+              key={`${d.label}-${i}`}
+              className="grid grid-cols-[minmax(70px,1fr)_2fr_60px] items-center gap-3 text-xs"
+            >
               <span className="flex items-center gap-2 break-words">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colorAt(i) }} />
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ background: colorAt(i) }}
+                />
                 {d.label}
               </span>
               <div className="h-5 rounded bg-muted">
@@ -442,13 +486,7 @@ function MarkdownTableChart({ text }: { text: string }) {
   );
 }
 
-export function AnalysisCharts({
-  text,
-  preview,
-}: {
-  text: string;
-  preview?: string | null;
-}) {
+export function AnalysisCharts({ text, preview }: { text: string; preview?: string | null }) {
   const specs = useMemo(() => parseChartSpecs(text), [text]);
   const auto = useMemo(
     () => (specs.length > 0 ? null : autoSpecFromPreview(preview)),
@@ -487,7 +525,3 @@ export function AnalysisCharts({
   }
   return <MarkdownTableChart text={text} />;
 }
-
-
-
-

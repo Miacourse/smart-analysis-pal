@@ -9,13 +9,7 @@ const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 const LOVABLE_BASE_URL = "https://ai.gateway.lovable.dev/v1";
 const FREE_BASE_URL = "https://text.pollinations.ai/openai";
 
-export type AiProvider =
-  | "gemini"
-  | "anthropic"
-  | "openrouter"
-  | "openai"
-  | "free"
-  | "lovable";
+export type AiProvider = "gemini" | "anthropic" | "openrouter" | "openai" | "free" | "lovable";
 
 function geminiKey() {
   return process.env["GEMINI_API_KEY"] ?? process.env["GOOGLE_GENERATIVE_AI_API_KEY"] ?? null;
@@ -72,9 +66,7 @@ async function fetchWithRetry(
     if (init?.signal?.aborted) break;
     const retryAfter = Number(response.headers.get("retry-after"));
     const delay =
-      Number.isFinite(retryAfter) && retryAfter > 0
-        ? retryAfter * 1000
-        : 1200 * 2 ** attempt;
+      Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1200 * 2 ** attempt;
     await new Promise((resolve) => setTimeout(resolve, Math.min(delay, 8000)));
   }
   return lastResponse ?? fetch(input, init);
@@ -145,8 +137,7 @@ export function createAnalysisCall(
       baseURL: OPENROUTER_BASE_URL,
       apiKey: openrouterKey()!,
       headers: {
-        "HTTP-Referer":
-          process.env["OPENROUTER_SITE_URL"] ?? "https://da-copilot.lovable.app",
+        "HTTP-Referer": process.env["OPENROUTER_SITE_URL"] ?? "https://da-copilot.lovable.app",
         "X-Title": "DA-Copilot",
       },
     });

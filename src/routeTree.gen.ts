@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProRouteImport } from './routes/pro'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiTrackRouteImport } from './routes/api/track'
 import { Route as ChatIndexRouteImport } from './routes/chat.index'
 import { Route as ChatThreadIdRouteImport } from './routes/chat.$threadId'
 
@@ -48,6 +49,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTrackRoute = ApiTrackRouteImport.update({
+  id: '/api/track',
+  path: '/api/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatIndexRoute = ChatIndexRouteImport.update({
   id: '/chat/',
   path: '/chat/',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/pro': typeof ProRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/track': typeof ApiTrackRoute
   '/chat/$threadId': typeof ChatThreadIdRoute
   '/chat/': typeof ChatIndexRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/pro': typeof ProRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/track': typeof ApiTrackRoute
   '/chat/$threadId': typeof ChatThreadIdRoute
   '/chat': typeof ChatIndexRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/pro': typeof ProRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/track': typeof ApiTrackRoute
   '/chat/$threadId': typeof ChatThreadIdRoute
   '/chat/': typeof ChatIndexRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/pro'
     | '/api/chat'
+    | '/api/track'
     | '/chat/$threadId'
     | '/chat/'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/pro'
     | '/api/chat'
+    | '/api/track'
     | '/chat/$threadId'
     | '/chat'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/pro'
     | '/api/chat'
+    | '/api/track'
     | '/chat/$threadId'
     | '/chat/'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ProRoute: typeof ProRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiTrackRoute: typeof ApiTrackRoute
   ChatThreadIdRoute: typeof ChatThreadIdRoute
   ChatIndexRoute: typeof ChatIndexRoute
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/track': {
+      id: '/api/track'
+      path: '/api/track'
+      fullPath: '/api/track'
+      preLoaderRoute: typeof ApiTrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat/': {
       id: '/chat/'
       path: '/chat'
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ProRoute: ProRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiTrackRoute: ApiTrackRoute,
   ChatThreadIdRoute: ChatThreadIdRoute,
   ChatIndexRoute: ChatIndexRoute,
 }

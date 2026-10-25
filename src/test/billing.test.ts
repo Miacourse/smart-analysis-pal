@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  FREE_MAX_ROWS,
-  PRO_MAX_ROWS,
-  TEAM_MAX_ROWS,
-  maxFileMb,
-  maxRows,
-} from "@/lib/billing";
+import { FREE_MAX_ROWS, PRO_MAX_ROWS, TEAM_MAX_ROWS, maxFileMb, maxRows } from "@/lib/billing";
 
 describe("plan limits", () => {
   it("exposes row limits per plan", () => {

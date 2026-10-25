@@ -64,7 +64,9 @@ function LoginPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (/invalid login credentials/i.test(msg)) {
-        toast.error("Email ou mot de passe incorrect. Si vous vous êtes inscrit avec Google, utilisez « Continuer avec Google ».");
+        toast.error(
+          "Email ou mot de passe incorrect. Si vous vous êtes inscrit avec Google, utilisez « Continuer avec Google ».",
+        );
       } else if (/email not confirmed/i.test(msg)) {
         toast.error("Confirmez d’abord votre email via le lien reçu.");
       } else if (/already registered/i.test(msg)) {
@@ -114,7 +116,9 @@ function LoginPage() {
 
   async function handleGoogle() {
     if (["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)) {
-      toast.error("La connexion Google n'est disponible que sur le site Lovable (preview ou publié). En local, utilisez email + mot de passe.");
+      toast.error(
+        "La connexion Google n'est disponible que sur le site Lovable (preview ou publié). En local, utilisez email + mot de passe.",
+      );
       return;
     }
     // Ferme toute session existante puis force Google à demander quel compte utiliser.
@@ -137,7 +141,11 @@ function LoginPage() {
         <div className="mb-6 flex flex-col items-center text-center">
           <img src={logo} alt="DA-Copilot" width={48} height={48} className="h-12 w-12" />
           <h1 className="mt-3 font-display text-xl font-bold">
-            {recovering ? "Nouveau mot de passe" : mode === "signin" ? "Bon retour" : "Créer un compte"}
+            {recovering
+              ? "Nouveau mot de passe"
+              : mode === "signin"
+                ? "Bon retour"
+                : "Créer un compte"}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {recovering

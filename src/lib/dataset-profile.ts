@@ -66,7 +66,10 @@ export const MAX_PROFILE_ROWS = 200_000;
 export const SAMPLE_ROW_COUNT = 40;
 
 export function parseNumeric(raw: string): number | null {
-  let s = raw.trim().replace(/[\s\u00a0\u202f]/g, "").replace(/%$/, "");
+  let s = raw
+    .trim()
+    .replace(/[\s\u00a0\u202f]/g, "")
+    .replace(/%$/, "");
   if (!s) return null;
   const hasComma = s.includes(",");
   const hasDot = s.includes(".");
@@ -84,7 +87,12 @@ export function parseNumeric(raw: string): number | null {
 function looksLikeDate(raw: string): boolean {
   const s = raw.trim();
   if (!s || /^[-+]?\d+(?:[.,]\d+)?$/.test(s)) return false;
-  if (!/[-/:]/.test(s) && !/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|janv|f[ée]vr|mars|avr|mai|juin|juil|ao[uû]t|sept|d[ée]c)\b/i.test(s)) {
+  if (
+    !/[-/:]/.test(s) &&
+    !/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|janv|f[ée]vr|mars|avr|mai|juin|juil|ao[uû]t|sept|d[ée]c)\b/i.test(
+      s,
+    )
+  ) {
     return false;
   }
   const t = Date.parse(s);
@@ -112,9 +120,7 @@ function quartile(sorted: number[], p: number): number {
 }
 
 const isPreambleRow = (row: string[] | undefined): boolean => {
-  const cells = (row ?? [])
-    .map((cell) => String(cell ?? "").trim())
-    .filter(Boolean);
+  const cells = (row ?? []).map((cell) => String(cell ?? "").trim()).filter(Boolean);
   if (cells.length === 0) return true;
   return cells.length === 1 && cells[0]!.startsWith("#");
 };
@@ -136,9 +142,7 @@ export function profileDataset(input: string[][], fileName: string): DatasetProf
   const columns = headerCells.length;
   const header = headerCells.map((h, i) => String(h ?? "").trim() || `Colonne ${i + 1}`);
 
-  const data = rows
-    .slice(1)
-    .filter((row) => row.some((cell) => String(cell ?? "").trim() !== ""));
+  const data = rows.slice(1).filter((row) => row.some((cell) => String(cell ?? "").trim() !== ""));
 
   const scannedRows =
     data.length <= MAX_PROFILE_ROWS
@@ -212,7 +216,8 @@ export function profileDataset(input: string[][], fileName: string): DatasetProf
       }
 
       const lower = raw.toLowerCase();
-      if (["true", "false", "oui", "non", "yes", "no", "vrai", "faux"].includes(lower)) booleanCount++;
+      if (["true", "false", "oui", "non", "yes", "no", "vrai", "faux"].includes(lower))
+        booleanCount++;
     }
 
     nullCells += nulls;
@@ -496,10 +501,11 @@ export function parseCsvFile(
             onProgress(Math.min(1, cursor / file.size));
           }
         },
-        complete: () => finish(() => {
-          onProgress?.(1);
-          resolve(rows);
-        }),
+        complete: () =>
+          finish(() => {
+            onProgress?.(1);
+            resolve(rows);
+          }),
         error: (error) => finish(() => reject(error)),
       });
     } catch (error) {
@@ -558,7 +564,8 @@ export function jsonToRows(value: unknown): string[][] {
   const isFeatureCollection = isRecord(value) && Array.isArray(value["features"]);
   const keys: string[] = [];
   for (const object of objects) {
-    const source = isFeatureCollection && isRecord(object["properties"]) ? object["properties"] : object;
+    const source =
+      isFeatureCollection && isRecord(object["properties"]) ? object["properties"] : object;
     for (const key of Object.keys(source)) {
       if (!keys.includes(key) && keys.length < 500) keys.push(key);
     }
@@ -569,7 +576,8 @@ export function jsonToRows(value: unknown): string[][] {
   }
 
   const rows = objects.map((object) => {
-    const source = isFeatureCollection && isRecord(object["properties"]) ? object["properties"] : object;
+    const source =
+      isFeatureCollection && isRecord(object["properties"]) ? object["properties"] : object;
     const coordinates = isFeatureCollection ? featureCoordinates(object) : null;
     return keys.map((key) => {
       if (key === "longitude") return coordinates ? String(coordinates[0]) : "";

@@ -143,14 +143,20 @@ export function countryName(iso: string) {
   for (const [code, , , ...names] of COUNTRIES) {
     if (code === iso) {
       const name = names[0] ?? code;
-      return name.replace(/(^|[\s-])([\p{L}])/gu, (_, sep: string, letter: string) => sep + letter.toUpperCase());
+      return name.replace(
+        /(^|[\s-])([\p{L}])/gu,
+        (_, sep: string, letter: string) => sep + letter.toUpperCase(),
+      );
     }
   }
   return iso;
 }
 
 const stripNumber = (value: string) => {
-  const cleaned = value.replace(/[\s\u00a0]/g, "").replace(/[€$£%]/g, "").replace(",", ".");
+  const cleaned = value
+    .replace(/[\s\u00a0]/g, "")
+    .replace(/[€$£%]/g, "")
+    .replace(",", ".");
   return cleaned === "" ? Number.NaN : Number(cleaned);
 };
 

@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_PROJECT_ID: ci
+      VITE_SUPABASE_URL: https://ci.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: ci
+      SUPABASE_PROJECT_ID: ci
+      SUPABASE_URL: https://ci.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: ci
+      SUPABASE_SERVICE_ROLE_KEY: ci
+      STRIPE_SECRET_KEY: sk_test_ci
+      LOVABLE_API_KEY: ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.3"
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build

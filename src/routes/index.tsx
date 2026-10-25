@@ -1,13 +1,37 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { BarChart3, FileSpreadsheet, Menu, MessageSquareText, ShieldCheck, TrendingUp, Upload } from "lucide-react";
+import {
+  BarChart3,
+  FileSpreadsheet,
+  Menu,
+  MessageSquareText,
+  ShieldCheck,
+  TrendingUp,
+  Upload,
+} from "lucide-react";
 
-import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, FREE_MAX_ROWS, PRO_MAX_FILE_MB, PRO_MAX_ROWS, TEAM_MAX_FILE_MB, TEAM_MAX_ROWS, PLAN_PRICES } from "@/lib/billing";
+import {
+  FREE_ANALYSIS_LIMIT,
+  FREE_MAX_FILE_MB,
+  FREE_MAX_ROWS,
+  PRO_MAX_FILE_MB,
+  PRO_MAX_ROWS,
+  TEAM_MAX_FILE_MB,
+  TEAM_MAX_ROWS,
+  PLAN_PRICES,
+} from "@/lib/billing";
 import { ANALYSIS_DOMAINS } from "@/lib/analysis-domains";
 import { LandingFaq } from "@/components/landing/faq";
 import { HeroPreview } from "@/components/landing/hero-preview";
 import { TrustStrip } from "@/components/landing/trust-strip";
-import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
@@ -22,7 +46,8 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "DA-Copilot — Agent d’analyse de données" },
       {
         property: "og:description",
-        content: "Vos données deviennent des décisions : analyses chiffrées et recommandations actionnables par IA.",
+        content:
+          "Vos données deviennent des décisions : analyses chiffrées et recommandations actionnables par IA.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -34,11 +59,31 @@ export const Route = createFileRoute("/")({
 const DISPLAYED_DOMAIN_COUNT = ANALYSIS_DOMAINS.length;
 
 const steps = [
-  { icon: FileSpreadsheet, title: "Profilage", text: "Structure, qualité, valeurs manquantes et doublons passés au crible." },
-  { icon: ShieldCheck, title: "Préparation", text: "Nettoyage documenté, avec un journal de transformations vérifiable." },
-  { icon: BarChart3, title: "Exploration", text: "KPI, tendances, segments et anomalies mis en évidence." },
-  { icon: TrendingUp, title: "Modélisation", text: "Approches prédictives simples quand elles apportent de la valeur." },
-  { icon: MessageSquareText, title: "Recommandations", text: "Des conclusions chiffrées et des actions concrètes." },
+  {
+    icon: FileSpreadsheet,
+    title: "Profilage",
+    text: "Structure, qualité, valeurs manquantes et doublons passés au crible.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Préparation",
+    text: "Nettoyage documenté, avec un journal de transformations vérifiable.",
+  },
+  {
+    icon: BarChart3,
+    title: "Exploration",
+    text: "KPI, tendances, segments et anomalies mis en évidence.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Modélisation",
+    text: "Approches prédictives simples quand elles apportent de la valeur.",
+  },
+  {
+    icon: MessageSquareText,
+    title: "Recommandations",
+    text: "Des conclusions chiffrées et des actions concrètes.",
+  },
 ];
 
 function Landing() {
@@ -52,10 +97,16 @@ function Landing() {
           <span className="font-display text-lg font-semibold tracking-tight">DA-Copilot</span>
         </div>
         <nav className="hidden items-center gap-1 md:flex lg:gap-3">
-          <Link to="/pricing" className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted lg:px-4">
+          <Link
+            to="/pricing"
+            className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted lg:px-4"
+          >
             Tarifs
           </Link>
-          <Link to="/login" className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted lg:px-4">
+          <Link
+            to="/login"
+            className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted lg:px-4"
+          >
             Se connecter
           </Link>
           <Link
@@ -81,12 +132,18 @@ function Landing() {
             </SheetHeader>
             <nav className="mt-6 flex flex-col gap-2">
               <SheetClose asChild>
-                <Link to="/pricing" className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted">
+                <Link
+                  to="/pricing"
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted"
+                >
                   Tarifs
                 </Link>
               </SheetClose>
               <SheetClose asChild>
-                <Link to="/login" className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted">
+                <Link
+                  to="/login"
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted"
+                >
                   Se connecter
                 </Link>
               </SheetClose>
@@ -112,8 +169,8 @@ function Landing() {
             Vos données deviennent des <span className="text-primary">décisions</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Téléversez un fichier (CSV, Excel, JSON…), posez votre question métier en
-            langage naturel, et recevez une réponse claire, chiffrée et vérifiable : KPI, tendances,
+            Téléversez un fichier (CSV, Excel, JSON…), posez votre question métier en langage
+            naturel, et recevez une réponse claire, chiffrée et vérifiable : KPI, tendances,
             anomalies et recommandations actionnables.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
@@ -141,7 +198,8 @@ function Landing() {
           Une méthode rigoureuse en 5 étapes
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
-          Chaque analyse suit le même pipeline reproductible, du profilage brut jusqu'aux recommandations.
+          Chaque analyse suit le même pipeline reproductible, du profilage brut jusqu'aux
+          recommandations.
         </p>
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
           {steps.map((s, i) => (
@@ -186,14 +244,19 @@ function Landing() {
 
       <section id="tarifs" className="border-t border-border bg-card">
         <div className="mx-auto max-w-5xl px-6 py-20">
-          <h2 className="text-center font-display text-3xl font-bold tracking-tight">Tarifs simples</h2>
+          <h2 className="text-center font-display text-3xl font-bold tracking-tight">
+            Tarifs simples
+          </h2>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             <div className="rounded-2xl border border-border bg-background p-8">
               <h3 className="font-display text-lg font-semibold">Gratuit</h3>
               <p className="mt-2 font-display text-4xl font-bold">0 €</p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                 <li>• {FREE_ANALYSIS_LIMIT} analyses offertes pour découvrir (une seule fois)</li>
-                <li>• Fichiers jusqu'à {FREE_MAX_FILE_MB} Mo / {FREE_MAX_ROWS.toLocaleString("fr-FR")} lignes</li>
+                <li>
+                  • Fichiers jusqu'à {FREE_MAX_FILE_MB} Mo / {FREE_MAX_ROWS.toLocaleString("fr-FR")}{" "}
+                  lignes
+                </li>
                 <li>• Historique des conversations</li>
               </ul>
               <Link
@@ -206,11 +269,15 @@ function Landing() {
             <div className="rounded-2xl border-2 border-primary bg-background p-8 shadow-sm">
               <h3 className="font-display text-lg font-semibold">Pro</h3>
               <p className="mt-2 font-display text-4xl font-bold">
-                {PLAN_PRICES.pro.eur} €<span className="text-base font-normal text-muted-foreground">/mois</span>
+                {PLAN_PRICES.pro.eur} €
+                <span className="text-base font-normal text-muted-foreground">/mois</span>
               </p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                 <li>• Analyses illimitées</li>
-                <li>• Fichiers jusqu'à {PRO_MAX_FILE_MB} Mo / {PRO_MAX_ROWS.toLocaleString("fr-FR")} lignes</li>
+                <li>
+                  • Fichiers jusqu'à {PRO_MAX_FILE_MB} Mo / {PRO_MAX_ROWS.toLocaleString("fr-FR")}{" "}
+                  lignes
+                </li>
                 <li>• Historique illimité</li>
                 <li>• Exports PDF et Excel</li>
               </ul>
@@ -224,11 +291,15 @@ function Landing() {
             <div className="rounded-2xl border border-border bg-background p-8">
               <h3 className="font-display text-lg font-semibold">Team</h3>
               <p className="mt-2 font-display text-4xl font-bold">
-                {PLAN_PRICES.team.eur} €<span className="text-base font-normal text-muted-foreground">/mois</span>
+                {PLAN_PRICES.team.eur} €
+                <span className="text-base font-normal text-muted-foreground">/mois</span>
               </p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                 <li>• Tout Pro, sans compromis</li>
-                <li>• Fichiers jusqu'à {TEAM_MAX_FILE_MB} Mo / {TEAM_MAX_ROWS.toLocaleString("fr-FR")} lignes</li>
+                <li>
+                  • Fichiers jusqu'à {TEAM_MAX_FILE_MB} Mo / {TEAM_MAX_ROWS.toLocaleString("fr-FR")}{" "}
+                  lignes
+                </li>
                 <li>• Analyses illimitées</li>
                 <li>• Exports PDF et Excel</li>
               </ul>
@@ -241,7 +312,11 @@ function Landing() {
             </div>
           </div>
           <p className="mt-8 text-center text-sm text-muted-foreground">
-            Comparez les offres en détail sur la <Link to="/pricing" className="font-semibold text-primary hover:underline">page Tarifs</Link>.
+            Comparez les offres en détail sur la{" "}
+            <Link to="/pricing" className="font-semibold text-primary hover:underline">
+              page Tarifs
+            </Link>
+            .
           </p>
         </div>
       </section>

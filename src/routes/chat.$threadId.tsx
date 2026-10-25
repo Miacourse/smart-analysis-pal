@@ -12,7 +12,10 @@ export const Route = createFileRoute("/chat/$threadId")({
       { title: "Analyse en cours — DA-Copilot" },
       { name: "description", content: "Conversation d'analyse de données avec DA-Copilot." },
       { property: "og:title", content: "Votre analyse — DA-Copilot" },
-      { property: "og:description", content: "Analysez votre CSV et retrouvez vos rapports DA-Copilot." },
+      {
+        property: "og:description",
+        content: "Analysez votre CSV et retrouvez vos rapports DA-Copilot.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

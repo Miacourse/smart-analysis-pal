@@ -4,11 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { analysisFetch, safeAnalysisError, type AnalysisPhase } from "@/lib/analysis-state";
 import { stripChartBlocks } from "@/lib/chart-spec";
-import {
-  ANALYSIS_DOMAINS,
-  getAnalysisDomain,
-  type AnalysisDomainId,
-} from "@/lib/analysis-domains";
+import { ANALYSIS_DOMAINS, getAnalysisDomain, type AnalysisDomainId } from "@/lib/analysis-domains";
 import {
   normalizeDatasetRows,
   parseCsvFile,
@@ -89,7 +85,11 @@ export function ChatWindow({ threadId }: { threadId: string }) {
       if (!cancelled) setAccessToken(session?.access_token ?? null);
 
       const [{ data: msgs }, { data: thread }] = await Promise.all([
-        supabase.from("messages").select("id, role, parts").eq("thread_id", threadId).order("created_at"),
+        supabase
+          .from("messages")
+          .select("id, role, parts")
+          .eq("thread_id", threadId)
+          .order("created_at"),
         supabase
           .from("threads")
           .select("dataset_name, dataset_rows, dataset_profile, dataset_preview")
@@ -163,7 +163,9 @@ function ChatSession({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
   const billingStatus = useServerFn(getBillingStatus);
-  const [processing, setProcessing] = useState<{ phase: AnalysisPhase; startedAt: number } | null>(null);
+  const [processing, setProcessing] = useState<{ phase: AnalysisPhase; startedAt: number } | null>(
+    null,
+  );
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadName, setUploadName] = useState<string | null>(null);
@@ -416,7 +418,10 @@ function ChatSession({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" title="Exporter le rapport PDF — Pro"
+          <Button
+            variant="outline"
+            size="sm"
+            title="Exporter le rapport PDF — Pro"
             disabled={busy || exporting || !messages.some((m) => m.role === "assistant")}
             onClick={() => handleExport("pdf")}
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
@@ -424,7 +429,10 @@ function ChatSession({
             <FileDown className="h-3.5 w-3.5" />
             PDF
           </Button>
-          <Button variant="outline" size="sm" title="Exporter le rapport Excel — Pro"
+          <Button
+            variant="outline"
+            size="sm"
+            title="Exporter le rapport Excel — Pro"
             disabled={busy || exporting || !messages.some((m) => m.role === "assistant")}
             onClick={() => handleExport("xlsx")}
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
@@ -432,7 +440,10 @@ function ChatSession({
             <FileSpreadsheet className="h-3.5 w-3.5" />
             Excel
           </Button>
-          <Button variant="outline" size="sm" disabled={busy || uploading}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy || uploading}
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
           >
@@ -454,7 +465,9 @@ function ChatSession({
       </div>
 
       {uploading && <UploadProgress progress={uploadProgress ?? 0} fileName={uploadName} />}
-      {!uploading && processing && <AnalysisProgress phase={processing.phase} startedAt={processing.startedAt} />}
+      {!uploading && processing && (
+        <AnalysisProgress phase={processing.phase} startedAt={processing.startedAt} />
+      )}
       {analysisError && (
         <div
           role="alert"
@@ -474,14 +487,19 @@ function ChatSession({
           {messages.length === 0 && (
             <div className="flex flex-col items-center py-16 text-center">
               <img src={logo} alt="DA-Copilot" width={56} height={56} className="h-14 w-14" />
-              <h2 className="mt-4 font-display text-xl font-semibold">Que voulez-vous analyser ?</h2>
+              <h2 className="mt-4 font-display text-xl font-semibold">
+                Que voulez-vous analyser ?
+              </h2>
               <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                 <Layers className="h-3 w-3" />
                 {domainMeta.label}
               </span>
-              <p className="mt-2 max-w-md text-sm text-muted-foreground">{domainMeta.description}</p>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                Téléversez un fichier (CSV, Excel, JSON, GeoJSON, LAS…), puis posez votre question métier.
+                {domainMeta.description}
+              </p>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                Téléversez un fichier (CSV, Excel, JSON, GeoJSON, LAS…), puis posez votre question
+                métier.
               </p>
               <p className="mt-3 max-w-lg text-xs text-muted-foreground">
                 Exemples : {domainMeta.examples.join(" · ")}
@@ -496,7 +514,11 @@ function ChatSession({
                 {m.parts.map((part, i) => {
                   if (part.type === "text") {
                     return m.role === "assistant" ? (
-                      <MessageResponse key={i}>{/<(?:!doctype|html|head|body)\b/i.test(part.text) ? safeAnalysisError(part.text) : stripChartBlocks(part.text)}</MessageResponse>
+                      <MessageResponse key={i}>
+                        {/<(?:!doctype|html|head|body)\b/i.test(part.text)
+                          ? safeAnalysisError(part.text)
+                          : stripChartBlocks(part.text)}
+                      </MessageResponse>
                     ) : (
                       <p key={i} className="whitespace-pre-wrap">
                         {part.text}
@@ -507,7 +529,10 @@ function ChatSession({
                 })}
                 {m.role === "assistant" && !busy && (
                   <AnalysisCharts
-                    text={m.parts.filter((p) => p.type === "text").map((p) => p.text).join("\n")}
+                    text={m.parts
+                      .filter((p) => p.type === "text")
+                      .map((p) => p.text)
+                      .join("\n")}
                     preview={datasetPreview}
                   />
                 )}
@@ -535,7 +560,14 @@ function ChatSession({
               placeholder="Posez votre question sur vos données…"
             />
             <PromptInputFooter className="justify-end">
-              <PromptInputSubmit status={status} disabled={uploading} onStop={() => { stop(); setProcessing(null); }} />
+              <PromptInputSubmit
+                status={status}
+                disabled={uploading}
+                onStop={() => {
+                  stop();
+                  setProcessing(null);
+                }}
+              />
             </PromptInputFooter>
           </PromptInput>
           <p className="mt-2 text-center text-xs text-muted-foreground">

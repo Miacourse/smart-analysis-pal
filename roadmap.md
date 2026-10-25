@@ -1,4 +1,5 @@
 # Travail demandé
+
 - [x] Corriger les erreurs HTML de l’analyse et tester un CSV.
 - [x] Ajouter une progression animée en quatre étapes.
 - [x] Conserver et vérifier les exports PDF/Excel, réservés à Pro.

@@ -8,7 +8,8 @@ const COUNTRY_HEADERS = [
   "x-appengine-country",
 ];
 
-const BOT = /bot|crawler|spider|preview|lighthouse|headless|playwright|puppeteer|curl|wget|python-requests/i;
+const BOT =
+  /bot|crawler|spider|preview|lighthouse|headless|playwright|puppeteer|curl|wget|python-requests/i;
 
 export const Route = createFileRoute("/api/track")({
   server: {

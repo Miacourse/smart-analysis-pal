@@ -65,9 +65,7 @@ describe("sanitizeReportText", () => {
   });
 
   it("conserve les accents français", () => {
-    expect(sanitizeReportText("Décision stratégique à l'été")).toBe(
-      "Décision stratégique à l'été",
-    );
+    expect(sanitizeReportText("Décision stratégique à l'été")).toBe("Décision stratégique à l'été");
   });
 
   it("convertit le LaTeX brut en texte lisible", () => {
@@ -94,12 +92,17 @@ describe("sanitizeReportText", () => {
 
 describe("reportTitle", () => {
   it("priorise le nom du fichier pour éviter les titres tronqués", () => {
-    expect(reportTitle({ title: "Analyse les sessions par canal d'acqui", datasetName: "ga4-acquisition.csv" })).toBe(
-      "Analyse de Ga4 acquisition",
-    );
+    expect(
+      reportTitle({
+        title: "Analyse les sessions par canal d'acqui",
+        datasetName: "ga4-acquisition.csv",
+      }),
+    ).toBe("Analyse de Ga4 acquisition");
   });
 
   it("retombe sur le titre sans fichier", () => {
-    expect(reportTitle({ title: "Bilan trimestriel", datasetName: null })).toBe("Bilan trimestriel");
+    expect(reportTitle({ title: "Bilan trimestriel", datasetName: null })).toBe(
+      "Bilan trimestriel",
+    );
   });
 });

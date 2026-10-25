@@ -1,6 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type Leaflet = any;
+type LeafletMap = {
+  remove: () => void;
+  fitBounds: (
+    bounds: Array<[number, number]>,
+    options?: { padding?: [number, number]; maxZoom?: number },
+  ) => void;
+};
+
+type LeafletLayer = {
+  addTo: (map: LeafletMap) => LeafletLayer;
+};
+
+type LeafletCircleMarker = LeafletLayer & {
+  bindTooltip: (content: string, options?: { direction?: string }) => LeafletCircleMarker;
+  bindPopup: (content: string) => LeafletCircleMarker;
+};
+
+type Leaflet = {
+  map: (element: HTMLElement, options: Record<string, unknown>) => LeafletMap;
+  tileLayer: (url: string, options: Record<string, unknown>) => LeafletLayer;
+  circleMarker: (latlng: [number, number], options: Record<string, unknown>) => LeafletCircleMarker;
+};
 
 declare global {
   interface Window {
@@ -63,7 +84,7 @@ export function GeoMap({
   );
 
   useEffect(() => {
-    let map: any = null;
+    let map: LeafletMap | null = null;
     let cancelled = false;
     loadLeaflet()
       .then((L) => {
@@ -76,7 +97,7 @@ export function GeoMap({
           attributionControl: true,
         });
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: '&copy; OpenStreetMap',
+          attribution: "&copy; OpenStreetMap",
           maxZoom: 19,
         }).addTo(map);
         for (const point of points) {
@@ -98,7 +119,7 @@ export function GeoMap({
         }
         if (points.length > 0) {
           map.fitBounds(
-            points.map((point) => [point.lat, point.lng]),
+            points.map((point): [number, number] => [point.lat, point.lng]),
             { padding: [30, 30], maxZoom: 4 },
           );
         }
@@ -149,7 +170,11 @@ export function GeoMap({
           </li>
         ))}
       </ul>
-      {caption && <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">{caption}</p>}
+      {caption && (
+        <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+          {caption}
+        </p>
+      )}
     </div>
   );
 }

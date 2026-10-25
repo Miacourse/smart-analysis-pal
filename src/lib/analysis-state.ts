@@ -10,7 +10,10 @@ export const ANALYSIS_STEPS = [
 export function estimatedProgress(phase: AnalysisPhase, elapsedMs: number) {
   const step = ANALYSIS_STEPS.find((s) => s.phase === phase);
   if (!step) return 0;
-  return Math.min(step.max - 1, Math.floor(step.min + (step.max - step.min - 1) * (1 - Math.exp(-elapsedMs / 15000))));
+  return Math.min(
+    step.max - 1,
+    Math.floor(step.min + (step.max - step.min - 1) * (1 - Math.exp(-elapsedMs / 15000))),
+  );
 }
 
 export function showLongAnalysisNotice(elapsedMs: number) {
@@ -46,8 +49,11 @@ export function safeAnalysisError(value: string): string {
   if (isProviderRequestError(value)) return SERVICE_UNAVAILABLE;
   try {
     const parsed = JSON.parse(value);
-    return typeof parsed.error === "string" ? safeAnalysisError(parsed.error) :
-      typeof parsed.message === "string" ? safeAnalysisError(parsed.message) : "L’analyse n’a pas pu aboutir.";
+    return typeof parsed.error === "string"
+      ? safeAnalysisError(parsed.error)
+      : typeof parsed.message === "string"
+        ? safeAnalysisError(parsed.message)
+        : "L’analyse n’a pas pu aboutir.";
   } catch {
     return value || "L’analyse n’a pas pu aboutir.";
   }
@@ -56,7 +62,10 @@ export function safeAnalysisError(value: string): string {
 export async function analysisFetch(input: RequestInfo | URL, init?: RequestInit) {
   const response = await fetch(input, init);
   if (response.headers.get("content-type")?.includes("text/html")) {
-    return Response.json({ error: safeAnalysisError("<!doctype html>") }, { status: response.ok ? 502 : response.status });
+    return Response.json(
+      { error: safeAnalysisError("<!doctype html>") },
+      { status: response.ok ? 502 : response.status },
+    );
   }
   return response;
 }

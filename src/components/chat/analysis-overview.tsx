@@ -39,17 +39,50 @@ export function AnalysisOverview({ profile }: { profile: DatasetProfile }) {
   };
 
   const profiledRows = profile.profiledRows ?? profile.rows;
-  const nonNumeric = profile.columnProfiles.reduce((total, column) => total + (column.nonNumeric ?? 0), 0);
-  const outliers = profile.columnProfiles.reduce((total, column) => total + (column.outliers ?? 0), 0);
+  const nonNumeric = profile.columnProfiles.reduce(
+    (total, column) => total + (column.nonNumeric ?? 0),
+    0,
+  );
+  const outliers = profile.columnProfiles.reduce(
+    (total, column) => total + (column.outliers ?? 0),
+    0,
+  );
   const constants = profile.columnProfiles.filter((column) => column.constant).length;
-  const whitespace = profile.columnProfiles.reduce((total, column) => total + (column.whitespace ?? 0), 0);
+  const whitespace = profile.columnProfiles.reduce(
+    (total, column) => total + (column.whitespace ?? 0),
+    0,
+  );
   const issues: { label: string; detail: string }[] = [];
-  if (profile.nullCells > 0) issues.push({ label: `${profile.nullCells.toLocaleString("fr-FR")} cellule(s) vide(s)`, detail: "imputation ou suppression" });
-  if (profile.duplicateRows > 0) issues.push({ label: `${profile.duplicateRows.toLocaleString("fr-FR")} ligne(s) dupliquée(s)`, detail: "dédoublonnage" });
-  if (nonNumeric > 0) issues.push({ label: `${nonNumeric.toLocaleString("fr-FR")} valeur(s) non numérique(s) en colonne numérique`, detail: "conversion ou correction" });
-  if (outliers > 0) issues.push({ label: `${outliers.toLocaleString("fr-FR")} valeur(s) aberrante(s) (IQR 1,5)`, detail: "vérification, plafonnement ou retrait" });
-  if (constants > 0) issues.push({ label: `${constants} colonne(s) constante(s)`, detail: "sans pouvoir discriminant" });
-  if (whitespace > 0) issues.push({ label: `${whitespace.toLocaleString("fr-FR")} valeur(s) avec espaces parasites`, detail: "nettoyage des espaces" });
+  if (profile.nullCells > 0)
+    issues.push({
+      label: `${profile.nullCells.toLocaleString("fr-FR")} cellule(s) vide(s)`,
+      detail: "imputation ou suppression",
+    });
+  if (profile.duplicateRows > 0)
+    issues.push({
+      label: `${profile.duplicateRows.toLocaleString("fr-FR")} ligne(s) dupliquée(s)`,
+      detail: "dédoublonnage",
+    });
+  if (nonNumeric > 0)
+    issues.push({
+      label: `${nonNumeric.toLocaleString("fr-FR")} valeur(s) non numérique(s) en colonne numérique`,
+      detail: "conversion ou correction",
+    });
+  if (outliers > 0)
+    issues.push({
+      label: `${outliers.toLocaleString("fr-FR")} valeur(s) aberrante(s) (IQR 1,5)`,
+      detail: "vérification, plafonnement ou retrait",
+    });
+  if (constants > 0)
+    issues.push({
+      label: `${constants} colonne(s) constante(s)`,
+      detail: "sans pouvoir discriminant",
+    });
+  if (whitespace > 0)
+    issues.push({
+      label: `${whitespace.toLocaleString("fr-FR")} valeur(s) avec espaces parasites`,
+      detail: "nettoyage des espaces",
+    });
 
   return (
     <div className="mt-6 w-full max-w-2xl space-y-4 text-left">
@@ -157,10 +190,7 @@ export function AnalysisOverview({ profile }: { profile: DatasetProfile }) {
               ))}
               {names.map((rowName) => (
                 <Fragment key={rowName}>
-                  <div
-                    className="truncate pr-1 text-right text-muted-foreground"
-                    title={rowName}
-                  >
+                  <div className="truncate pr-1 text-right text-muted-foreground" title={rowName}>
                     {rowName}
                   </div>
                   {names.map((colName) => {

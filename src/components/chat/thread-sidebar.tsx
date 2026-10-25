@@ -16,7 +16,13 @@ type Thread = {
   updated_at: string;
 };
 
-type Usage = { plan: "free" | "pro" | "team"; analysesUsed: number; analysesThisMonth: number; periodEnd: string | null; freeLimit?: number };
+type Usage = {
+  plan: "free" | "pro" | "team";
+  analysesUsed: number;
+  analysesThisMonth: number;
+  periodEnd: string | null;
+  freeLimit?: number;
+};
 
 export function ThreadSidebar({
   activeThreadId,
@@ -48,8 +54,10 @@ export function ThreadSidebar({
 
   useEffect(() => {
     loadThreads();
-    billingStatus().then(setUsage).catch(() => {});
-  }, [activeThreadId]);
+    billingStatus()
+      .then(setUsage)
+      .catch(() => {});
+  }, [activeThreadId, billingStatus]);
 
   useEffect(() => {
     const reload = () => loadThreads();
@@ -60,9 +68,11 @@ export function ThreadSidebar({
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    adminCheck().then((r: { isAdmin: boolean }) => setIsAdmin(r.isAdmin)).catch(() => {});
+    adminCheck()
+      .then((r: { isAdmin: boolean }) => setIsAdmin(r.isAdmin))
+      .catch(() => {});
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
-  }, []);
+  }, [adminCheck]);
 
   async function createThread() {
     const {
@@ -86,7 +96,8 @@ export function ThreadSidebar({
   }
 
   async function deleteThread(id: string) {
-    if (!confirm("Supprimer cette conversation et son historique ? Cette action est définitive.")) return;
+    if (!confirm("Supprimer cette conversation et son historique ? Cette action est définitive."))
+      return;
     const { error } = await supabase.from("threads").delete().eq("id", id);
     if (error) {
       toast.error("Suppression impossible.");
@@ -140,7 +151,10 @@ export function ThreadSidebar({
             >
               <span className="block truncate font-medium">{t.title}</span>
               {t.dataset_name && (
-                <span className="block truncate text-xs text-muted-foreground" title={t.dataset_name}>
+                <span
+                  className="block truncate text-xs text-muted-foreground"
+                  title={t.dataset_name}
+                >
                   {t.dataset_name}
                 </span>
               )}
@@ -168,7 +182,11 @@ export function ThreadSidebar({
               <span className="font-semibold text-sidebar-foreground">
                 {usage.plan === "team" ? "Team" : usage.plan === "pro" ? "Pro" : "Gratuit"}
               </span>
-              {usage.plan !== "free" && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">Actif</span>}
+              {usage.plan !== "free" && (
+                <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                  Actif
+                </span>
+              )}
             </div>
             <p className="mt-1 text-muted-foreground">
               {usage.plan === "free"
@@ -176,25 +194,39 @@ export function ThreadSidebar({
                 : "Analyses illimitées"}
             </p>
             {usage.plan === "free" && (
-              <div className="mt-1.5 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, usage.analysesUsed / (usage.freeLimit ?? FREE_ANALYSIS_LIMIT) * 100)}%` }} /></div>
+              <div className="mt-1.5 h-1.5 rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{
+                    width: `${Math.min(100, (usage.analysesUsed / (usage.freeLimit ?? FREE_ANALYSIS_LIMIT)) * 100)}%`,
+                  }}
+                />
+              </div>
             )}
-            {usage.plan === "free" && usage.analysesUsed >= (usage.freeLimit ?? FREE_ANALYSIS_LIMIT) && (
-              <Link
-                to="/pricing"
-                onClick={() => onNavigate?.()}
-                className="mt-2 flex items-center justify-center gap-1.5 rounded-md bg-primary px-2 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
-              >
-                <Sparkles className="h-3 w-3" />
-                Passer à Pro — analyses illimitées
-              </Link>
-            )}
+            {usage.plan === "free" &&
+              usage.analysesUsed >= (usage.freeLimit ?? FREE_ANALYSIS_LIMIT) && (
+                <Link
+                  to="/pricing"
+                  onClick={() => onNavigate?.()}
+                  className="mt-2 flex items-center justify-center gap-1.5 rounded-md bg-primary px-2 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Passer à Pro — analyses illimitées
+                </Link>
+              )}
             {usage.plan !== "free" && usage.periodEnd && (
-              <p className="text-muted-foreground">Renouvellement le {new Date(usage.periodEnd).toLocaleDateString("fr-FR")}</p>
+              <p className="text-muted-foreground">
+                Renouvellement le {new Date(usage.periodEnd).toLocaleDateString("fr-FR")}
+              </p>
             )}
           </div>
         )}
         {isAdmin && (
-          <Link to="/admin" onClick={() => onNavigate?.()} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent">
+          <Link
+            to="/admin"
+            onClick={() => onNavigate?.()}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent"
+          >
             <Shield className="h-4 w-4" />
             Administration
           </Link>
