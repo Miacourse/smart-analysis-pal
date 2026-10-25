@@ -21,6 +21,7 @@ import {
   PLAN_PRICES,
 } from "@/lib/billing";
 import { ANALYSIS_DOMAINS } from "@/lib/analysis-domains";
+import { SUPPORT_EMAIL } from "@/lib/legal";
 import { LandingFaq } from "@/components/landing/faq";
 import { HeroPreview } from "@/components/landing/hero-preview";
 import { TrustStrip } from "@/components/landing/trust-strip";
@@ -324,12 +325,17 @@ function Landing() {
       <LandingFaq />
 
       <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-8 text-sm text-muted-foreground">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <img src={logo} alt="" width={20} height={20} className="h-5 w-5" loading="lazy" />
             <span>DA-Copilot</span>
           </div>
-          <p>Analyse de données rigoureuse et pédagogue.</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <p>Analyse de données rigoureuse et pédagogue.</p>
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium hover:text-primary">
+              Contact
+            </a>
+          </div>
         </div>
       </footer>
     </div>

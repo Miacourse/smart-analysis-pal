@@ -4,6 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { AI_PROVIDER_NAME, SUPPORT_EMAIL } from "@/lib/legal";
 
 const faq = [
   {
@@ -30,6 +31,17 @@ const faq = [
     question: "Comment résilier ?",
     answer:
       "Depuis la page Tarifs, le bouton « Gérer mon abonnement » ouvre le portail Stripe, où vous pouvez annuler le renouvellement.",
+  },
+  {
+    question: "Mes données servent-elles à entraîner une IA ?",
+    answer:
+      "Non. DA-Copilot ne réentraîne aucun modèle avec vos données. L’analyse est générée via " +
+      AI_PROVIDER_NAME +
+      " à partir de votre question, de l’aperçu CSV et du résumé statistique. Le fichier d’origine n’est pas transmis. Évitez les données personnelles ou sensibles.",
+  },
+  {
+    question: "Comment vous contacter ?",
+    answer: `Écrivez-nous à ${SUPPORT_EMAIL}. Nous répondons sous 48 heures ouvrées. Pour une suppression de compte, vous pouvez aussi nous écrire depuis cet email.`,
   },
 ];
 

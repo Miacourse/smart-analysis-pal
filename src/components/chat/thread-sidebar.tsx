@@ -1,8 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { MessageSquarePlus, Trash2, LogOut, Sparkles, Shield } from "lucide-react";
+import { MessageSquarePlus, Trash2, LogOut, Sparkles, Shield, Mail } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { getBillingStatus, getIsAdmin } from "@/lib/billing.functions";
+import { deleteAccount } from "@/lib/account.functions";
 import { FREE_ANALYSIS_LIMIT } from "@/lib/billing";
+import { SUPPORT_EMAIL } from "@/lib/legal";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -39,6 +41,7 @@ export function ThreadSidebar({
   const [isAdmin, setIsAdmin] = useState(false);
   const billingStatus = useServerFn(getBillingStatus);
   const adminCheck = useServerFn(getIsAdmin);
+  const removeAccount = useServerFn(deleteAccount);
 
   async function loadThreads() {
     const { data, error } = await supabase
@@ -66,6 +69,9 @@ export function ThreadSidebar({
   }, []);
 
   const [email, setEmail] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     adminCheck()
@@ -112,6 +118,22 @@ export function ThreadSidebar({
     await supabase.auth.signOut();
     navigate({ to: "/" });
     onNavigate?.();
+  }
+
+  async function confirmDeleteAccount() {
+    if (deleteConfirmation !== "SUPPRIMER") return;
+    setDeleting(true);
+    try {
+      await removeAccount({ data: { confirmation: deleteConfirmation } });
+      await supabase.auth.signOut();
+      toast.success("Votre compte a été supprimé.");
+      navigate({ to: "/" });
+      onNavigate?.();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Suppression impossible.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -244,6 +266,13 @@ export function ThreadSidebar({
             Connecté : <span className="font-medium text-sidebar-foreground">{email}</span>
           </p>
         )}
+        <a
+          href={`mailto:${SUPPORT_EMAIL}`}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent"
+        >
+          <Mail className="h-4 w-4" />
+          Aide / Contact
+        </a>
         <button
           onClick={signOut}
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent"
@@ -251,6 +280,50 @@ export function ThreadSidebar({
           <LogOut className="h-4 w-4" />
           Se déconnecter / changer de compte
         </button>
+        <button
+          onClick={() => {
+            setDeleteOpen((open) => !open);
+            setDeleteConfirmation("");
+          }}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-4 w-4" />
+          Supprimer mon compte
+        </button>
+        {deleteOpen && (
+          <div className="mx-3 mb-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs">
+            <p className="font-semibold text-destructive">Cette action est définitive.</p>
+            <p className="mt-1 text-muted-foreground">
+              Votre abonnement Stripe actif sera résilié immédiatement. Tapez SUPPRIMER pour
+              confirmer.
+            </p>
+            <input
+              value={deleteConfirmation}
+              onChange={(event) => setDeleteConfirmation(event.target.value)}
+              className="mt-2 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground"
+              placeholder="SUPPRIMER"
+              aria-label="Confirmation de suppression du compte"
+            />
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={confirmDeleteAccount}
+                disabled={deleteConfirmation !== "SUPPRIMER" || deleting}
+                className="rounded-md bg-destructive px-2.5 py-1.5 font-semibold text-destructive-foreground disabled:opacity-50"
+              >
+                {deleting ? "Suppression…" : "Confirmer"}
+              </button>
+              <button
+                onClick={() => {
+                  setDeleteOpen(false);
+                  setDeleteConfirmation("");
+                }}
+                className="rounded-md border border-border px-2.5 py-1.5"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

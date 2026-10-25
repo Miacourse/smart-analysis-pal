@@ -18,6 +18,7 @@ import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { safeAnalysisError } from "@/lib/analysis-state";
+import { SUPPORT_EMAIL } from "@/lib/legal";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -243,7 +244,11 @@ function PricingPage() {
           </Button>
         </div>
         <p className="mt-8 text-center text-xs text-muted-foreground">
-          Paiement sécurisé par Stripe. Annulation en un clic.
+          Paiement sécurisé par Stripe. Annulation en un clic. Une question ?{" "}
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium hover:text-primary">
+            Contactez-nous
+          </a>
+          .
         </p>
       </main>
     </div>

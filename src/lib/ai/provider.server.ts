@@ -28,8 +28,8 @@ function openaiKey() {
 }
 
 /**
- * Fournisseur actif : Gemini, Claude ou OpenAI si une clé est fournie, sinon un point
- * d'accès gratuit sans clé (dépannage). `AI_PROVIDER` force un fournisseur précis.
+ * Fournisseur actif : Lovable si sa clé est fournie, puis Gemini, Claude ou OpenAI,
+ * sinon un point d'accès gratuit sans clé (dépannage). `AI_PROVIDER` force un choix.
  */
 export function activeProvider(): AiProvider {
   const forced = (process.env["AI_PROVIDER"] ?? "").trim().toLowerCase();
@@ -40,6 +40,7 @@ export function activeProvider(): AiProvider {
   if (forced === "lovable" && process.env["LOVABLE_API_KEY"]) return "lovable";
   // Le point d'accès gratuit ne demande aucune clé : on peut le forcer explicitement.
   if (forced === "free") return "free";
+  if (process.env["LOVABLE_API_KEY"]) return "lovable";
   if (geminiKey()) return "gemini";
   if (anthropicKey()) return "anthropic";
   if (openrouterKey()) return "openrouter";

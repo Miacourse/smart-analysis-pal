@@ -15,6 +15,7 @@ import {
   PRO_MAX_ROWS,
 } from "@/lib/billing";
 import logo from "@/assets/logo.png";
+import { SUPPORT_EMAIL } from "@/lib/legal";
 
 export const Route = createFileRoute("/pro")({
   head: () => ({
@@ -323,9 +324,14 @@ function ProPage() {
       </main>
       <footer className="mx-auto flex max-w-6xl flex-wrap justify-between gap-3 px-5 py-7 text-sm text-muted-foreground">
         <span>DA-Copilot · Vos données, vos décisions.</span>
-        <Link to="/pricing" className="hover:text-primary">
-          Retour aux tarifs
-        </Link>
+        <div className="flex items-center gap-5">
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-primary">
+            Contact
+          </a>
+          <Link to="/pricing" className="hover:text-primary">
+            Retour aux tarifs
+          </Link>
+        </div>
       </footer>
     </div>
   );

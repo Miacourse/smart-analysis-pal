@@ -10,6 +10,7 @@ type StripeSubscriptionItem = {
   price?: { product?: string };
 };
 type StripeSubscription = {
+  id: string;
   status: string;
   current_period_end?: number;
   customer?: { email?: string };
@@ -112,6 +113,25 @@ export async function createCheckoutSession(opts: {
   const s = await stripe<StripeSession>("checkout/sessions", { method: "POST", body });
   if (!s.url) throw new Error("URL de paiement indisponible.");
   return s.url;
+}
+
+export async function cancelSubscriptionsForEmail(email: string) {
+  if (!process.env["STRIPE_SECRET_KEY"]) return;
+  const customerId = await findCustomerId(email);
+  if (!customerId) return;
+  const pages = await Promise.all(
+    BILLABLE_STATUSES.map((status) =>
+      stripe<StripeSubscriptionList>(
+        `subscriptions?customer=${customerId}&status=${status}&limit=100`,
+      ),
+    ),
+  );
+  const subscriptions = pages.flatMap((page) => page.data ?? []);
+  await Promise.all(
+    subscriptions.map((subscription) =>
+      stripe<StripeSubscription>(`subscriptions/${subscription.id}`, { method: "DELETE" }),
+    ),
+  );
 }
 
 export async function createPortalSession(email: string, origin: string) {
