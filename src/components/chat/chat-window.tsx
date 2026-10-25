@@ -394,11 +394,16 @@ function ChatSession({
               ))}
             </SelectContent>
           </Select>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
             {datasetName ? (
               <>
-                <Paperclip className="h-4 w-4" />
-                <span className="break-all font-medium text-foreground">{datasetName}</span>
+                <Paperclip className="h-4 w-4 shrink-0" />
+                <span
+                  className="min-w-0 max-w-[70vw] truncate font-medium text-foreground sm:max-w-md"
+                  title={datasetName}
+                >
+                  {datasetName}
+                </span>
                 {datasetRows !== null && (
                   <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                     {datasetRows.toLocaleString("fr-FR")} lignes analysées

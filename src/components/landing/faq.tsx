@@ -1,0 +1,61 @@
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
+const faq = [
+  {
+    question: "Les 5 analyses gratuites, c'est par mois ?",
+    answer:
+      "Non. Les 5 analyses offertes sont valables une seule fois et ne se renouvellent pas chaque mois. Une fois le quota utilisé, il faut passer à Pro ou Team pour continuer.",
+  },
+  {
+    question: "Quels formats de fichiers sont acceptés ?",
+    answer:
+      "CSV, TSV, TXT, Excel (.xlsx et .xls), JSON, GeoJSON et LAS. Le fichier est lu dans votre navigateur avant l'analyse.",
+  },
+  {
+    question: "Mes données sont-elles conservées ?",
+    answer:
+      "Le fichier original n'est pas conservé. Un extrait CSV de 40 lignes et le profil statistique sont enregistrés avec votre conversation, ainsi que les messages. Vous pouvez supprimer la conversation depuis la barre latérale, ce qui supprime aussi son historique. Évitez les données personnelles ou sensibles.",
+  },
+  {
+    question: "Puis-je exporter mes résultats ?",
+    answer:
+      "Oui, en PDF et Excel, avec les offres Pro et Team. L'offre gratuite ne comprend pas les exports.",
+  },
+  {
+    question: "Comment résilier ?",
+    answer:
+      "Depuis la page Tarifs, le bouton « Gérer mon abonnement » ouvre le portail Stripe, où vous pouvez annuler le renouvellement.",
+  },
+];
+
+export function LandingFaq() {
+  return (
+    <section className="border-t border-border">
+      <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20">
+        <h2 className="text-center font-display text-3xl font-bold tracking-tight">
+          Questions fréquentes
+        </h2>
+        <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
+          Les réponses essentielles avant de lancer votre première analyse.
+        </p>
+        <Accordion type="single" collapsible className="mt-8">
+          {faq.map((item, index) => (
+            <AccordionItem key={item.question} value={`faq-${index}`}>
+              <AccordionTrigger className="text-left text-base font-semibold hover:no-underline">
+                {item.question}
+              </AccordionTrigger>
+              <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+                {item.answer}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </div>
+    </section>
+  );
+}

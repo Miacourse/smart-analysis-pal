@@ -1,8 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BarChart3, FileSpreadsheet, MessageSquareText, ShieldCheck, TrendingUp, Upload } from "lucide-react";
+import { useState } from "react";
+import { BarChart3, FileSpreadsheet, Menu, MessageSquareText, ShieldCheck, TrendingUp, Upload } from "lucide-react";
 
 import { FREE_ANALYSIS_LIMIT, FREE_MAX_FILE_MB, FREE_MAX_ROWS, PRO_MAX_FILE_MB, PRO_MAX_ROWS, TEAM_MAX_FILE_MB, TEAM_MAX_ROWS, PLAN_PRICES } from "@/lib/billing";
 import { ANALYSIS_DOMAINS } from "@/lib/analysis-domains";
+import { LandingFaq } from "@/components/landing/faq";
+import { HeroPreview } from "@/components/landing/hero-preview";
+import { TrustStrip } from "@/components/landing/trust-strip";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
@@ -37,32 +42,70 @@ const steps = [
 ];
 
 function Landing() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <div className="flex items-center gap-3">
+      <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
+        <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
           <img src={logo} alt="DA-Copilot" width={36} height={36} className="h-9 w-9" />
           <span className="font-display text-lg font-semibold tracking-tight">DA-Copilot</span>
         </div>
-        <nav className="flex items-center gap-3">
-          <Link to="/pricing" className="rounded-md px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
+        <nav className="hidden items-center gap-1 md:flex lg:gap-3">
+          <Link to="/pricing" className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted lg:px-4">
             Tarifs
           </Link>
-          <Link to="/login" className="rounded-md px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
+          <Link to="/login" className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted lg:px-4">
             Se connecter
           </Link>
           <Link
             to="/chat"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="whitespace-nowrap rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 lg:px-4"
           >
             Analyser mes données
           </Link>
         </nav>
+        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+          <SheetTrigger asChild>
+            <button
+              type="button"
+              aria-label="Ouvrir le menu"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-card text-foreground md:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-72">
+            <SheetHeader>
+              <SheetTitle>Menu</SheetTitle>
+            </SheetHeader>
+            <nav className="mt-6 flex flex-col gap-2">
+              <SheetClose asChild>
+                <Link to="/pricing" className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted">
+                  Tarifs
+                </Link>
+              </SheetClose>
+              <SheetClose asChild>
+                <Link to="/login" className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted">
+                  Se connecter
+                </Link>
+              </SheetClose>
+              <SheetClose asChild>
+                <Link
+                  to="/chat"
+                  className="mt-2 rounded-lg bg-primary px-3 py-2.5 text-center text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  Analyser mes données
+                </Link>
+              </SheetClose>
+            </nav>
+          </SheetContent>
+        </Sheet>
       </header>
 
-      <section className="bg-grid-paper">
-        <div className="mx-auto max-w-4xl px-6 pb-20 pt-16 text-center">
-          <p className="mx-auto mb-5 w-fit rounded-full border border-border bg-card px-4 py-1 text-xs font-medium text-muted-foreground">
+      <section className="bg-grid-paper pb-12">
+        <div className="mx-auto max-w-4xl px-6 pt-16 text-center">
+          <p className="mx-auto mb-5 w-fit max-w-full rounded-full border border-border bg-card px-4 py-1 text-center text-xs font-medium text-muted-foreground">
             {`Agent d'analyse de données — ${DISPLAYED_DOMAIN_COUNT} modes métier, rapports prêts à partager`}
           </p>
           <h1 className="text-balance font-display text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
@@ -89,7 +132,9 @@ function Landing() {
             </Link>
           </div>
         </div>
+        <HeroPreview />
       </section>
+      <TrustStrip />
 
       <section className="mx-auto max-w-6xl px-6 py-20">
         <h2 className="text-center font-display text-3xl font-bold tracking-tight">
@@ -200,6 +245,8 @@ function Landing() {
           </p>
         </div>
       </section>
+
+      <LandingFaq />
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-8 text-sm text-muted-foreground">

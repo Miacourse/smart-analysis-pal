@@ -140,7 +140,9 @@ export function ThreadSidebar({
             >
               <span className="block truncate font-medium">{t.title}</span>
               {t.dataset_name && (
-                <span className="block truncate text-xs text-muted-foreground">{t.dataset_name}</span>
+                <span className="block truncate text-xs text-muted-foreground" title={t.dataset_name}>
+                  {t.dataset_name}
+                </span>
               )}
             </Link>
             <button
@@ -164,14 +166,14 @@ export function ThreadSidebar({
           <div className="mb-2 rounded-lg bg-sidebar-accent/60 px-3 py-2 text-xs">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-sidebar-foreground">
-                {usage.plan === "team" ? "Team" : usage.plan === "pro" ? "Pro" : "Essai gratuit"}
+                {usage.plan === "team" ? "Team" : usage.plan === "pro" ? "Pro" : "Gratuit"}
               </span>
               {usage.plan !== "free" && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">Actif</span>}
             </div>
             <p className="mt-1 text-muted-foreground">
               {usage.plan === "free"
                 ? `${Math.min(usage.analysesUsed, usage.freeLimit ?? FREE_ANALYSIS_LIMIT)} / ${usage.freeLimit ?? FREE_ANALYSIS_LIMIT} analyses utilisées`
-                : `${usage.analysesThisMonth} analyses ce mois-ci`}
+                : "Analyses illimitées"}
             </p>
             {usage.plan === "free" && (
               <div className="mt-1.5 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, usage.analysesUsed / (usage.freeLimit ?? FREE_ANALYSIS_LIMIT) * 100)}%` }} /></div>
