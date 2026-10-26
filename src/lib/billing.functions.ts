@@ -139,12 +139,13 @@ export const getAdminStats = createServerFn({ method: "GET" })
         .limit(5000),
       supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin"),
       listActivePlansByEmail().catch(() => new Map<string, "free" | "pro" | "team">()),
-      (supabaseAdmin as unknown as AppVisitsClient)
-        .from("app_visits")
-        .select("country, created_at")
-        .gte("created_at", since30)
-        .limit(20000)
-        .catch(() => ({ data: [], error: true })),
+      Promise.resolve(
+        (supabaseAdmin as unknown as AppVisitsClient)
+          .from("app_visits")
+          .select("country, created_at")
+          .gte("created_at", since30)
+          .limit(20000),
+      ).catch(() => ({ data: [], error: true })),
     ]);
     const subRows = subs.data ?? [];
     const used = new Map(subRows.map((s) => [s.user_id, s.analyses_used]));
