@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_visits: {
+        Row: {
+          country: string | null
+          created_at: string
+          id: number
+          path: string
+          referrer: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          id?: never
+          path?: string
+          referrer?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          id?: never
+          path?: string
+          referrer?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
