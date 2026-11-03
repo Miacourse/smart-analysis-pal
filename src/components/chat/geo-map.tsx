@@ -13,7 +13,15 @@ type LeafletLayer = {
 };
 
 type LeafletCircleMarker = LeafletLayer & {
-  bindTooltip: (content: string, options?: { direction?: string }) => LeafletCircleMarker;
+  bindTooltip: (
+    content: string,
+    options?: {
+      direction?: string;
+      permanent?: boolean;
+      className?: string;
+      offset?: [number, number];
+    },
+  ) => LeafletCircleMarker;
   bindPopup: (content: string) => LeafletCircleMarker;
 };
 
@@ -62,6 +70,12 @@ const formatValue = (value: number) =>
     ? value.toLocaleString("fr-FR")
     : value.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
 
+const escapeHtml = (value: string) =>
+  value.replace(
+    /[&<>"']/g,
+    (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!,
+  );
+
 export function GeoMap({
   points,
   valueLabel,
@@ -103,17 +117,24 @@ export function GeoMap({
         for (const point of points) {
           const weight = Math.abs(point.value) / max;
           L.circleMarker([point.lat, point.lng], {
-            radius: 6 + 24 * Math.sqrt(weight),
-            color: "#0f766e",
-            weight: 1.5,
+            radius: 8 + 24 * Math.sqrt(weight),
+            color: "#0f172a",
+            weight: 2,
+            opacity: 1,
             fillColor: "#14b8a6",
-            fillOpacity: 0.55,
+            fillOpacity: 0.8,
           })
-            .bindTooltip(`${point.label} : ${formatValue(point.value)} ${valueLabel}`, {
-              direction: "top",
-            })
+            .bindTooltip(
+              `<strong>${escapeHtml(point.label)}</strong><br/>${formatValue(point.value)} ${escapeHtml(valueLabel)}`,
+              {
+                direction: "top",
+                permanent: true,
+                className: "geo-country-label",
+                offset: [0, -8],
+              },
+            )
             .bindPopup(
-              `<strong>${point.label}</strong><br/>${formatValue(point.value)} ${valueLabel}`,
+              `<strong>${escapeHtml(point.label)}</strong><br/>${formatValue(point.value)} ${escapeHtml(valueLabel)}`,
             )
             .addTo(map);
         }

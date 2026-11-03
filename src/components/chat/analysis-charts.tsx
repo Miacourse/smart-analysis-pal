@@ -22,7 +22,13 @@ import {
 import { extractMarkdownTables } from "@/lib/export-report";
 import { geoTrafficFromPreview } from "@/lib/geo";
 import { GeoMap } from "@/components/chat/geo-map";
-import { buildChartData, parseChartSpecs, toChartNumber, type ChartSpec } from "@/lib/chart-spec";
+import {
+  buildChartData,
+  buildChartValueTable,
+  parseChartSpecs,
+  toChartNumber,
+  type ChartSpec,
+} from "@/lib/chart-spec";
 
 const VegaChart = lazy(() => import("./vega-chart"));
 const PlotlyChart = lazy(() => import("./plotly-chart"));
@@ -295,6 +301,7 @@ function displayTitle(spec: ChartSpec): string {
 
 function SpecChart({ spec }: { spec: ChartSpec }) {
   const title = displayTitle(spec);
+  const reportValues = buildChartValueTable(spec);
   return (
     <figure className="rounded-xl border border-border bg-card p-4 shadow-sm">
       <figcaption className="mb-3 text-sm font-semibold">{title}</figcaption>
@@ -312,6 +319,19 @@ function SpecChart({ spec }: { spec: ChartSpec }) {
             <RechartsBody spec={spec} />
           </ResponsiveContainer>
         </div>
+      )}
+      {reportValues.length > 1 && (
+        <table data-report-values className="sr-only">
+          <tbody>
+            {reportValues.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row.map((cell, cellIndex) => (
+                  <td key={cellIndex}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </figure>
   );

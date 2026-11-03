@@ -139,14 +139,23 @@ const DISPLAY: Record<string, string> = {
 };
 
 export function countryName(iso: string) {
-  if (DISPLAY[iso]) return DISPLAY[iso];
-  for (const [code, , , ...names] of COUNTRIES) {
-    if (code === iso) {
+  const code = iso.trim().toUpperCase();
+  if (DISPLAY[code]) return DISPLAY[code];
+  for (const [countryCode, , , ...names] of COUNTRIES) {
+    if (countryCode === code) {
       const name = names[0] ?? code;
       return name.replace(
         /(^|[\s-])([\p{L}])/gu,
         (_, sep: string, letter: string) => sep + letter.toUpperCase(),
       );
+    }
+  }
+  if (/^[A-Z]{2}$/.test(code)) {
+    try {
+      const localized = new Intl.DisplayNames(["fr"], { type: "region" }).of(code);
+      if (localized && localized !== code) return localized;
+    } catch {
+      // Code pays inconnu : conserver le libellé d'origine.
     }
   }
   return iso;

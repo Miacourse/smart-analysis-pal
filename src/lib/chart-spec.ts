@@ -327,3 +327,22 @@ export function buildChartData(spec: ChartSpec): Record<string, string | number>
     return output;
   });
 }
+
+/** Valeurs textuelles à joindre au graphique statique dans le rapport PDF. */
+export function buildChartValueTable(spec: ChartSpec, maxRows = 30): string[][] {
+  if (spec.engine !== "recharts" || !spec.xKey || !spec.yKeys?.length) return [];
+  const rows = buildChartData(spec).slice(0, Math.max(1, maxRows));
+  if (rows.length === 0) return [];
+  const header = [spec.xKey, ...spec.yKeys];
+  return [
+    header,
+    ...rows.map((row) =>
+      header.map((key) => {
+        const value = row[key];
+        return typeof value === "number"
+          ? value.toLocaleString("fr-FR", { maximumFractionDigits: 2 })
+          : String(value ?? "");
+      }),
+    ),
+  ];
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { geoTrafficFromPreview, parseDelimited, resolveCountry } from "@/lib/geo";
+import { countryName, geoTrafficFromPreview, parseDelimited, resolveCountry } from "@/lib/geo";
 
 describe("resolveCountry", () => {
   it("reconnaît les noms français accentués et les codes", () => {
@@ -14,6 +14,15 @@ describe("resolveCountry", () => {
     expect(resolveCountry("Atlantide")).toBeNull();
     expect(resolveCountry("??")).toBeNull();
     expect(resolveCountry("")).toBeNull();
+  });
+});
+
+describe("countryName", () => {
+  it("affiche le nom complet des pays, y compris hors de la liste cartographique", () => {
+    expect(countryName("FR")).toBe("France");
+    expect(countryName("GB")).toBe("Royaume-Uni");
+    expect(countryName("CD")).toMatch(/Congo/);
+    expect(countryName("CD")).not.toBe("CD");
   });
 });
 

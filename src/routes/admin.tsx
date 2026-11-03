@@ -488,9 +488,7 @@ function AdminPage() {
                       {stats.visitsByCountry.map((row) => (
                         <tr key={row.country} className="border-b border-border last:border-0">
                           <td className="p-3">
-                            {row.country === "??"
-                              ? "Inconnu"
-                              : countryName(resolveCountry(row.country)?.iso ?? "") || row.country}
+                            {row.country === "??" ? "Inconnu" : countryName(row.country)}
                           </td>
                           <td className="p-3 tabular-nums">{row.count}</td>
                         </tr>

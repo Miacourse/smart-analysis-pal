@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { buildChartData, parseChartSpecs, stripChartBlocks } from "@/lib/chart-spec";
+import {
+  buildChartData,
+  buildChartValueTable,
+  parseChartSpecs,
+  stripChartBlocks,
+} from "@/lib/chart-spec";
 
 const text = `Voici le résultat.
 
@@ -185,5 +190,25 @@ describe("buildChartData", () => {
       { Classe: "1", Taux: 63 },
       { Classe: "2", Taux: 47 },
     ]);
+  });
+});
+
+describe("buildChartValueTable", () => {
+  it("prépare les valeurs lisibles à ajouter sous le graphique PDF", () => {
+    const [spec] = parseChartSpecs(`\`\`\`chart
+{"type":"bar","xKey":"Canal","yKeys":["Sessions"],"data":[{"Canal":"Direct","Sessions":1200},{"Canal":"Email","Sessions":45.5}]}
+\`\`\``);
+    expect(spec ? buildChartValueTable(spec) : []).toEqual([
+      ["Canal", "Sessions"],
+      ["Direct", "1 200"],
+      ["Email", "45,5"],
+    ]);
+  });
+
+  it("limite le nombre de lignes exportées", () => {
+    const [spec] = parseChartSpecs(`\`\`\`chart
+{"type":"bar","xKey":"Pays","yKeys":["Visites"],"data":[{"Pays":"France","Visites":10},{"Pays":"Espagne","Visites":5}]}
+\`\`\``);
+    expect(spec ? buildChartValueTable(spec, 1) : []).toHaveLength(2);
   });
 });

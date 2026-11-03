@@ -704,6 +704,9 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
       }
       doc.addImage(chart.dataUrl, "PNG", M, y, width, height);
       y += height + 16;
+      if (chart.values && chart.values.length > 1) {
+        renderTable(chart.values);
+      }
     }
     y += 4;
   }

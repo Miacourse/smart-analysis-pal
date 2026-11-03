@@ -3,6 +3,7 @@ export type ReportChart = {
   dataUrl: string;
   width: number;
   height: number;
+  values?: string[][];
 };
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -113,7 +114,12 @@ export async function captureChartImages(
     const width = Math.round(rect.width) || 700;
     const height = Math.round(rect.height) || 280;
     const title = figure.querySelector("figcaption")?.textContent?.trim() ?? "";
-    charts.push({ title, dataUrl, width, height });
+    const values = Array.from(figure.querySelectorAll("[data-report-values] tr"))
+      .map((row) =>
+        Array.from(row.querySelectorAll("th, td")).map((cell) => cell.textContent?.trim() ?? ""),
+      )
+      .filter((row) => row.some(Boolean));
+    charts.push({ title, dataUrl, width, height, ...(values.length > 1 ? { values } : {}) });
   }
   return charts;
 }
