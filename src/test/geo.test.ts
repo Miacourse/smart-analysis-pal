@@ -17,6 +17,17 @@ describe("resolveCountry", () => {
   });
 });
 
+describe("resolveCountry Afrique", () => {
+  it("reconnaît le Burkina Faso et le Bénin", () => {
+    expect(resolveCountry("Burkina Faso")?.iso).toBe("BF");
+    expect(resolveCountry("burkina")?.iso).toBe("BF");
+    expect(resolveCountry("B\u00e9nin")?.iso).toBe("BJ");
+    expect(resolveCountry("Benin")?.iso).toBe("BJ");
+    expect(countryName("BF")).toBe("Burkina Faso");
+    expect(countryName("BJ")).toBe("B\u00e9nin");
+  });
+});
+
 describe("countryName", () => {
   it("affiche le nom complet des pays, y compris hors de la liste cartographique", () => {
     expect(countryName("FR")).toBe("France");
