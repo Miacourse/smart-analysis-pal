@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { countryName, geoTrafficFromPreview, parseDelimited, resolveCountry } from "@/lib/geo";
+import { WORLD_COUNTRIES } from "@/lib/countries-data";
 
 describe("resolveCountry", () => {
   it("reconnaît les noms français accentués et les codes", () => {
@@ -25,6 +26,20 @@ describe("resolveCountry Afrique", () => {
     expect(resolveCountry("Benin")?.iso).toBe("BJ");
     expect(countryName("BF")).toBe("Burkina Faso");
     expect(countryName("BJ")).toBe("B\u00e9nin");
+  });
+});
+
+describe("WORLD_COUNTRIES dataset", () => {
+  it("couvre les 250 pays et les noms FR/EN sont résolubles", () => {
+    expect(WORLD_COUNTRIES.length).toBe(250);
+    const unresolved: string[] = [];
+    for (const country of WORLD_COUNTRIES) {
+      if (!resolveCountry(country.fr) || !resolveCountry(country.en)) {
+        unresolved.push(country.iso);
+      }
+      expect(countryName(country.iso)).toBe(country.fr);
+    }
+    expect(unresolved).toEqual([]);
   });
 });
 

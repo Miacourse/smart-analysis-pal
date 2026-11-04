@@ -1,125 +1,11 @@
+import { WORLD_COUNTRIES } from "./countries-data";
+
 export type GeoPoint = {
   label: string;
   lat: number;
   lng: number;
   value: number;
 };
-
-type Country = [iso: string, lat: number, lng: number, ...names: string[]];
-
-const COUNTRIES: Country[] = [
-  ["FR", 46.6, 2.4, "france"],
-  ["US", 39.8, -98.6, "etats-unis", "etats unis", "united states", "usa", "amerique"],
-  ["CA", 56.1, -106.3, "canada"],
-  ["GB", 54.0, -2.0, "royaume-uni", "united kingdom", "uk", "grande-bretagne", "angleterre"],
-  ["DE", 51.2, 10.4, "allemagne", "germany", "deutschland"],
-  ["ES", 40.5, -3.7, "espagne", "spain", "espana"],
-  ["IT", 41.9, 12.6, "italie", "italy", "italia"],
-  ["BE", 50.5, 4.5, "belgique", "belgium", "belgique"],
-  ["NL", 52.1, 5.3, "pays-bas", "netherlands", "holland", "nederland"],
-  ["CH", 46.8, 8.2, "suisse", "switzerland", "schweiz", "svizzera"],
-  ["LU", 49.8, 6.1, "luxembourg"],
-  ["PT", 39.4, -8.2, "portugal"],
-  ["IE", 53.1, -8.2, "irlande", "ireland"],
-  ["AT", 47.6, 14.1, "autriche", "austria"],
-  ["DK", 56.0, 10.0, "danemark", "denmark"],
-  ["SE", 62.0, 15.0, "suede", "sweden"],
-  ["NO", 60.5, 8.5, "norvege", "norway"],
-  ["FI", 64.0, 26.0, "finlande", "finland"],
-  ["PL", 52.2, 19.4, "pologne", "poland", "polska"],
-  ["CZ", 49.8, 15.5, "tchequie", "czechia", "czech republic"],
-  ["SK", 48.7, 19.7, "slovaquie", "slovakia"],
-  ["HU", 47.2, 19.5, "hongrie", "hungary"],
-  ["RO", 45.9, 25.0, "roumanie", "romania"],
-  ["BG", 42.7, 25.5, "bulgarie", "bulgaria"],
-  ["GR", 39.1, 21.8, "grece", "greece"],
-  ["HR", 45.1, 15.2, "croatie", "croatia"],
-  ["SI", 46.2, 15.0, "slovenie", "slovenia"],
-  ["RS", 44.0, 21.0, "serbie", "serbia"],
-  ["UA", 48.4, 31.2, "ukraine"],
-  ["RU", 61.5, 105.0, "russie", "russia"],
-  ["TR", 39.0, 35.2, "turquie", "turkey", "turkiye"],
-  ["MA", 31.8, -7.1, "maroc", "morocco"],
-  ["DZ", 28.0, 1.7, "algerie", "algeria"],
-  ["TN", 33.9, 9.5, "tunisie", "tunisia"],
-  ["EG", 26.8, 30.8, "egypte", "egypt"],
-  ["BF", 12.24, -1.56, "burkina faso", "burkina"],
-  ["BJ", 9.31, 2.31, "benin"],
-  ["TG", 8.62, 1.22, "togo"],
-  ["NE", 17.61, 8.08, "niger"],
-  ["ML", 17.57, -3.99, "mali"],
-  ["GN", 10.4, -11.5, "guinee", "guinea"],
-  ["GW", 11.8, -15.2, "guinee bissau", "guinee-bissau", "guinea-bissau"],
-  ["SL", 8.5, -11.8, "sierra leone"],
-  ["LR", 6.4, -9.4, "liberia"],
-  ["MR", 20.0, -10.6, "mauritanie", "mauritania"],
-  [
-    "CD",
-    -4.0,
-    22.0,
-    "rd congo",
-    "rdc",
-    "congo kinshasa",
-    "zaire",
-    "democratic republic of the congo",
-    "republique democratique du congo",
-  ],
-  [
-    "CG",
-    -0.6,
-    15.2,
-    "congo brazzaville",
-    "congo-brazzaville",
-    "republic of the congo",
-    "republique du congo",
-  ],
-  ["GA", -0.6, 9.8, "gabon"],
-  ["AO", -11.2, 17.9, "angola"],
-  ["CF", 6.6, 20.9, "centrafrique", "republique centrafricaine", "central african republic"],
-  ["TD", 15.5, 19.0, "tchad", "chad"],
-  ["MZ", -18.2, 35.5, "mozambique"],
-  ["MG", -18.8, 47.5, "madagascar"],
-  ["TZ", -6.3, 34.9, "tanzanie", "tanzania"],
-  ["UG", 1.4, 32.4, "ouganda", "uganda"],
-  ["ZM", -13.1, 27.8, "zambie", "zambia"],
-  ["MW", -13.3, 34.3, "malawi"],
-  ["ZW", -19.0, 29.2, "zimbabwe"],
-  ["NA", -22.9, 17.1, "namibie", "namibia"],
-  ["BW", -22.3, 24.7, "botswana"],
-  ["SN", 14.5, -14.5, "senegal"],
-  ["CI", 7.5, -5.5, "cote d'ivoire", "cote divoire", "ivory coast"],
-  ["CM", 7.4, 12.4, "cameroun", "cameroon"],
-  ["NG", 9.1, 8.7, "nigeria"],
-  ["GH", 7.9, -1.0, "ghana"],
-  ["KE", -0.0, 37.9, "kenya"],
-  ["ZA", -30.6, 22.9, "afrique du sud", "south africa"],
-  ["ET", 9.1, 40.5, "ethiopie", "ethiopia"],
-  ["IL", 31.0, 34.9, "israel"],
-  ["SA", 23.9, 45.1, "arabie saoudite", "saudi arabia"],
-  ["AE", 23.4, 53.8, "emirats arabes unis", "uae", "united arab emirates"],
-  ["QA", 25.3, 51.2, "qatar"],
-  ["IN", 20.6, 79.0, "inde", "india"],
-  ["PK", 30.4, 69.3, "pakistan"],
-  ["BD", 23.7, 90.4, "bangladesh"],
-  ["CN", 35.9, 104.2, "chine", "china"],
-  ["JP", 36.2, 138.3, "japon", "japan"],
-  ["KR", 35.9, 127.8, "coree du sud", "south korea", "korea"],
-  ["ID", -0.8, 113.9, "indonesie", "indonesia"],
-  ["VN", 14.1, 108.3, "vietnam"],
-  ["TH", 15.9, 101.0, "thailande", "thailand"],
-  ["MY", 4.2, 101.98, "malaisie", "malaysia"],
-  ["SG", 1.35, 103.8, "singapour", "singapore"],
-  ["PH", 12.9, 121.8, "philippines"],
-  ["AU", -25.3, 133.8, "australie", "australia"],
-  ["NZ", -40.9, 174.9, "nouvelle-zelande", "new zealand"],
-  ["BR", -14.2, -51.9, "bresil", "brazil", "brasil"],
-  ["AR", -38.4, -63.6, "argentine", "argentina"],
-  ["MX", 23.6, -102.6, "mexique", "mexico"],
-  ["CL", -35.7, -71.5, "chili", "chile"],
-  ["CO", 4.6, -74.3, "colombie", "colombia"],
-  ["PE", -9.2, -75.0, "perou", "peru"],
-  ["UY", -32.5, -55.8, "uruguay"],
-];
 
 const GEO_HEADER =
   /(^|\b)(pays|country|countries|régions?|regions?|nation|localisation|localisation|location|geo|zone|marché|market|territoire)(\b|$)/i;
@@ -136,10 +22,51 @@ function normalize(value: string) {
     .trim();
 }
 
+const EXTRA_ALIASES: Record<string, string> = {
+  usa: "US",
+  uk: "GB",
+  uae: "AE",
+  rdc: "CD",
+  zaire: "CD",
+  "rd congo": "CD",
+  "congo kinshasa": "CD",
+  "democratic republic of the congo": "CD",
+  "republique democratique du congo": "CD",
+  "republic of the congo": "CG",
+  "congo brazzaville": "CG",
+  "republique du congo": "CG",
+  turkey: "TR",
+  "cape verde": "CV",
+  swaziland: "SZ",
+  burma: "MM",
+  "czech republic": "CZ",
+  holland: "NL",
+  hollande: "NL",
+  "ivory coast": "CI",
+  "russian federation": "RU",
+  "bolivia plurinational state of": "BO",
+  "venezuela bolivarian republic of": "VE",
+  "viet nam": "VN",
+  "iran islamic republic of": "IR",
+  "syrian arab republic": "SY",
+  "tanzania united republic of": "TZ",
+  "united states of america": "US",
+  "south korea": "KR",
+  "north korea": "KP",
+  "bosnia and herzegovina": "BA",
+  "north macedonia": "MK",
+};
+
 const BY_ALIAS = new Map<string, { iso: string; lat: number; lng: number }>();
-for (const [iso, lat, lng, ...names] of COUNTRIES) {
-  BY_ALIAS.set(iso.toLowerCase(), { iso, lat, lng });
-  for (const name of names) BY_ALIAS.set(normalize(name), { iso, lat, lng });
+for (const country of WORLD_COUNTRIES) {
+  const point = { iso: country.iso, lat: country.lat, lng: country.lng };
+  BY_ALIAS.set(country.iso.toLowerCase(), point);
+  BY_ALIAS.set(normalize(country.en), point);
+  BY_ALIAS.set(normalize(country.fr), point);
+}
+for (const [alias, iso] of Object.entries(EXTRA_ALIASES)) {
+  const target = BY_ALIAS.get(iso.toLowerCase());
+  if (target) BY_ALIAS.set(alias, target);
 }
 
 export function resolveCountry(value: string) {
@@ -158,48 +85,12 @@ export function resolveCountry(value: string) {
   return null;
 }
 
-const DISPLAY: Record<string, string> = {
-  US: "États-Unis",
-  BF: "Burkina Faso",
-  BJ: "B\u00e9nin",
-  CD: "RD Congo",
-  CG: "Congo-Brazzaville",
-  CF: "Centrafrique",
-  TD: "Tchad",
-  GW: "Guin\u00e9e-Bissau",
-  GB: "Royaume-Uni",
-  CI: "Côte d'Ivoire",
-  KR: "Corée du Sud",
-  NZ: "Nouvelle-Zélande",
-  GR: "Grèce",
-  SE: "Suède",
-  NO: "Norvège",
-  CZ: "Tchéquie",
-  DZ: "Algérie",
-  EG: "Égypte",
-  SN: "Sénégal",
-  TH: "Thaïlande",
-  ID: "Indonésie",
-  BR: "Brésil",
-  PE: "Pérou",
-  AE: "Émirats arabes unis",
-  ET: "Éthiopie",
-  NL: "Pays-Bas",
-  RU: "Russie",
-};
+const BY_ISO = new Map(WORLD_COUNTRIES.map((country) => [country.iso, country]));
 
 export function countryName(iso: string) {
   const code = iso.trim().toUpperCase();
-  if (DISPLAY[code]) return DISPLAY[code];
-  for (const [countryCode, , , ...names] of COUNTRIES) {
-    if (countryCode === code) {
-      const name = names[0] ?? code;
-      return name.replace(
-        /(^|[\s-])([\p{L}])/gu,
-        (_, sep: string, letter: string) => sep + letter.toUpperCase(),
-      );
-    }
-  }
+  const match = BY_ISO.get(code);
+  if (match) return match.fr;
   if (/^[A-Z]{2}$/.test(code)) {
     try {
       const localized = new Intl.DisplayNames(["fr"], { type: "region" }).of(code);
