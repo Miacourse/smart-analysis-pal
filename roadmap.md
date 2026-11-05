@@ -1,5 +1,9 @@
 # Travail demandé
 
+- [ ] Installer l’identité Datello : thème, textes exacts, logo, mascotte, favicon et nom du projet.
+- [ ] Refaire l’espace d’analyse et brancher les moments FR/EN sans modifier les limites ni les exports.
+- [ ] Vérifier l’affichage mobile/ordinateur et un import suivi d’une analyse authentifiée.
+
 - [x] Corriger les erreurs HTML de l’analyse et tester un CSV.
 - [x] Ajouter une progression animée en quatre étapes.
 - [x] Conserver et vérifier les exports PDF/Excel, réservés à Pro.
