@@ -14,7 +14,7 @@ import {
   TEAM_MAX_FILE_MB,
   TEAM_MAX_ROWS,
 } from "@/lib/billing";
-import logo from "@/assets/logo.png";
+import { DatelloLogo } from "@/components/brand/DatelloLogo";
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { safeAnalysisError } from "@/lib/analysis-state";
@@ -24,13 +24,13 @@ import { useLang } from "@/lib/i18n";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Tarifs — DA-Copilot" },
+      { title: "Tarifs — Datello" },
       {
         name: "description",
         content:
-          "Essai gratuit puis DA-Copilot Pro à 19 €/mois : analyses illimitées et gros fichiers.",
+          "Essai gratuit puis Datello Pro à 19 €/mois : analyses illimitées et gros fichiers.",
       },
-      { property: "og:title", content: "Tarifs — DA-Copilot" },
+      { property: "og:title", content: "Tarifs — Datello" },
       {
         property: "og:description",
         content: "Essai gratuit puis Pro à 19 €/mois, sans engagement.",
@@ -151,8 +151,7 @@ function PricingPage() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="DA-Copilot" width={36} height={36} className="h-9 w-9" />
-          <span className="font-display text-lg font-semibold">DA-Copilot</span>
+          <DatelloLogo height={34} />
         </Link>
         <Link
           to={loggedIn ? "/chat" : "/login"}

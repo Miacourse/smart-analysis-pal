@@ -139,7 +139,7 @@ export function createAnalysisCall(
       apiKey: openrouterKey()!,
       headers: {
         "HTTP-Referer": process.env["OPENROUTER_SITE_URL"] ?? "https://da-copilot.lovable.app",
-        "X-Title": "DA-Copilot",
+        "X-Title": "Datello",
       },
     });
     const model = process.env["OPENROUTER_MODEL"] ?? "nvidia/nemotron-3-super-120b-a12b:free";

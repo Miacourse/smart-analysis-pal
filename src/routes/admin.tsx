@@ -42,9 +42,9 @@ export const Route = createFileRoute("/admin")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Administration — DA-Copilot" },
-      { name: "description", content: "Tableau de bord administrateur de DA-Copilot." },
-      { property: "og:title", content: "Administration — DA-Copilot" },
+      { title: "Administration — Datello" },
+      { name: "description", content: "Tableau de bord administrateur de Datello." },
+      { property: "og:title", content: "Administration — Datello" },
       {
         property: "og:description",
         content: "Statistiques internes des utilisateurs, abonnements et analyses.",
@@ -220,7 +220,7 @@ function AdminPage() {
           <div>
             <h1 className="font-display text-3xl font-bold">{t("Administration")}</h1>
             <p className="text-sm text-muted-foreground">
-              {t("Utilisateurs, abonnements et activité de DA-Copilot.")}
+              {t("Utilisateurs, abonnements et activité de Datello.")}
             </p>
           </div>
           <div className="flex gap-2">

@@ -14,20 +14,20 @@ import {
   PRO_MAX_FILE_MB,
   PRO_MAX_ROWS,
 } from "@/lib/billing";
-import logo from "@/assets/logo.png";
+import { DatelloLogo } from "@/components/brand/DatelloLogo";
 import { SUPPORT_EMAIL } from "@/lib/legal";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/pro")({
   head: () => ({
     meta: [
-      { title: "DA-Copilot Pro — Analyses illimitées à 19 €/mois" },
+      { title: "Datello Pro — Analyses illimitées à 19 €/mois" },
       {
         name: "description",
         content:
           "Passez en Pro : analyses illimitées, CSV jusqu'à 100 Mo, rapports PDF et Excel. Découvrez les exemples et les réponses à vos questions.",
       },
-      { property: "og:title", content: "DA-Copilot Pro — Votre analyse, sans limites" },
+      { property: "og:title", content: "Datello Pro — Votre analyse, sans limites" },
       {
         property: "og:description",
         content:
@@ -50,7 +50,7 @@ function ProPage() {
     {
       name: "Julien",
       role: t("E-commerçant, France"),
-      quote: t("DA-Copilot m'a fait économiser 10h d'analyse sur mes ventes."),
+      quote: t("Datello m'a fait économiser 10h d'analyse sur mes ventes."),
     },
     {
       name: "Sarah",
@@ -154,8 +154,7 @@ function ProPage() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-5">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="" className="size-9" />
-          <span className="font-display text-lg font-semibold">DA-Copilot</span>
+          <DatelloLogo height={32} />
         </Link>
         <nav className="flex gap-2">
           <Button variant="ghost" asChild>
@@ -170,7 +169,7 @@ function ProPage() {
         <section className="border-y border-border bg-secondary/40">
           <div className="mx-auto max-w-6xl px-5 py-14 sm:py-20">
             <div className="flex items-center gap-3 text-sm font-medium text-primary">
-              <img src={logo} alt="" className="size-12" /> DA-Copilot Pro
+              <DatelloLogo height={44} /> Datello Pro
             </div>
             <h1 className="mt-6 max-w-3xl font-display text-4xl font-bold leading-tight sm:text-5xl">
               {t("Passez en Pro")} <span className="text-primary">— 19 €{t("/mois")}</span>
@@ -250,7 +249,7 @@ function ProPage() {
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
             {t(
-              "DA-Copilot profile l'intégralité de votre fichier (échantillonnage régulier au-delà de 200 000 lignes) et détecte les vides, doublons, valeurs non numériques et valeurs aberrantes. L'offre Pro augmente les limites et débloque les exports. Besoin de fichiers plus volumineux ?",
+              "Datello profile l'intégralité de votre fichier (échantillonnage régulier au-delà de 200 000 lignes) et détecte les vides, doublons, valeurs non numériques et valeurs aberrantes. L'offre Pro augmente les limites et débloque les exports. Besoin de fichiers plus volumineux ?",
             )}{" "}
             <Link to="/pricing" className="font-semibold text-primary hover:underline">
               {t("L'offre Team (49 €/mois)")}
@@ -305,7 +304,7 @@ function ProPage() {
             {t("Leurs mots, votre prochain déclic.")}
           </h2>
           <p className="mt-3 text-sm text-muted-foreground">
-            {t("Témoignages fournis par DA-Copilot.")}
+            {t("Témoignages fournis par Datello.")}
           </p>
           <div className="mt-8 grid gap-5 md:grid-cols-3">
             {testimonials.map((item) => (
@@ -340,7 +339,7 @@ function ProPage() {
         <section className="border-y border-border bg-secondary">
           <div className="mx-auto max-w-4xl px-5 py-14 text-center">
             <h2 className="font-display text-3xl font-bold">
-              {t("DA-Copilot Pro. À vous de décider.")}
+              {t("Datello Pro. À vous de décider.")}
             </h2>
             <p className="mt-4 text-muted-foreground">
               {t("19 €/mois. Analyses illimitées. Rapports PDF et Excel.")}
@@ -361,7 +360,7 @@ function ProPage() {
         </section>
       </main>
       <footer className="mx-auto flex max-w-6xl flex-wrap justify-between gap-3 px-5 py-7 text-sm text-muted-foreground">
-        <span>{t("DA-Copilot — Vos données, vos décisions.")}</span>
+        <span>{t("Datello — Vos données, vos décisions.")}</span>
         <div className="flex items-center gap-5">
           <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-primary">
             {t("Contact")}

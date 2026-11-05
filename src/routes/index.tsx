@@ -35,22 +35,22 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import logo from "@/assets/logo.png";
+import { DatelloLogo } from "@/components/brand/DatelloLogo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "DA-Copilot — Agent d’analyse de données" },
+      { title: "Datello — Vos données, enfin claires" },
       {
         name: "description",
         content:
           "Téléversez un fichier (CSV, Excel, JSON, GeoJSON, LAS…), posez votre question métier, et recevez une analyse claire, chiffrée et vérifiable : KPI, tendances, anomalies et recommandations.",
       },
-      { property: "og:title", content: "DA-Copilot — Agent d’analyse de données" },
+      { property: "og:title", content: "Datello — Vos données, enfin claires" },
       {
         property: "og:description",
         content:
-          "Vos données deviennent des décisions : analyses chiffrées et recommandations actionnables par IA.",
+          "Datello, l’agent IA qui traite et analyse vos données. Importez un fichier, posez votre question, obtenez la réponse en graphique.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -97,8 +97,7 @@ function Landing() {
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
         <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
-          <img src={logo} alt="DA-Copilot" width={36} height={36} className="h-9 w-9" />
-          <span className="font-display text-lg font-semibold tracking-tight">DA-Copilot</span>
+          <DatelloLogo height={34} />
         </div>
         <nav className="hidden items-center gap-1 md:flex lg:gap-3">
           <Link
@@ -172,7 +171,7 @@ function Landing() {
             })}
           </p>
           <h1 className="text-balance font-display text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
-            {t("Vos données deviennent des")} <span className="text-primary">{t("décisions")}</span>
+            {t("Vos données,")} <span className="text-brand-teal-dark">{t("enfin claires.")}</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
             {t(
@@ -351,8 +350,8 @@ function Landing() {
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <img src={logo} alt="" width={20} height={20} className="h-5 w-5" loading="lazy" />
-            <span>DA-Copilot</span>
+            <DatelloLogo height={20} />
+            <span>Datello</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <p>{t("Analyse de données rigoureuse et pédagogue.")}</p>

@@ -82,18 +82,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "DA-Copilot — Agent d’analyse de données" },
+      { title: "Datello — Vos données, enfin claires" },
       {
         name: "description",
         content:
-          "DA-Copilot transforme vos questions métier et vos fichiers CSV en analyses claires, chiffrées et actionnables : KPI, tendances, anomalies et recommandations.",
+          "Datello, l’agent IA qui traite et analyse vos données. Importez un fichier, posez votre question, obtenez la réponse en graphique.",
       },
-      { property: "og:site_name", content: "DA-Copilot" },
-      { property: "og:title", content: "DA-Copilot — Agent d’analyse de données" },
+      { name: "theme-color", content: "#14213D" },
+      { property: "og:site_name", content: "Datello" },
+      { property: "og:title", content: "Datello — Vos données, enfin claires" },
       {
         property: "og:description",
-        content:
-          "Téléversez vos données, posez votre question, recevez une analyse chiffrée et des recommandations actionnables.",
+        content: "Importez un fichier, posez votre question, obtenez la réponse en graphique.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://da-copilot.lovable.app/" },
@@ -106,14 +106,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image:height", content: "630" },
       {
         property: "og:image:alt",
-        content: "Logo DA-Copilot et accroche : vos données deviennent des décisions.",
+        content: "Logo Datello et accroche : vos données, enfin claires.",
       },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "DA-Copilot — Agent d’analyse de données" },
+      { name: "twitter:title", content: "Datello — Vos données, enfin claires" },
       {
         name: "twitter:description",
-        content:
-          "Téléversez vos données, posez votre question, recevez une analyse chiffrée et des recommandations actionnables.",
+        content: "Importez un fichier, posez votre question, obtenez la réponse en graphique.",
       },
       {
         name: "twitter:image",
@@ -121,18 +120,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         name: "twitter:image:alt",
-        content: "Logo DA-Copilot et accroche : vos données deviennent des décisions.",
+        content: "Logo Datello et accroche : vos données, enfin claires.",
       },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Inter:wght@400;500;600&display=swap",
       },
     ],
   }),

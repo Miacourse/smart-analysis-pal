@@ -6,6 +6,28 @@ const LANG_KEY = "da-lang";
 
 /** English strings, keyed by the French source string. Missing keys fall back to French. */
 const EN: Record<string, string> = {
+  "Mes fichiers": "My files",
+  "Tableaux de bord": "Dashboards",
+  "Fichiers récents": "Recent files",
+  "Aucun fichier associé": "No file attached",
+  Arrêter: "Stop",
+  Analyser: "Analyze",
+  "Importer un fichier CSV ou Excel": "Upload a CSV or Excel file",
+  "Posez une question sur vos données…": "Ask a question about your data…",
+  "Vos données,": "Your data,",
+  "enfin claires.": "finally clear.",
+  "Retrouvez les fichiers importés et reprenez une analyse.":
+    "Find your imported files and resume an analysis.",
+  "Chargement de vos fichiers…": "Loading your files…",
+  "Aucun fichier pour le moment.": "No files yet.",
+  "Ouvrez une conversation puis importez un fichier CSV ou Excel.":
+    "Open a conversation, then upload a CSV or Excel file.",
+  "Reprenez vos analyses enregistrées et leurs graphiques.":
+    "Resume your saved analyses and their charts.",
+  "Chargement de vos tableaux de bord…": "Loading your dashboards…",
+  "Aucun tableau de bord pour le moment.": "No dashboards yet.",
+  "Chaque analyse terminée apparaît ici avec ses graphiques.":
+    "Every completed analysis appears here with its charts.",
   "Page introuvable": "Page not found",
   "La page que vous cherchez n'existe pas ou a été déplacée.":
     "The page you are looking for does not exist or has been moved.",
@@ -105,8 +127,8 @@ const EN: Record<string, string> = {
   "Depuis la page Tarifs, le bouton « Gérer mon abonnement » ouvre le portail Stripe, où vous pouvez annuler le renouvellement.":
     "From the Pricing page, the “Manage my subscription” button opens the Stripe portal, where you can cancel the renewal.",
   "Mes données servent-elles à entraîner une IA ?": "Is my data used to train AI?",
-  "Non. DA-Copilot ne réentraîne aucun modèle avec vos données. L'analyse est générée via":
-    "No. DA-Copilot does not retrain any model with your data. The analysis is generated via",
+  "Non. Datello ne réentraîne aucun modèle avec vos données. L'analyse est générée via":
+    "No. Datello does not retrain any model with your data. The analysis is generated via",
   "à partir de votre question, de l'aperçu CSV et du résumé statistique. Le fichier d'origine n'est pas transmis. Évitez les données personnelles ou sensibles.":
     "from your question, the CSV preview and the statistical summary. The original file is not transmitted. Avoid personal or sensitive data.",
   "Comment vous contacter ?": "How can I contact you?",
@@ -144,8 +166,8 @@ const EN: Record<string, string> = {
   "Support dédié par email": "Dedicated email support",
   "E-commerçant, France": "E-commerce, France",
   "Consultant, Espagne": "Consulting, Spain",
-  "DA-Copilot m'a fait économiser 10h d'analyse sur mes ventes.":
-    "DA-Copilot saved me 10 hours of analysis on my sales.",
+  "Datello m'a fait économiser 10h d'analyse sur mes ventes.":
+    "Datello saved me 10 hours of analysis on my sales.",
   "Enfin un outil qui explique mes CSV sans code.":
     "Finally a tool that explains my CSVs without code.",
   "L'export Excel est parfait pour mes rapports.": "Excel export is perfect for my reports.",
@@ -210,8 +232,8 @@ const EN: Record<string, string> = {
   "Lignes par fichier": "Rows per file",
   Rapports: "Reports",
   Oui: "Yes",
-  "DA-Copilot profile l'intégralité de votre fichier (échantillonnage régulier au-delà de 200 000 lignes) et détecte les vides, doublons, valeurs non numériques et valeurs aberrantes. L'offre Pro augmente les limites et débloque les exports. Besoin de fichiers plus volumineux ?":
-    "DA-Copilot profiles your entire file (regular sampling beyond 200,000 rows) and detects gaps, duplicates, non-numeric and outlier values. Pro raises the limits and unlocks exports. Need bigger files?",
+  "Datello profile l'intégralité de votre fichier (échantillonnage régulier au-delà de 200 000 lignes) et détecte les vides, doublons, valeurs non numériques et valeurs aberrantes. L'offre Pro augmente les limites et débloque les exports. Besoin de fichiers plus volumineux ?":
+    "Datello profiles your entire file (regular sampling beyond 200,000 rows) and detects gaps, duplicates, non-numeric and outlier values. Pro raises the limits and unlocks exports. Need bigger files?",
   "L'offre Team (49 €/mois)": "The Team plan (€49/month)",
   "monte à 250 Mo et 2 000 000 de lignes.": "goes up to 250 MB and 2,000,000 rows.",
   "Du CSV brut à une lecture claire.": "From raw CSV to clear reading.",
@@ -220,15 +242,15 @@ const EN: Record<string, string> = {
   AVANT: "BEFORE",
   APRÈS: "AFTER",
   "Leurs mots, votre prochain déclic.": "Their words, your next click.",
-  "Témoignages fournis par DA-Copilot.": "Testimonials provided by DA-Copilot.",
+  "Témoignages fournis par Datello.": "Testimonials provided by Datello.",
   "5 étoiles sur 5": "5 stars out of 5",
   "Vos questions, sans détour.": "Your questions, straight to the point.",
-  "DA-Copilot Pro. À vous de décider.": "DA-Copilot Pro. The call is yours.",
+  "Datello Pro. À vous de décider.": "Datello Pro. The call is yours.",
   "19 €/mois. Analyses illimitées. Rapports PDF et Excel.":
     "€19/month. Unlimited analyses. PDF and Excel reports.",
   "L'essai gratuit de 5 analyses reste disponible avant de souscrire.":
     "The 5 free analyses remain available before you subscribe.",
-  "DA-Copilot — Vos données, vos décisions.": "DA-Copilot — Your data, your decisions.",
+  "Datello — Vos données, vos décisions.": "Datello — Your data, your decisions.",
   "Retour aux tarifs": "Back to pricing",
   "Chargement de la conversation…": "Loading the conversation…",
   "Les exports PDF et Excel sont inclus dans Pro.": "PDF and Excel exports are included in Pro.",
@@ -262,8 +284,8 @@ const EN: Record<string, string> = {
     "Upload a file (CSV, Excel, JSON, GeoJSON, LAS…), then ask your business question.",
   "Analyse en cours…": "Analysis in progress…",
   "Posez votre question sur vos données…": "Ask your question about your data…",
-  "DA-Copilot s’appuie sur le profil statistique complet du fichier et un échantillon d’illustration. Vérifiez les chiffres clés.":
-    "DA-Copilot relies on the complete statistical profile of the file and an illustrative sample. Check the key figures.",
+  "Datello s’appuie sur le profil statistique complet du fichier et un échantillon d’illustration. Vérifiez les chiffres clés.":
+    "Datello relies on the complete statistical profile of the file and an illustrative sample. Check the key figures.",
   "Exemples : {list}": "Examples: {list}",
   "Chargement du graphique…": "Loading the chart…",
   "{measures} par {x}": "{measures} by {x}",
@@ -369,8 +391,7 @@ const EN: Record<string, string> = {
   "{email} n’est plus administrateur.": "{email} is no longer an administrator.",
   "{email} est désormais administrateur.": "{email} is now an administrator.",
   "Action impossible.": "Action failed.",
-  "Utilisateurs, abonnements et activité de DA-Copilot.":
-    "DA-Copilot users, subscriptions and activity.",
+  "Utilisateurs, abonnements et activité de Datello.": "Datello users, subscriptions and activity.",
   Actualiser: "Refresh",
   "Retour à l’espace": "Back to workspace",
   "Chargement…": "Loading…",

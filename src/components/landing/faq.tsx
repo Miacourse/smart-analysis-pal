@@ -44,9 +44,7 @@ export function LandingFaq() {
     {
       question: t("Mes données servent-elles à entraîner une IA ?"),
       answer:
-        t(
-          "Non. DA-Copilot ne réentraîne aucun modèle avec vos données. L'analyse est générée via",
-        ) +
+        t("Non. Datello ne réentraîne aucun modèle avec vos données. L'analyse est générée via") +
         ` ${AI_PROVIDER_NAME} ` +
         t(
           "à partir de votre question, de l'aperçu CSV et du résumé statistique. Le fichier d'origine n'est pas transmis. Évitez les données personnelles ou sensibles.",

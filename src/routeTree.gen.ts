@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as DashboardsRouteImport } from './routes/dashboards'
+import { Route as FilesRouteImport } from './routes/files'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProRouteImport } from './routes/pro'
@@ -27,6 +29,16 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardsRoute = DashboardsRouteImport.update({
+  id: '/dashboards',
+  path: '/dashboards',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FilesRoute = FilesRouteImport.update({
+  id: '/files',
+  path: '/files',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -68,6 +80,8 @@ const ChatThreadIdRoute = ChatThreadIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/dashboards': typeof DashboardsRoute
+  '/files': typeof FilesRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/pro': typeof ProRoute
@@ -79,6 +93,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/dashboards': typeof DashboardsRoute
+  '/files': typeof FilesRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/pro': typeof ProRoute
@@ -91,6 +107,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/dashboards': typeof DashboardsRoute
+  '/files': typeof FilesRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/pro': typeof ProRoute
@@ -104,6 +122,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/dashboards'
+    | '/files'
     | '/login'
     | '/pricing'
     | '/pro'
@@ -115,6 +135,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/dashboards'
+    | '/files'
     | '/login'
     | '/pricing'
     | '/pro'
@@ -126,6 +148,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/dashboards'
+    | '/files'
     | '/login'
     | '/pricing'
     | '/pro'
@@ -138,6 +162,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  DashboardsRoute: typeof DashboardsRoute
+  FilesRoute: typeof FilesRoute
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
   ProRoute: typeof ProRoute
@@ -161,6 +187,20 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboards': {
+      id: '/dashboards'
+      path: '/dashboards'
+      fullPath: '/dashboards'
+      preLoaderRoute: typeof DashboardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/files': {
+      id: '/files'
+      path: '/files'
+      fullPath: '/files'
+      preLoaderRoute: typeof FilesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -218,6 +258,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  DashboardsRoute: DashboardsRoute,
+  FilesRoute: FilesRoute,
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
   ProRoute: ProRoute,

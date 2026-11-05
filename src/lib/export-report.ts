@@ -730,7 +730,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
     doc.line(M, H - 44, W - M, H - 44);
     doc.setFont("helvetica", "normal").setFontSize(8);
     setMuted();
-    doc.text("DA-Copilot - Rapport d'analyse", M, H - 30);
+    doc.text("Datello - Rapport d'analyse", M, H - 30);
     doc.text(`Page ${page} / ${pages}`, W - M, H - 30, { align: "right" });
   }
 }
@@ -751,7 +751,7 @@ export async function exportExcel(input: ReportInput) {
   const XLSX = await import("xlsx");
   const wb = XLSX.utils.book_new();
   const summary = [
-    ["Rapport d'analyse DA-Copilot"],
+    ["Rapport d'analyse Datello"],
     ["Conversation", sanitizeReportText(input.title)],
     ["Fichier", sanitizeReportText(input.datasetName ?? "aucun")],
     ["Généré le", sanitizeReportText(new Date().toLocaleString("fr-FR"))],

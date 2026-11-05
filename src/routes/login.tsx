@@ -4,15 +4,15 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import logo from "@/assets/logo.png";
+import { DatelloLogo } from "@/components/brand/DatelloLogo";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Connexion — DA-Copilot" },
-      { name: "description", content: "Connectez-vous à DA-Copilot pour analyser vos données." },
-      { property: "og:title", content: "Connexion — DA-Copilot" },
+      { title: "Connexion — Datello" },
+      { name: "description", content: "Connectez-vous à Datello pour analyser vos données." },
+      { property: "og:title", content: "Connexion — Datello" },
       { property: "og:description", content: "Accédez à votre assistant d'analyse de données." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -147,7 +147,7 @@ function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-grid-paper bg-background px-4">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <img src={logo} alt="DA-Copilot" width={48} height={48} className="h-12 w-12" />
+          <DatelloLogo height={48} />
           <h1 className="mt-3 font-display text-xl font-bold">
             {recovering
               ? t("Nouveau mot de passe")

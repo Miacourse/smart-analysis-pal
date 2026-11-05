@@ -9,7 +9,7 @@ import { safeAnalysisError } from "@/lib/analysis-state";
 import { formatProfileForPrompt, type DatasetProfile } from "@/lib/dataset-profile";
 import { getAnalysisDomain } from "@/lib/analysis-domains";
 
-const SYSTEM_PROMPT = `Tu es DA-Copilot, un agent d'analyse de données rigoureux et pédagogue.
+const SYSTEM_PROMPT = `Tu es Datello, un agent d'analyse de données rigoureux et pédagogue.
 Tu transformes une question métier et un jeu de données en une réponse claire, chiffrée et vérifiable.
 
 Ton workflow en 5 étapes :

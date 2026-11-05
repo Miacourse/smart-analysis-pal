@@ -9,9 +9,9 @@ import { useLang } from "@/lib/i18n";
 export const Route = createFileRoute("/chat/")({
   head: () => ({
     meta: [
-      { title: "Mes analyses — DA-Copilot" },
+      { title: "Mes analyses — Datello" },
       { name: "description", content: "Vos conversations d'analyse de données." },
-      { property: "og:title", content: "Mes analyses — DA-Copilot" },
+      { property: "og:title", content: "Mes analyses — Datello" },
       {
         property: "og:description",
         content: "Retrouvez votre espace d’analyse de données et vos conversations.",

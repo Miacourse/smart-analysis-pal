@@ -10,12 +10,12 @@ import { useLang } from "@/lib/i18n";
 export const Route = createFileRoute("/chat/$threadId")({
   head: () => ({
     meta: [
-      { title: "Analyse en cours — DA-Copilot" },
-      { name: "description", content: "Conversation d'analyse de données avec DA-Copilot." },
-      { property: "og:title", content: "Votre analyse — DA-Copilot" },
+      { title: "Analyse en cours — Datello" },
+      { name: "description", content: "Conversation d'analyse de données avec Datello." },
+      { property: "og:title", content: "Votre analyse — Datello" },
       {
         property: "og:description",
-        content: "Analysez votre CSV et retrouvez vos rapports DA-Copilot.",
+        content: "Analysez votre CSV et retrouvez vos rapports Datello.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
