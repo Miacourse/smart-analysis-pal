@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatShell } from "@/components/chat/chat-shell";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/chat/")({
   head: () => ({
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/chat/")({
 
 function ChatIndex() {
   const navigate = useNavigate();
+  const { t } = useLang();
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +67,7 @@ function ChatIndex() {
   return (
     <ChatShell>
       <div className="flex flex-1 items-center justify-center">
-        <Shimmer className="text-sm">Ouverture de votre espace d'analyse…</Shimmer>
+        <Shimmer className="text-sm">{t("Ouverture de votre espace d'analyse…")}</Shimmer>
       </div>
     </ChatShell>
   );

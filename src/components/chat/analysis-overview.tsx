@@ -2,13 +2,7 @@ import { Fragment } from "react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
 import type { DatasetProfile } from "@/lib/dataset-profile";
-
-const compact = new Intl.NumberFormat("fr-FR", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
-const formatNumber = (value: number) => (Number.isFinite(value) ? compact.format(value) : "—");
+import { useLang } from "@/lib/i18n";
 
 function correlationColor(r: number) {
   const alpha = 0.12 + Math.abs(r) * 0.75;
@@ -25,6 +19,13 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 export function AnalysisOverview({ profile }: { profile: DatasetProfile }) {
+  const { t, locale } = useLang();
+  const formatNumber = (value: number) =>
+    Number.isFinite(value)
+      ? new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(
+          value,
+        )
+      : "—";
   const numeric = profile.columnProfiles.filter((column) => column.type === "number");
   const missing =
     profile.rows * profile.columns > 0 ? profile.nullCells / (profile.rows * profile.columns) : 0;
@@ -55,55 +56,66 @@ export function AnalysisOverview({ profile }: { profile: DatasetProfile }) {
   const issues: { label: string; detail: string }[] = [];
   if (profile.nullCells > 0)
     issues.push({
-      label: `${profile.nullCells.toLocaleString("fr-FR")} cellule(s) vide(s)`,
-      detail: "imputation ou suppression",
+      label: t("{count} cellule(s) vide(s)", { count: profile.nullCells.toLocaleString(locale) }),
+      detail: t("imputation ou suppression"),
     });
   if (profile.duplicateRows > 0)
     issues.push({
-      label: `${profile.duplicateRows.toLocaleString("fr-FR")} ligne(s) dupliquée(s)`,
-      detail: "dédoublonnage",
+      label: t("{count} ligne(s) dupliquée(s)", {
+        count: profile.duplicateRows.toLocaleString(locale),
+      }),
+      detail: t("dédoublonnage"),
     });
   if (nonNumeric > 0)
     issues.push({
-      label: `${nonNumeric.toLocaleString("fr-FR")} valeur(s) non numérique(s) en colonne numérique`,
-      detail: "conversion ou correction",
+      label: t("{count} valeur(s) non numérique(s) en colonne numérique", {
+        count: nonNumeric.toLocaleString(locale),
+      }),
+      detail: t("conversion ou correction"),
     });
   if (outliers > 0)
     issues.push({
-      label: `${outliers.toLocaleString("fr-FR")} valeur(s) aberrante(s) (IQR 1,5)`,
-      detail: "vérification, plafonnement ou retrait",
+      label: t("{count} valeur(s) aberrante(s) (IQR 1,5)", {
+        count: outliers.toLocaleString(locale),
+      }),
+      detail: t("vérification, plafonnement ou retrait"),
     });
   if (constants > 0)
     issues.push({
-      label: `${constants} colonne(s) constante(s)`,
-      detail: "sans pouvoir discriminant",
+      label: t("{count} colonne(s) constante(s)", { count: constants }),
+      detail: t("sans pouvoir discriminant"),
     });
   if (whitespace > 0)
     issues.push({
-      label: `${whitespace.toLocaleString("fr-FR")} valeur(s) avec espaces parasites`,
-      detail: "nettoyage des espaces",
+      label: t("{count} valeur(s) avec espaces parasites", {
+        count: whitespace.toLocaleString(locale),
+      }),
+      detail: t("nettoyage des espaces"),
     });
 
   return (
     <div className="mt-6 w-full max-w-2xl space-y-4 text-left">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat label="Lignes" value={profile.rows.toLocaleString("fr-FR")} />
-        <Stat label="Colonnes" value={profile.columns.toLocaleString("fr-FR")} />
-        <Stat label="Valeurs vides" value={`${(missing * 100).toFixed(1)} %`} />
-        <Stat label="Doublons" value={profile.duplicateRows.toLocaleString("fr-FR")} />
+        <Stat label={t("Lignes")} value={profile.rows.toLocaleString(locale)} />
+        <Stat label={t("Colonnes")} value={profile.columns.toLocaleString(locale)} />
+        <Stat label={t("Valeurs vides")} value={`${(missing * 100).toFixed(1)} %`} />
+        <Stat label={t("Doublons")} value={profile.duplicateRows.toLocaleString(locale)} />
       </div>
 
       <section className="rounded-xl border border-border bg-card p-4">
-        <h3 className="text-sm font-semibold">Qualité des données</h3>
+        <h3 className="text-sm font-semibold">{t("Qualité des données")}</h3>
         <p className="mt-1 text-[11px] text-muted-foreground">
-          Détection sur{" "}
           {profiledRows < profile.rows
-            ? `${profiledRows.toLocaleString("fr-FR")} lignes échantillonnées sur ${profile.rows.toLocaleString("fr-FR")}`
-            : `${profile.rows.toLocaleString("fr-FR")} lignes`}
-          .
+            ? t("Détection sur {sampled} lignes échantillonnées sur {total}.", {
+                sampled: profiledRows.toLocaleString(locale),
+                total: profile.rows.toLocaleString(locale),
+              })
+            : t("Détection sur {total} lignes.", { total: profile.rows.toLocaleString(locale) })}
         </p>
         {issues.length === 0 ? (
-          <p className="mt-3 text-xs text-muted-foreground">Aucun problème majeur détecté.</p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {t("Aucun problème majeur détecté.")}
+          </p>
         ) : (
           <ul className="mt-3 space-y-1.5 text-xs">
             {issues.map((issue) => (
@@ -118,13 +130,15 @@ export function AnalysisOverview({ profile }: { profile: DatasetProfile }) {
           </ul>
         )}
         <p className="mt-2 text-[11px] text-muted-foreground">
-          L'agent explique chaque problème et propose une correction sans modifier vos données.
+          {t(
+            "L'agent explique chaque problème et propose une correction sans modifier vos données.",
+          )}
         </p>
       </section>
 
       {histograms.length > 0 && (
         <section className="rounded-xl border border-border bg-card p-4">
-          <h3 className="text-sm font-semibold">Distributions (fichier complet)</h3>
+          <h3 className="text-sm font-semibold">{t("Distributions (fichier complet)")}</h3>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             {histograms.map((histogram) => (
               <div key={histogram.name}>
@@ -148,7 +162,7 @@ export function AnalysisOverview({ profile }: { profile: DatasetProfile }) {
                         interval="preserveStartEnd"
                       />
                       <Tooltip
-                        formatter={(value) => [formatNumber(Number(value)), "valeurs"]}
+                        formatter={(value) => [formatNumber(Number(value)), t("valeurs")]}
                         labelFormatter={(label) => `≥ ${String(label)}`}
                         contentStyle={{
                           background: "var(--card)",
@@ -170,7 +184,7 @@ export function AnalysisOverview({ profile }: { profile: DatasetProfile }) {
 
       {names.length > 1 && (profile.correlations?.length ?? 0) > 0 && (
         <section className="rounded-xl border border-border bg-card p-4">
-          <h3 className="text-sm font-semibold">Corrélations (Pearson)</h3>
+          <h3 className="text-sm font-semibold">{t("Corrélations (Pearson)")}</h3>
           <div className="mt-3 overflow-x-auto">
             <div
               className="grid gap-1 text-[10px]"
@@ -201,7 +215,7 @@ export function AnalysisOverview({ profile }: { profile: DatasetProfile }) {
                         className="flex h-7 items-center justify-center rounded-sm font-medium"
                         title={
                           r === null
-                            ? "Données insuffisantes"
+                            ? t("Données insuffisantes")
                             : `${rowName} × ${colName} : r = ${r.toFixed(2)}`
                         }
                         style={
@@ -222,8 +236,9 @@ export function AnalysisOverview({ profile }: { profile: DatasetProfile }) {
             </div>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Bleu = corrélation positive, rouge = négative. Calcul sur les lignes complètes (jusqu'à
-            50 000).
+            {t(
+              "Bleu = corrélation positive, rouge = négative. Calcul sur les lignes complètes (jusqu'à 50 000).",
+            )}
           </p>
         </section>
       )}
@@ -233,7 +248,7 @@ export function AnalysisOverview({ profile }: { profile: DatasetProfile }) {
           <span
             key={column.name}
             className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
-            title={`${column.type} · ${column.nulls} vides`}
+            title={t("{type} · {count} vides", { type: column.type, count: column.nulls })}
           >
             {column.name} <span className="opacity-60">{column.type}</span>
           </span>

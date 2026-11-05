@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ChatShell } from "@/components/chat/chat-shell";
 import { ChatWindow } from "@/components/chat/chat-window";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/chat/$threadId")({
   head: () => ({
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/chat/$threadId")({
 
 function ChatThreadPage() {
   const { threadId } = Route.useParams();
+  const { t } = useLang();
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
 
@@ -49,7 +51,7 @@ function ChatThreadPage() {
   if (!ready) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <Shimmer className="text-sm">Vérification de votre session…</Shimmer>
+        <Shimmer className="text-sm">{t("Vérification de votre session…")}</Shimmer>
       </div>
     );
   }

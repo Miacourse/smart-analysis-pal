@@ -1,16 +1,18 @@
 import { CreditCard, ListChecks, ShieldCheck } from "lucide-react";
-
-const points = [
-  { icon: ShieldCheck, text: "Fichier original non conservé" },
-  { icon: ListChecks, text: "Analyse en 5 étapes visibles" },
-  { icon: CreditCard, text: "Sans carte bancaire pour commencer" },
-];
+import { useLang } from "@/lib/i18n";
 
 export function TrustStrip() {
+  const { t } = useLang();
+  const points = [
+    { icon: ShieldCheck, text: t("Fichier original non conservé") },
+    { icon: ListChecks, text: t("Analyse en 5 étapes visibles") },
+    { icon: CreditCard, text: t("Sans carte bancaire pour commencer") },
+  ];
+
   return (
     <section
       className="border-y border-border bg-card/60"
-      aria-label="Confiance et confidentialité"
+      aria-label={t("Confiance et confidentialité")}
     >
       <div className="mx-auto grid max-w-6xl gap-3 px-4 py-4 sm:grid-cols-3 sm:px-6">
         {points.map(({ icon: Icon, text }) => (

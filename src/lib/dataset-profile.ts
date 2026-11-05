@@ -470,7 +470,12 @@ export function formatProfileForPrompt(profile: DatasetProfile, maxChars = 24_00
   return `${output.slice(0, maxChars)}\n…(profil tronqué)`;
 }
 
-export function profileSummary(profile: DatasetProfile): string {
+export function profileSummary(profile: DatasetProfile, lang: "fr" | "en" = "fr"): string {
+  if (lang === "en") {
+    return `${profile.rows} row${profile.rows > 1 ? "s" : ""} × ${profile.columns} column${
+      profile.columns > 1 ? "s" : ""
+    }`;
+  }
   return `${profile.rows} ligne${profile.rows > 1 ? "s" : ""} × ${profile.columns} colonne${
     profile.columns > 1 ? "s" : ""
   }`;

@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import embed from "vega-embed";
+import { useLang } from "@/lib/i18n";
 
 export default function VegaChart({
   spec,
@@ -8,6 +9,7 @@ export default function VegaChart({
   spec: Record<string, unknown>;
   title?: string | undefined;
 }) {
+  const { t } = useLang();
   const containerRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
 
@@ -45,7 +47,7 @@ export default function VegaChart({
   if (failed) {
     return (
       <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
-        Graphique indisponible pour ces données.
+        {t("Graphique indisponible pour ces données.")}
       </div>
     );
   }

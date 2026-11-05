@@ -20,6 +20,8 @@ import {
   TEAM_MAX_ROWS,
   PLAN_PRICES,
 } from "@/lib/billing";
+import { useLang } from "@/lib/i18n";
+import { domainLabel, domainDescription } from "@/lib/domain-i18n";
 import { ANALYSIS_DOMAINS } from "@/lib/analysis-domains";
 import { SUPPORT_EMAIL } from "@/lib/legal";
 import { LandingFaq } from "@/components/landing/faq";
@@ -59,36 +61,37 @@ export const Route = createFileRoute("/")({
 
 const DISPLAYED_DOMAIN_COUNT = ANALYSIS_DOMAINS.length;
 
-const steps = [
-  {
-    icon: FileSpreadsheet,
-    title: "Profilage",
-    text: "Structure, qualité, valeurs manquantes et doublons passés au crible.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Préparation",
-    text: "Nettoyage documenté, avec un journal de transformations vérifiable.",
-  },
-  {
-    icon: BarChart3,
-    title: "Exploration",
-    text: "KPI, tendances, segments et anomalies mis en évidence.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Modélisation",
-    text: "Approches prédictives simples quand elles apportent de la valeur.",
-  },
-  {
-    icon: MessageSquareText,
-    title: "Recommandations",
-    text: "Des conclusions chiffrées et des actions concrètes.",
-  },
-];
-
 function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { t, locale, lang } = useLang();
+
+  const steps = [
+    {
+      icon: FileSpreadsheet,
+      title: t("Profilage"),
+      text: t("Structure, qualité, valeurs manquantes et doublons passés au crible."),
+    },
+    {
+      icon: ShieldCheck,
+      title: t("Préparation"),
+      text: t("Nettoyage documenté, avec un journal de transformations vérifiable."),
+    },
+    {
+      icon: BarChart3,
+      title: t("Exploration"),
+      text: t("KPI, tendances, segments et anomalies mis en évidence."),
+    },
+    {
+      icon: TrendingUp,
+      title: t("Modélisation"),
+      text: t("Approches prédictives simples quand elles apportent de la valeur."),
+    },
+    {
+      icon: MessageSquareText,
+      title: t("Recommandations"),
+      text: t("Des conclusions chiffrées et des actions concrètes."),
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,26 +105,26 @@ function Landing() {
             to="/pricing"
             className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted lg:px-4"
           >
-            Tarifs
+            {t("Tarifs")}
           </Link>
           <Link
             to="/login"
             className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted lg:px-4"
           >
-            Se connecter
+            {t("Se connecter")}
           </Link>
           <Link
             to="/chat"
             className="whitespace-nowrap rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 lg:px-4"
           >
-            Analyser mes données
+            {t("Analyser mes données")}
           </Link>
         </nav>
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
             <button
               type="button"
-              aria-label="Ouvrir le menu"
+              aria-label={t("Ouvrir le menu")}
               className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-card text-foreground md:hidden"
             >
               <Menu className="h-5 w-5" />
@@ -129,7 +132,7 @@ function Landing() {
           </SheetTrigger>
           <SheetContent side="right" className="w-72">
             <SheetHeader>
-              <SheetTitle>Menu</SheetTitle>
+              <SheetTitle>{t("Menu")}</SheetTitle>
             </SheetHeader>
             <nav className="mt-6 flex flex-col gap-2">
               <SheetClose asChild>
@@ -137,7 +140,7 @@ function Landing() {
                   to="/pricing"
                   className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted"
                 >
-                  Tarifs
+                  {t("Tarifs")}
                 </Link>
               </SheetClose>
               <SheetClose asChild>
@@ -145,7 +148,7 @@ function Landing() {
                   to="/login"
                   className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted"
                 >
-                  Se connecter
+                  {t("Se connecter")}
                 </Link>
               </SheetClose>
               <SheetClose asChild>
@@ -153,7 +156,7 @@ function Landing() {
                   to="/chat"
                   className="mt-2 rounded-lg bg-primary px-3 py-2.5 text-center text-sm font-semibold text-primary-foreground hover:bg-primary/90"
                 >
-                  Analyser mes données
+                  {t("Analyser mes données")}
                 </Link>
               </SheetClose>
             </nav>
@@ -164,15 +167,17 @@ function Landing() {
       <section className="bg-grid-paper pb-12">
         <div className="mx-auto max-w-4xl px-6 pt-16 text-center">
           <p className="mx-auto mb-5 w-fit max-w-full rounded-full border border-border bg-card px-4 py-1 text-center text-xs font-medium text-muted-foreground">
-            {`Agent d'analyse de données — ${DISPLAYED_DOMAIN_COUNT} modes métier, rapports prêts à partager`}
+            {t("Agent d'analyse de données — {count} modes métier, rapports prêts à partager", {
+              count: DISPLAYED_DOMAIN_COUNT,
+            })}
           </p>
           <h1 className="text-balance font-display text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
-            Vos données deviennent des <span className="text-primary">décisions</span>
+            {t("Vos données deviennent des")} <span className="text-primary">{t("décisions")}</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Téléversez un fichier (CSV, Excel, JSON…), posez votre question métier en langage
-            naturel, et recevez une réponse claire, chiffrée et vérifiable : KPI, tendances,
-            anomalies et recommandations actionnables.
+            {t(
+              "Téléversez un fichier (CSV, Excel, JSON…), posez votre question métier en langage naturel, et recevez une réponse claire, chiffrée et vérifiable : KPI, tendances, anomalies et recommandations actionnables.",
+            )}
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -180,13 +185,13 @@ function Landing() {
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
             >
               <Upload className="h-4 w-4" />
-              Analyser mes données
+              {t("Analyser mes données")}
             </Link>
             <Link
               to="/pricing"
               className="rounded-lg border border-border bg-card px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
             >
-              Voir les tarifs
+              {t("Voir les tarifs")}
             </Link>
           </div>
         </div>
@@ -196,11 +201,12 @@ function Landing() {
 
       <section className="mx-auto max-w-6xl px-6 py-20">
         <h2 className="text-center font-display text-3xl font-bold tracking-tight">
-          Une méthode rigoureuse en 5 étapes
+          {t("Une méthode rigoureuse en 5 étapes")}
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
-          Chaque analyse suit le même pipeline reproductible, du profilage brut jusqu'aux
-          recommandations.
+          {t(
+            "Chaque analyse suit le même pipeline reproductible, du profilage brut jusqu'aux recommandations.",
+          )}
         </p>
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
           {steps.map((s, i) => (
@@ -208,7 +214,9 @@ function Landing() {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
                 <s.icon className="h-5 w-5 text-secondary-foreground" />
               </div>
-              <p className="mt-4 text-xs font-semibold text-muted-foreground">Étape {i + 1}</p>
+              <p className="mt-4 text-xs font-semibold text-muted-foreground">
+                {t("Étape {n}", { n: i + 1 })}
+              </p>
               <h3 className="mt-1 font-display font-semibold">{s.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{s.text}</p>
             </div>
@@ -219,26 +227,28 @@ function Landing() {
       <section className="border-t border-border">
         <div className="mx-auto max-w-6xl px-6 py-16">
           <h2 className="text-center font-display text-3xl font-bold tracking-tight">
-            Pensé pour le monde des données
+            {t("Pensé pour le monde des données")}
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-center text-muted-foreground">
-            Choisissez votre mode d'analyse : l'agent adapte les indicateurs, le vocabulaire et les
-            visualisations à votre métier.
+            {t(
+              "Choisissez votre mode d'analyse : l'agent adapte les indicateurs, le vocabulaire et les visualisations à votre métier.",
+            )}
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-2">
             {ANALYSIS_DOMAINS.map((domain) => (
               <span
                 key={domain.id}
-                title={domain.description}
+                title={domainDescription(domain.id, lang)}
                 className="rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground"
               >
-                {domain.label}
+                {domainLabel(domain.id, lang)}
               </span>
             ))}
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
-            Visualisations intégrées : Recharts, Vega-Lite et Plotly (coupes, cartes, 3D, ternaires,
-            chandeliers, heatmaps).
+            {t(
+              "Visualisations intégrées : Recharts, Vega-Lite et Plotly (coupes, cartes, 3D, ternaires, chandeliers, heatmaps).",
+            )}
           </p>
         </div>
       </section>
@@ -246,76 +256,90 @@ function Landing() {
       <section id="tarifs" className="border-t border-border bg-card">
         <div className="mx-auto max-w-5xl px-6 py-20">
           <h2 className="text-center font-display text-3xl font-bold tracking-tight">
-            Tarifs simples
+            {t("Tarifs simples")}
           </h2>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             <div className="rounded-2xl border border-border bg-background p-8">
-              <h3 className="font-display text-lg font-semibold">Gratuit</h3>
+              <h3 className="font-display text-lg font-semibold">{t("Gratuit")}</h3>
               <p className="mt-2 font-display text-4xl font-bold">0 €</p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <li>• {FREE_ANALYSIS_LIMIT} analyses offertes pour découvrir (une seule fois)</li>
                 <li>
-                  • Fichiers jusqu'à {FREE_MAX_FILE_MB} Mo / {FREE_MAX_ROWS.toLocaleString("fr-FR")}{" "}
-                  lignes
+                  •{" "}
+                  {t("{count} analyses offertes pour découvrir (une seule fois)", {
+                    count: FREE_ANALYSIS_LIMIT,
+                  })}
                 </li>
-                <li>• Historique des conversations</li>
+                <li>
+                  •{" "}
+                  {t("Fichiers jusqu’à {mb} Mo / {rows} lignes", {
+                    mb: FREE_MAX_FILE_MB,
+                    rows: FREE_MAX_ROWS.toLocaleString(locale),
+                  })}
+                </li>
+                <li>• {t("Historique des conversations")}</li>
               </ul>
               <Link
                 to="/chat"
                 className="mt-8 block rounded-lg border border-border bg-card px-4 py-2.5 text-center text-sm font-semibold hover:bg-muted"
               >
-                Commencer
+                {t("Commencer")}
               </Link>
             </div>
             <div className="rounded-2xl border-2 border-primary bg-background p-8 shadow-sm">
               <h3 className="font-display text-lg font-semibold">Pro</h3>
               <p className="mt-2 font-display text-4xl font-bold">
                 {PLAN_PRICES.pro.eur} €
-                <span className="text-base font-normal text-muted-foreground">/mois</span>
+                <span className="text-base font-normal text-muted-foreground">{t("/mois")}</span>
               </p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <li>• Analyses illimitées</li>
+                <li>• {t("Analyses illimitées")}</li>
                 <li>
-                  • Fichiers jusqu'à {PRO_MAX_FILE_MB} Mo / {PRO_MAX_ROWS.toLocaleString("fr-FR")}{" "}
-                  lignes
+                  •{" "}
+                  {t("Fichiers jusqu’à {mb} Mo / {rows} lignes", {
+                    mb: PRO_MAX_FILE_MB,
+                    rows: PRO_MAX_ROWS.toLocaleString(locale),
+                  })}
                 </li>
-                <li>• Historique illimité</li>
-                <li>• Exports PDF et Excel</li>
+                <li>• {t("Historique illimité")}</li>
+                <li>• {t("Exports PDF et Excel")}</li>
               </ul>
               <Link
                 to="/pricing"
                 className="mt-8 block w-full rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground hover:bg-primary/90"
               >
-                Devenir Pro
+                {t("Devenir Pro")}
               </Link>
             </div>
             <div className="rounded-2xl border border-border bg-background p-8">
               <h3 className="font-display text-lg font-semibold">Team</h3>
               <p className="mt-2 font-display text-4xl font-bold">
                 {PLAN_PRICES.team.eur} €
-                <span className="text-base font-normal text-muted-foreground">/mois</span>
+                <span className="text-base font-normal text-muted-foreground">{t("/mois")}</span>
               </p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <li>• Tout Pro, sans compromis</li>
+                <li>• {t("Tout Pro, sans compromis")}</li>
                 <li>
-                  • Fichiers jusqu'à {TEAM_MAX_FILE_MB} Mo / {TEAM_MAX_ROWS.toLocaleString("fr-FR")}{" "}
-                  lignes
+                  •{" "}
+                  {t("Fichiers jusqu’à {mb} Mo / {rows} lignes", {
+                    mb: TEAM_MAX_FILE_MB,
+                    rows: TEAM_MAX_ROWS.toLocaleString(locale),
+                  })}
                 </li>
-                <li>• Analyses illimitées</li>
-                <li>• Exports PDF et Excel</li>
+                <li>• {t("Analyses illimitées")}</li>
+                <li>• {t("Exports PDF et Excel")}</li>
               </ul>
               <Link
                 to="/pricing"
                 className="mt-8 block w-full rounded-lg border border-primary bg-background px-4 py-2.5 text-center text-sm font-semibold text-primary hover:bg-primary/5"
               >
-                Découvrir Team
+                {t("Découvrir Team")}
               </Link>
             </div>
           </div>
           <p className="mt-8 text-center text-sm text-muted-foreground">
-            Comparez les offres en détail sur la{" "}
+            {t("Comparez les offres en détail sur la")}{" "}
             <Link to="/pricing" className="font-semibold text-primary hover:underline">
-              page Tarifs
+              {t("page Tarifs")}
             </Link>
             .
           </p>
@@ -331,9 +355,9 @@ function Landing() {
             <span>DA-Copilot</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <p>Analyse de données rigoureuse et pédagogue.</p>
+            <p>{t("Analyse de données rigoureuse et pédagogue.")}</p>
             <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium hover:text-primary">
-              Contact
+              {t("Contact")}
             </a>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Plotly from "plotly.js-dist-min";
+import { useLang } from "@/lib/i18n";
 
 export default function PlotlyChart({
   traces,
@@ -10,6 +11,7 @@ export default function PlotlyChart({
   layout?: Record<string, unknown> | undefined;
   title?: string | undefined;
 }) {
+  const { t } = useLang();
   const containerRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
 
@@ -52,7 +54,7 @@ export default function PlotlyChart({
   if (failed) {
     return (
       <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
-        Graphique indisponible pour ces données.
+        {t("Graphique indisponible pour ces données.")}
       </div>
     );
   }

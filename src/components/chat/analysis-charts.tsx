@@ -29,6 +29,7 @@ import {
   toChartNumber,
   type ChartSpec,
 } from "@/lib/chart-spec";
+import { useLang } from "@/lib/i18n";
 
 const VegaChart = lazy(() => import("./vega-chart"));
 const PlotlyChart = lazy(() => import("./plotly-chart"));
@@ -46,15 +47,15 @@ const colorAt = (index: number) => COLORS[index % COLORS.length] ?? "var(--chart
 const tickStyle = { fill: "var(--muted-foreground)", fontSize: 11 };
 const axisLine = { stroke: "var(--border)" };
 
-function formatValue(value: unknown): string {
+function formatValue(value: unknown, locale: string): string {
   const numeric = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(numeric) ? numeric.toLocaleString("fr-FR") : String(value ?? "");
+  return Number.isFinite(numeric) ? numeric.toLocaleString(locale) : String(value ?? "");
 }
 
-function tooltipNode() {
+function tooltipNode(locale: string) {
   return (
     <Tooltip
-      formatter={(value) => formatValue(value)}
+      formatter={(value) => formatValue(value, locale)}
       contentStyle={{
         background: "var(--card)",
         border: "1px solid var(--border)",
@@ -76,6 +77,7 @@ function RechartsBody({
   width?: number | undefined;
   height?: number | undefined;
 }) {
+  const { locale } = useLang();
   const data = useMemo(() => buildChartData(spec), [spec]);
   const yKeys = useMemo(() => spec.yKeys ?? [], [spec.yKeys]);
   const xKey = spec.xKey ?? "x";
@@ -98,7 +100,7 @@ function RechartsBody({
         height={height ?? 0}
         margin={{ top: 8, right: 8, bottom: 8, left: 8 }}
       >
-        {tooltipNode()}
+        {tooltipNode(locale)}
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Pie data={pieData} dataKey="value" nameKey="name" outerRadius="78%" paddingAngle={2}>
           {pieData.map((entry, index) => (
@@ -135,7 +137,7 @@ function RechartsBody({
           tickLine={axisLine}
           width={48}
         />
-        {tooltipNode()}
+        {tooltipNode(locale)}
         <Scatter name={yKey} data={data} fill={colorAt(0)} />
       </ScatterChart>
     );
@@ -166,7 +168,7 @@ function RechartsBody({
         {grid}
         {xAxis}
         {yAxis}
-        {tooltipNode()}
+        {tooltipNode(locale)}
         {legend}
         {yKeys.map((key, index) => (
           <Line
@@ -194,7 +196,7 @@ function RechartsBody({
         {grid}
         {xAxis}
         {yAxis}
-        {tooltipNode()}
+        {tooltipNode(locale)}
         {legend}
         {yKeys.map((key, index) => (
           <Area
@@ -221,7 +223,7 @@ function RechartsBody({
       {grid}
       {xAxis}
       {yAxis}
-      {tooltipNode()}
+      {tooltipNode(locale)}
       {legend}
       {yKeys.map((key, index) => (
         <Bar
@@ -237,9 +239,10 @@ function RechartsBody({
 }
 
 function ChartLoading() {
+  const { t } = useLang();
   return (
     <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
-      Chargement du graphique…
+      {t("Chargement du graphique…")}
     </div>
   );
 }
@@ -267,11 +270,15 @@ function fieldLabel(field: unknown): string | null {
 }
 
 /** Titre explicite même quand le modèle a oublié le champ `title`. */
-function displayTitle(spec: ChartSpec): string {
+function displayTitle(
+  spec: ChartSpec,
+  t: (s: string, v?: Record<string, string | number>) => string,
+): string {
   if (spec.title?.trim()) return spec.title.trim();
   if (spec.engine === "recharts") {
     const measures = (spec.yKeys ?? []).filter((key) => key.trim().length > 0);
-    if (spec.xKey && measures.length > 0) return `${measures.join(", ")} par ${spec.xKey}`;
+    if (spec.xKey && measures.length > 0)
+      return t("{measures} par {x}", { measures: measures.join(", "), x: spec.xKey });
   }
   if (spec.engine === "vega" && spec.vegaSpec) {
     const rawTitle = spec.vegaSpec["title"];
@@ -284,8 +291,8 @@ function displayTitle(spec: ChartSpec): string {
     if (encoding) {
       const xField = fieldLabel(encoding["x"]);
       const yField = fieldLabel(encoding["y"]);
-      if (xField && yField) return `${yField} par ${xField}`;
-      if (xField) return `Distribution de ${xField}`;
+      if (xField && yField) return t("{y} par {x}", { y: yField, x: xField });
+      if (xField) return t("Distribution de {field}", { field: xField });
     }
   }
   if (spec.engine === "plotly" && spec.layout) {
@@ -296,11 +303,12 @@ function displayTitle(spec: ChartSpec): string {
       return titleObject["text"].trim();
     }
   }
-  return DEFAULT_TITLES[spec.engine];
+  return t(DEFAULT_TITLES[spec.engine] ?? "Graphique");
 }
 
 function SpecChart({ spec }: { spec: ChartSpec }) {
-  const title = displayTitle(spec);
+  const { t } = useLang();
+  const title = displayTitle(spec, t);
   const reportValues = buildChartValueTable(spec);
   return (
     <figure className="rounded-xl border border-border bg-card p-4 shadow-sm">
@@ -375,11 +383,16 @@ function parseCsvPreview(text: string): string[][] {
   return rows;
 }
 
-function autoSpecFromPreview(preview: string | null | undefined): ChartSpec | null {
+function autoSpecFromPreview(
+  preview: string | null | undefined,
+  t: (s: string, v?: Record<string, string | number>) => string,
+): ChartSpec | null {
   if (!preview || !preview.trim()) return null;
   const rows = parseCsvPreview(preview);
   if (rows.length < 3) return null;
-  const header = (rows[0] ?? []).map((name, index) => name.trim() || `Colonne ${index + 1}`);
+  const header = (rows[0] ?? []).map(
+    (name, index) => name.trim() || t("Colonne {n}", { n: index + 1 }),
+  );
   const body = rows.slice(1).filter((row) => row.length === header.length);
   if (body.length < 2 || header.length < 2) return null;
 
@@ -408,8 +421,8 @@ function autoSpecFromPreview(preview: string | null | undefined): ChartSpec | nu
     current.count += 1;
     buckets.set(key, current);
   }
-  const numericKey = header[numeric] ?? "Valeur";
-  const categoryKey = header[category] ?? "Catégorie";
+  const numericKey = header[numeric] ?? t("Valeur");
+  const categoryKey = header[category] ?? t("Catégorie");
   const data = [...buckets.entries()]
     .map(([key, bucket]) => ({
       [categoryKey]: key,
@@ -420,7 +433,7 @@ function autoSpecFromPreview(preview: string | null | undefined): ChartSpec | nu
   return {
     engine: "recharts",
     type: "bar",
-    title: `${numericKey} moyen par ${categoryKey}`,
+    title: t("{numeric} moyen par {category}", { numeric: numericKey, category: categoryKey }),
     xKey: categoryKey,
     yKeys: [numericKey],
     data,
@@ -432,6 +445,7 @@ function num(value: string) {
 }
 
 function MarkdownTableChart({ text }: { text: string }) {
+  const { t, locale } = useLang();
   const tables = extractMarkdownTables(text);
   let table: string[][] | undefined;
   let valueIndex = 1;
@@ -488,7 +502,7 @@ function MarkdownTableChart({ text }: { text: string }) {
                   style={{ width: `${(Math.abs(d.value) / max) * 100}%`, background: colorAt(i) }}
                 />
               </div>
-              <span className="text-right tabular-nums">{d.value.toLocaleString("fr-FR")}</span>
+              <span className="text-right tabular-nums">{d.value.toLocaleString(locale)}</span>
             </div>
           ))}
         </div>
@@ -507,18 +521,22 @@ function MarkdownTableChart({ text }: { text: string }) {
 }
 
 export function AnalysisCharts({ text, preview }: { text: string; preview?: string | null }) {
+  const { t, lang } = useLang();
   const specs = useMemo(() => parseChartSpecs(text), [text]);
   const auto = useMemo(
-    () => (specs.length > 0 ? null : autoSpecFromPreview(preview)),
-    [specs.length, preview],
+    () => (specs.length > 0 ? null : autoSpecFromPreview(preview, t)),
+    [specs.length, preview, t],
   );
-  const geo = useMemo(() => geoTrafficFromPreview(preview), [preview]);
+  const geo = useMemo(() => geoTrafficFromPreview(preview, lang), [preview, lang]);
 
   const geoBlock = geo ? (
     <GeoMap
       points={geo.points}
       valueLabel={geo.valueColumn}
-      caption={`Source : colonne ${geo.labelColumn} du fichier, agrégée par ${geo.valueColumn === "Volume" ? "nombre de lignes" : geo.valueColumn}.`}
+      caption={t("Source : colonne {label} du fichier, agrégée par {by}.", {
+        label: geo.labelColumn,
+        by: geo.valueColumn === "Volume" ? t("nombre de lignes") : geo.valueColumn,
+      })}
     />
   ) : null;
 
@@ -538,7 +556,7 @@ export function AnalysisCharts({ text, preview }: { text: string; preview?: stri
         {geoBlock}
         {auto && <SpecChart spec={auto} />}
         <p className="text-[11px] text-muted-foreground">
-          Graphique généré automatiquement à partir du fichier.
+          {t("Graphique généré automatiquement à partir du fichier.")}
         </p>
       </div>
     );

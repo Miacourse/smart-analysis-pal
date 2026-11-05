@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import logo from "@/assets/logo.png";
+import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -24,6 +25,7 @@ const inputClass =
   "w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring";
 
 function LoginPage() {
+  const { t } = useLang();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -33,7 +35,7 @@ function LoginPage() {
   const [newPassword, setNewPassword] = useState("");
   const [resetSent, setResetSent] = useState(false);
 
-  // Détecte le retour depuis le lien de réinitialisation envoyé par email.
+  // Detecte le retour depuis le lien de réinitialisation envoyé par email.
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash.includes("type=recovery")) {
       setRecovering(true);
@@ -58,21 +60,25 @@ function LoginPage() {
         if (data.session) {
           navigate({ to: "/chat" });
         } else {
-          toast.success("Compte créé ! Vérifiez votre email pour confirmer votre inscription.");
+          toast.success(t("Compte créé ! Vérifiez votre email pour confirmer votre inscription."));
         }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (/invalid login credentials/i.test(msg)) {
         toast.error(
-          "Email ou mot de passe incorrect. Si vous vous êtes inscrit avec Google, utilisez « Continuer avec Google ».",
+          t(
+            "Email ou mot de passe incorrect. Si vous vous êtes inscrit avec Google, utilisez « Continuer avec Google ».",
+          ),
         );
       } else if (/email not confirmed/i.test(msg)) {
-        toast.error("Confirmez d’abord votre email via le lien reçu.");
+        toast.error(t("Confirmez d'abord votre email via le lien reçu."));
       } else if (/already registered/i.test(msg)) {
-        toast.error("Un compte existe déjà avec cet email. Connectez-vous (ou utilisez Google).");
+        toast.error(
+          t("Un compte existe déjà avec cet email. Connectez-vous (ou utilisez Google)."),
+        );
       } else {
-        toast.error(msg || "Une erreur est survenue.");
+        toast.error(msg || t("Une erreur est survenue."));
       }
     } finally {
       setLoading(false);
@@ -81,7 +87,7 @@ function LoginPage() {
 
   async function handleForgot() {
     if (!email.trim()) {
-      toast.error("Renseignez d’abord votre adresse email, puis cliquez à nouveau.");
+      toast.error(t("Renseignez d'abord votre adresse email, puis cliquez à nouveau."));
       return;
     }
     setLoading(true);
@@ -91,9 +97,9 @@ function LoginPage() {
       });
       if (error) throw error;
       setResetSent(true);
-      toast.success("Email de réinitialisation envoyé. Vérifiez votre boîte de réception.");
+      toast.success(t("Email de réinitialisation envoyé. Vérifiez votre boîte de réception."));
     } catch {
-      toast.error("Envoi impossible. Réessayez dans un instant.");
+      toast.error(t("Envoi impossible. Réessayez dans un instant."));
     } finally {
       setLoading(false);
     }
@@ -105,10 +111,10 @@ function LoginPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-      toast.success("Mot de passe mis à jour.");
+      toast.success(t("Mot de passe mis à jour."));
       navigate({ to: "/chat" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Mise à jour impossible.");
+      toast.error(err instanceof Error ? err.message : t("Mise à jour impossible."));
     } finally {
       setLoading(false);
     }
@@ -117,7 +123,9 @@ function LoginPage() {
   async function handleGoogle() {
     if (["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)) {
       toast.error(
-        "La connexion Google n'est disponible que sur le site Lovable (preview ou publié). En local, utilisez email + mot de passe.",
+        t(
+          "La connexion Google n'est disponible que sur le site Lovable (preview ou publié). En local, utilisez email + mot de passe.",
+        ),
       );
       return;
     }
@@ -128,7 +136,7 @@ function LoginPage() {
       extraParams: { prompt: "select_account" },
     });
     if (result.error) {
-      toast.error("La connexion Google a échoué.");
+      toast.error(t("La connexion Google a échoué."));
       return;
     }
     if (result.redirected) return;
@@ -142,17 +150,17 @@ function LoginPage() {
           <img src={logo} alt="DA-Copilot" width={48} height={48} className="h-12 w-12" />
           <h1 className="mt-3 font-display text-xl font-bold">
             {recovering
-              ? "Nouveau mot de passe"
+              ? t("Nouveau mot de passe")
               : mode === "signin"
-                ? "Bon retour"
-                : "Créer un compte"}
+                ? t("Bon retour")
+                : t("Créer un compte")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {recovering
-              ? "Choisissez un nouveau mot de passe pour votre compte."
+              ? t("Choisissez un nouveau mot de passe pour votre compte.")
               : mode === "signin"
-                ? "Connectez-vous pour retrouver vos analyses."
-                : "5 analyses offertes, sans carte bancaire."}
+                ? t("Connectez-vous pour retrouver vos analyses.")
+                : t("5 analyses offertes, sans carte bancaire.")}
           </p>
         </div>
 
@@ -164,7 +172,7 @@ function LoginPage() {
               minLength={6}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Nouveau mot de passe (6 caractères min.)"
+              placeholder={t("Nouveau mot de passe (6 caractères min.)")}
               className={inputClass}
             />
             <button
@@ -172,7 +180,7 @@ function LoginPage() {
               disabled={loading}
               className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
             >
-              {loading ? "Patientez…" : "Mettre à jour le mot de passe"}
+              {loading ? t("Patientez…") : t("Mettre à jour le mot de passe")}
             </button>
           </form>
         ) : (
@@ -182,12 +190,12 @@ function LoginPage() {
               onClick={handleGoogle}
               className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium hover:bg-muted"
             >
-              Continuer avec Google
+              {t("Continuer avec Google")}
             </button>
 
             <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
               <div className="h-px flex-1 bg-border" />
-              ou
+              {t("ou")}
               <div className="h-px flex-1 bg-border" />
             </div>
 
@@ -197,7 +205,7 @@ function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Adresse email"
+                placeholder={t("Adresse email")}
                 className={inputClass}
               />
               <input
@@ -206,7 +214,7 @@ function LoginPage() {
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mot de passe (6 caractères min.)"
+                placeholder={t("Mot de passe (6 caractères min.)")}
                 className={inputClass}
               />
               <button
@@ -214,7 +222,11 @@ function LoginPage() {
                 disabled={loading}
                 className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
               >
-                {loading ? "Patientez…" : mode === "signin" ? "Se connecter" : "S'inscrire"}
+                {loading
+                  ? t("Patientez…")
+                  : mode === "signin"
+                    ? t("Se connecter")
+                    : t("S'inscrire")}
               </button>
             </form>
 
@@ -226,19 +238,19 @@ function LoginPage() {
                   disabled={loading}
                   className="text-xs text-muted-foreground hover:underline disabled:opacity-60"
                 >
-                  {resetSent ? "Email envoyé — renvoyer le lien" : "Mot de passe oublié ?"}
+                  {resetSent ? t("Email envoyé — renvoyer le lien") : t("Mot de passe oublié ?")}
                 </button>
               </p>
             )}
 
             <p className="mt-5 text-center text-sm text-muted-foreground">
-              {mode === "signin" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}
+              {mode === "signin" ? t("Pas encore de compte ?") : t("Déjà inscrit ?")}{" "}
               <button
                 type="button"
                 onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
                 className="font-semibold text-primary hover:underline"
               >
-                {mode === "signin" ? "S'inscrire" : "Se connecter"}
+                {mode === "signin" ? t("S'inscrire") : t("Se connecter")}
               </button>
             </p>
           </>
@@ -246,7 +258,7 @@ function LoginPage() {
 
         <p className="mt-4 text-center">
           <Link to="/" className="text-xs text-muted-foreground hover:underline">
-            ← Retour à l'accueil
+            ← {t("Retour à l'accueil")}
           </Link>
         </p>
       </div>

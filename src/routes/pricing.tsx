@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { safeAnalysisError } from "@/lib/analysis-state";
 import { SUPPORT_EMAIL } from "@/lib/legal";
+import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -50,35 +51,48 @@ type Status = {
   freeLimit?: number;
 };
 
-const PAID = [
-  {
-    id: "pro" as const,
-    name: "Pro",
-    price: 19,
-    highlight: true,
-    features: [
-      "Analyses illimitées",
-      `Fichiers jusqu'à ${PRO_MAX_FILE_MB} Mo et ${PRO_MAX_ROWS.toLocaleString("fr-FR")} lignes`,
-      "CSV, Excel, JSON, GeoJSON, LAS",
-      "Historique illimité",
-      "Exports PDF et Excel",
-    ],
-  },
-  {
-    id: "team" as const,
-    name: "Team",
-    price: 49,
-    highlight: false,
-    features: [
-      "Tout le plan Pro",
-      `Fichiers jusqu'à ${TEAM_MAX_FILE_MB} Mo et ${TEAM_MAX_ROWS.toLocaleString("fr-FR")} lignes`,
-      "Traitement prioritaire",
-      "Support dédié par email",
-    ],
-  },
-];
+function paidPlans(
+  t: (s: string, vars?: Record<string, string | number>) => string,
+  locale: string,
+) {
+  return [
+    {
+      id: "pro" as const,
+      name: "Pro",
+      price: 19,
+      highlight: true,
+      features: [
+        t("Analyses illimitées"),
+        t("Fichiers jusqu'à {mb} Mo / {rows} lignes", {
+          mb: PRO_MAX_FILE_MB,
+          rows: PRO_MAX_ROWS.toLocaleString(locale),
+        }),
+        "CSV, Excel, JSON, GeoJSON, LAS",
+        t("Historique illimité"),
+        t("Exports PDF et Excel"),
+      ],
+    },
+    {
+      id: "team" as const,
+      name: "Team",
+      price: 49,
+      highlight: false,
+      features: [
+        t("Tout le plan Pro"),
+        t("Fichiers jusqu'à {mb} Mo / {rows} lignes", {
+          mb: TEAM_MAX_FILE_MB,
+          rows: TEAM_MAX_ROWS.toLocaleString(locale),
+        }),
+        t("Traitement prioritaire"),
+        t("Support dédié par email"),
+      ],
+    },
+  ];
+}
 
 function PricingPage() {
+  const { t, locale } = useLang();
+  const PAID = paidPlans(t, locale);
   const navigate = useNavigate();
   const billingStatus = useServerFn(getBillingStatus);
   const checkout = useServerFn(startCheckout);
@@ -102,8 +116,9 @@ function PricingPage() {
   useEffect(() => {
     refresh();
     const p = new URLSearchParams(window.location.search);
-    if (p.get("success")) toast.success("Paiement confirmé ! Bienvenue dans votre nouvelle offre.");
-    if (p.get("canceled")) toast("Paiement annulé.");
+    if (p.get("success"))
+      toast.success(t("Paiement confirmé ! Bienvenue dans votre nouvelle offre."));
+    if (p.get("canceled")) toast(t("Paiement annulé."));
   }, [refresh]);
 
   async function subscribe(plan: "pro" | "team") {
@@ -113,7 +128,7 @@ function PricingPage() {
       const { url } = await checkout({ data: { plan } });
       window.location.href = url;
     } catch (e) {
-      toast.error(safeAnalysisError(e instanceof Error ? e.message : "Paiement indisponible."));
+      toast.error(safeAnalysisError(e instanceof Error ? e.message : t("Paiement indisponible.")));
       setBusy(false);
     }
   }
@@ -124,7 +139,7 @@ function PricingPage() {
       const { url } = await portal();
       window.location.href = url;
     } catch (e) {
-      toast.error(safeAnalysisError(e instanceof Error ? e.message : "Portail indisponible."));
+      toast.error(safeAnalysisError(e instanceof Error ? e.message : t("Portail indisponible.")));
       setBusy(false);
     }
   }
@@ -143,35 +158,46 @@ function PricingPage() {
           to={loggedIn ? "/chat" : "/login"}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          {loggedIn ? "Mon espace" : "Se connecter"}
+          {loggedIn ? t("Mon espace") : t("Se connecter")}
         </Link>
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-14">
         <h1 className="text-center font-display text-4xl font-bold tracking-tight">
-          Tarifs simples
+          {t("Tarifs simples")}
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
-          Essayez gratuitement, passez à l’offre qui vous convient. Sans engagement.
+          {t("Essayez gratuitement, passez à l’offre qui vous convient. Sans engagement.")}
         </p>
         {status && (
           <p className="mt-4 text-center text-sm text-muted-foreground">
             {isPro
-              ? `Offre ${plan === "team" ? "Team" : "Pro"} active · ${status.analysesThisMonth} analyses ce mois-ci`
-              : `Essai : ${Math.min(status.analysesUsed, status.freeLimit ?? FREE_ANALYSIS_LIMIT)} / ${status.freeLimit ?? FREE_ANALYSIS_LIMIT} analyses utilisées`}
+              ? t("Offre {plan} active à {count} analyses ce mois-ci", {
+                  plan: plan === "team" ? "Team" : "Pro",
+                  count: status.analysesThisMonth,
+                })
+              : t("Essai : {used} / {limit} analyses utilisées", {
+                  used: Math.min(status.analysesUsed, status.freeLimit ?? FREE_ANALYSIS_LIMIT),
+                  limit: status.freeLimit ?? FREE_ANALYSIS_LIMIT,
+                })}
           </p>
         )}
 
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           <div className="rounded-2xl border border-border bg-card p-8">
-            <h2 className="font-display text-lg font-semibold">Essai gratuit</h2>
+            <h2 className="font-display text-lg font-semibold">{t("Essai gratuit")}</h2>
             <p className="mt-2 font-display text-4xl font-bold">0 €</p>
             <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
               {[
-                `${FREE_ANALYSIS_LIMIT} analyses offertes pour découvrir (une seule fois)`,
-                `Fichiers jusqu'à ${FREE_MAX_FILE_MB} Mo et ${FREE_MAX_ROWS.toLocaleString("fr-FR")} lignes`,
-                "Historique des conversations",
-                "Pas d’export",
+                t("{count} analyses offertes pour découvrir (une seule fois)", {
+                  count: FREE_ANALYSIS_LIMIT,
+                }),
+                t("Fichiers jusqu'à {mb} Mo / {rows} lignes", {
+                  mb: FREE_MAX_FILE_MB,
+                  rows: FREE_MAX_ROWS.toLocaleString(locale),
+                }),
+                t("Historique des conversations"),
+                t("Pas d'export"),
               ].map((f) => (
                 <li key={f} className="flex gap-2">
                   <Check className="h-4 w-4 text-primary" />
@@ -183,7 +209,7 @@ function PricingPage() {
               to={loggedIn ? "/chat" : "/login"}
               className="mt-8 block rounded-lg border border-border px-4 py-2.5 text-center text-sm font-semibold hover:bg-muted"
             >
-              {loggedIn ? "Continuer l'essai" : "Commencer gratuitement"}
+              {loggedIn ? t("Continuer l'essai") : t("Commencer gratuitement")}
             </Link>
           </div>
 
@@ -196,11 +222,11 @@ function PricingPage() {
                 <h2 className="font-display text-lg font-semibold">{p.name}</h2>
                 {plan === p.id ? (
                   <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-                    Votre offre
+                    {t("Votre offre")}
                   </span>
                 ) : p.highlight ? (
                   <span className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
-                    Populaire
+                    {t("Populaire")}
                   </span>
                 ) : null}
               </div>
@@ -218,7 +244,7 @@ function PricingPage() {
               </ul>
               {isPro ? (
                 <Button variant="outline" onClick={manage} disabled={busy} className="mt-8 w-full">
-                  {plan === p.id ? "Gérer mon abonnement" : "Changer d’offre"}
+                  {plan === p.id ? t("Gérer mon abonnement") : t("Changer d’offre")}
                 </Button>
               ) : (
                 <Button
@@ -227,12 +253,14 @@ function PricingPage() {
                   variant={p.highlight ? "default" : "outline"}
                   className="mt-8 w-full"
                 >
-                  {busy ? "Redirection…" : `Choisir ${p.name}`}
+                  {busy ? t("Redirection…") : t("Choisir {name}", { name: p.name })}
                 </Button>
               )}
               {plan === p.id && status?.periodEnd && (
                 <p className="mt-3 text-center text-xs text-muted-foreground">
-                  Renouvellement le {new Date(status.periodEnd).toLocaleDateString("fr-FR")}
+                  {t("Renouvellement le {date}", {
+                    date: new Date(status.periodEnd).toLocaleDateString(locale),
+                  })}
                 </p>
               )}
             </div>
@@ -240,13 +268,13 @@ function PricingPage() {
         </div>
         <div className="mt-6 text-center">
           <Button asChild variant="link">
-            <Link to="/pro">Découvrir tous les avantages Pro →</Link>
+            <Link to="/pro">{t("Découvrir tous les avantages Pro")}</Link>
           </Button>
         </div>
         <p className="mt-8 text-center text-xs text-muted-foreground">
-          Paiement sécurisé par Stripe. Annulation en un clic. Une question ?{" "}
+          {t("Paiement sécurisé par Stripe. Annulation en un clic. Une question ?")}{" "}
           <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium hover:text-primary">
-            Contactez-nous
+            {t("Contactez-nous")}
           </a>
           .
         </p>

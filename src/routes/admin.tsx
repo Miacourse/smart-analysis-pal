@@ -25,6 +25,7 @@ import { FREE_ANALYSIS_LIMIT } from "@/lib/billing";
 import { supabase } from "@/integrations/supabase/client";
 import { GeoMap } from "@/components/chat/geo-map";
 import { countryName, resolveCountry } from "@/lib/geo";
+import { useLang } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -58,9 +59,11 @@ export const Route = createFileRoute("/admin")({
 
 type Stats = Awaited<ReturnType<typeof getAdminStats>>;
 const PLAN_LABEL = { free: "Gratuit", pro: "Pro", team: "Team" } as const;
-const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
+const fmt = (d: string | null, locale: string) =>
+  d ? new Date(d).toLocaleDateString(locale) : "—";
 
 function AdminPage() {
+  const { t, locale, lang } = useLang();
   const fetchStats = useServerFn(getAdminStats);
   const resetQuota = useServerFn(adminResetQuota);
   const setComp = useServerFn(adminSetComp);
@@ -76,7 +79,7 @@ function AdminPage() {
     setLoading(true);
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
-      setError("Connectez-vous avec le compte administrateur.");
+      setError(t("Connectez-vous avec le compte administrateur."));
       setLoading(false);
       return;
     }
@@ -84,7 +87,7 @@ function AdminPage() {
       setStats(await fetchStats());
       setError(null);
     } catch {
-      setError("Accès réservé à l’administrateur.");
+      setError(t("Accès réservé à l’administrateur."));
     } finally {
       setLoading(false);
     }
@@ -105,55 +108,66 @@ function AdminPage() {
   );
 
   async function reset(userId: string, email: string) {
-    if (!confirm(`Remettre à zéro le compteur d’analyses de ${email} ?`)) return;
+    if (!confirm(t("Remettre à zéro le compteur d’analyses de {email} ?", { email }))) return;
     try {
       await resetQuota({ data: { userId } });
-      toast.success(`Compteur de ${email} remis à zéro.`);
+      toast.success(t("Compteur de {email} remis à zéro.", { email }));
       load();
     } catch {
-      toast.error("Réinitialisation impossible.");
+      toast.error(t("Réinitialisation impossible."));
     }
   }
 
   async function setOffer(userId: string, email: string, plan: "pro" | "team" | "none") {
-    const label = plan === "none" ? "retirer l’offre de" : `offrir ${PLAN_LABEL[plan]} à`;
-    if (!confirm(`Voulez-vous ${label} ${email} ?`)) return;
+    const label =
+      plan === "none"
+        ? t("retirer l’offre de")
+        : t("offrir {plan} à", { plan: t(PLAN_LABEL[plan]) });
+    if (!confirm(t("Voulez-vous {label} {email} ?", { label, email }))) return;
     try {
       await setComp({ data: { userId, plan } });
       toast.success(
-        plan === "none" ? `Offre retirée à ${email}.` : `${PLAN_LABEL[plan]} offert à ${email}.`,
+        plan === "none"
+          ? t("Offre retirée à {email}.", { email })
+          : t("{plan} offert à {email}.", { plan: t(PLAN_LABEL[plan]), email }),
       );
       load();
     } catch {
-      toast.error("Mise à jour de l’offre impossible.");
+      toast.error(t("Mise à jour de l’offre impossible."));
     }
   }
 
   async function grantBonus(userId: string, email: string, delta: number) {
     try {
       await addBonus({ data: { userId, delta } });
-      toast.success(`${delta > 0 ? "+" : ""}${delta} analyses pour ${email}.`);
+      toast.success(
+        t("{delta} analyses pour {email}.", { delta: `${delta > 0 ? "+" : ""}${delta}`, email }),
+      );
       load();
     } catch {
-      toast.error("Mise à jour du quota impossible.");
+      toast.error(t("Mise à jour du quota impossible."));
     }
   }
 
   async function toggleAdmin(userId: string, email: string, isAdmin: boolean) {
     if (
       !confirm(
-        isAdmin ? `Retirer les droits admin de ${email} ?` : `Donner les droits admin à ${email} ?`,
+        isAdmin
+          ? t("Retirer les droits admin de {email} ?", { email })
+          : t("Donner les droits admin à {email} ?", { email }),
       )
     )
       return;
     try {
       await setRole({ data: { userId, isAdmin } });
       toast.success(
-        isAdmin ? `${email} n’est plus administrateur.` : `${email} est désormais administrateur.`,
+        isAdmin
+          ? t("{email} n’est plus administrateur.", { email })
+          : t("{email} est désormais administrateur.", { email }),
       );
       load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Action impossible.");
+      toast.error(e instanceof Error ? e.message : t("Action impossible."));
     }
   }
 
@@ -167,8 +181,8 @@ function AdminPage() {
         u.analysesUsed,
         u.analyses30d,
         u.conversations,
-        fmt(u.createdAt),
-        fmt(u.lastSignIn),
+        fmt(u.createdAt, locale),
+        fmt(u.lastSignIn, locale),
       ].join(";"),
     );
     const blob = new Blob([[head, ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
@@ -188,7 +202,7 @@ function AdminPage() {
           if (!country) return [];
           return [
             {
-              label: countryName(country.iso),
+              label: countryName(country.iso, lang),
               lat: country.lat,
               lng: country.lng,
               value: row.count,
@@ -196,7 +210,7 @@ function AdminPage() {
           ];
         },
       ),
-    [stats],
+    [stats, lang],
   );
 
   return (
@@ -204,17 +218,18 @@ function AdminPage() {
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="font-display text-3xl font-bold">Administration</h1>
+            <h1 className="font-display text-3xl font-bold">{t("Administration")}</h1>
             <p className="text-sm text-muted-foreground">
-              Utilisateurs, abonnements et activité de DA-Copilot.
+              {t("Utilisateurs, abonnements et activité de DA-Copilot.")}
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Actualiser
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              {t("Actualiser")}
             </Button>
             <Button asChild size="sm">
-              <Link to="/chat">Retour à l’espace</Link>
+              <Link to="/chat">{t("Retour à l’espace")}</Link>
             </Button>
           </div>
         </div>
@@ -224,35 +239,37 @@ function AdminPage() {
             {error}
           </p>
         )}
-        {!stats && !error && <p className="mt-8 text-muted-foreground">Chargement…</p>}
+        {!stats && !error && <p className="mt-8 text-muted-foreground">{t("Chargement…")}</p>}
 
         {stats && (
           <>
             <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <Kpi icon={Users} label="Utilisateurs" value={stats.totalUsers} />
+              <Kpi icon={Users} label={t("Utilisateurs")} value={stats.totalUsers} />
               <Kpi
                 icon={Crown}
-                label="Abonnés Pro / Team"
+                label={t("Abonnés Pro / Team")}
                 value={`${stats.proCount} / ${stats.teamCount}`}
               />
-              <Kpi icon={Euro} label="Revenu mensuel estimé" value={`${stats.mrr} €`} />
-              <Kpi icon={Activity} label="Analyses aujourd’hui" value={stats.analysesToday} />
-              <Kpi icon={MessagesSquare} label="Conversations" value={stats.totalThreads} />
-              <Kpi icon={Activity} label="Analyses au total" value={stats.totalAnalyses} />
+              <Kpi icon={Euro} label={t("Revenu mensuel estimé")} value={`${stats.mrr} €`} />
+              <Kpi icon={Activity} label={t("Analyses aujourd’hui")} value={stats.analysesToday} />
+              <Kpi icon={MessagesSquare} label={t("Conversations")} value={stats.totalThreads} />
+              <Kpi icon={Activity} label={t("Analyses au total")} value={stats.totalAnalyses} />
               <Kpi
                 icon={AlertTriangle}
-                label="Gratuits proches de la limite"
+                label={t("Gratuits proches de la limite")}
                 value={stats.nearLimit}
               />
               <Kpi
                 icon={Activity}
-                label="Analyses (14 jours)"
+                label={t("Analyses (14 jours)")}
                 value={stats.perDay.reduce((n, d) => n + d.count, 0)}
               />
             </div>
 
             <section className="mt-6 rounded-xl border border-border bg-card p-5">
-              <h2 className="text-sm font-semibold">Analyses par jour (14 derniers jours)</h2>
+              <h2 className="text-sm font-semibold">
+                {t("Analyses par jour (14 derniers jours)")}
+              </h2>
               <div className="mt-4 flex h-32 items-end gap-1.5">
                 {stats.perDay.map((d, i) => (
                   <div
@@ -277,9 +294,9 @@ function AdminPage() {
 
             <Tabs defaultValue="users" className="mt-6">
               <TabsList>
-                <TabsTrigger value="users">Utilisateurs</TabsTrigger>
-                <TabsTrigger value="trafic">Trafic</TabsTrigger>
-                <TabsTrigger value="threads">Dernières analyses</TabsTrigger>
+                <TabsTrigger value="users">{t("Utilisateurs")}</TabsTrigger>
+                <TabsTrigger value="trafic">{t("Trafic")}</TabsTrigger>
+                <TabsTrigger value="threads">{t("Dernières analyses")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="users">
@@ -289,7 +306,7 @@ function AdminPage() {
                     <Input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Rechercher un email…"
+                      placeholder={t("Rechercher un email…")}
                       className="pl-9"
                     />
                   </div>
@@ -300,24 +317,24 @@ function AdminPage() {
                       variant={planFilter === p ? "default" : "outline"}
                       onClick={() => setPlanFilter(p)}
                     >
-                      {p === "all" ? "Tous" : PLAN_LABEL[p]}
+                      {p === "all" ? t("Tous") : t(PLAN_LABEL[p])}
                     </Button>
                   ))}
                   <Button size="sm" variant="outline" onClick={exportCsv}>
-                    Exporter CSV
+                    {t("Exporter CSV")}
                   </Button>
                 </div>
                 <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-card">
                   <table className="w-full min-w-[760px] text-left text-sm">
                     <thead className="border-b border-border text-xs text-muted-foreground">
                       <tr>
-                        <th className="p-3">Email</th>
-                        <th className="p-3">Offre</th>
-                        <th className="p-3">Analyses</th>
-                        <th className="p-3">30 j</th>
-                        <th className="p-3">Conv.</th>
-                        <th className="p-3">Inscrit</th>
-                        <th className="p-3">Connexion</th>
+                        <th className="p-3">{t("Email")}</th>
+                        <th className="p-3">{t("Offre")}</th>
+                        <th className="p-3">{t("Analyses")}</th>
+                        <th className="p-3">{t("30 j")}</th>
+                        <th className="p-3">{t("Conv.")}</th>
+                        <th className="p-3">{t("Inscrit")}</th>
+                        <th className="p-3">{t("Connexion")}</th>
                         <th className="p-3" />
                       </tr>
                     </thead>
@@ -336,11 +353,11 @@ function AdminPage() {
                             <span
                               className={`rounded-full px-2 py-0.5 text-xs font-semibold ${u.plan === "free" ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"}`}
                             >
-                              {PLAN_LABEL[u.plan]}
+                              {t(PLAN_LABEL[u.plan])}
                             </span>
                             {u.compPlan && (
                               <span className="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold">
-                                offert
+                                {t("offert")}
                               </span>
                             )}
                           </td>
@@ -358,66 +375,66 @@ function AdminPage() {
                           </td>
                           <td className="p-3">{u.analyses30d}</td>
                           <td className="p-3">{u.conversations}</td>
-                          <td className="p-3">{fmt(u.createdAt)}</td>
-                          <td className="p-3">{fmt(u.lastSignIn)}</td>
+                          <td className="p-3">{fmt(u.createdAt, locale)}</td>
+                          <td className="p-3">{fmt(u.lastSignIn, locale)}</td>
                           <td className="p-3 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button size="sm" variant="ghost" aria-label="Actions">
+                                <Button size="sm" variant="ghost" aria-label={t("Actions")}>
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-56">
-                                <DropdownMenuLabel>Offre</DropdownMenuLabel>
+                                <DropdownMenuLabel>{t("Offre")}</DropdownMenuLabel>
                                 {u.plan !== "pro" && (
                                   <DropdownMenuItem onClick={() => setOffer(u.id, u.email, "pro")}>
                                     <Gift className="mr-2 h-4 w-4" />
-                                    Offrir Pro
+                                    {t("Offrir Pro")}
                                   </DropdownMenuItem>
                                 )}
                                 {u.plan !== "team" && (
                                   <DropdownMenuItem onClick={() => setOffer(u.id, u.email, "team")}>
                                     <Gift className="mr-2 h-4 w-4" />
-                                    Offrir Team
+                                    {t("Offrir Team")}
                                   </DropdownMenuItem>
                                 )}
                                 {u.compPlan && (
                                   <DropdownMenuItem onClick={() => setOffer(u.id, u.email, "none")}>
                                     <Ban className="mr-2 h-4 w-4" />
-                                    Retirer l’offre offerte
+                                    {t("Retirer l’offre offerte")}
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
-                                <DropdownMenuLabel>Quota d’analyses</DropdownMenuLabel>
+                                <DropdownMenuLabel>{t("Quota d’analyses")}</DropdownMenuLabel>
                                 <DropdownMenuItem onClick={() => grantBonus(u.id, u.email, 5)}>
                                   <Plus className="mr-2 h-4 w-4" />
-                                  Ajouter 5 analyses
+                                  {t("Ajouter 5 analyses")}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => grantBonus(u.id, u.email, -5)}
                                   disabled={u.bonus === 0}
                                 >
                                   <Ban className="mr-2 h-4 w-4" />
-                                  Retirer 5 analyses
+                                  {t("Retirer 5 analyses")}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => reset(u.id, u.email)}>
-                                  Remettre à zéro
+                                  {t("Remettre à zéro")}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuLabel>Droits</DropdownMenuLabel>
+                                <DropdownMenuLabel>{t("Droits")}</DropdownMenuLabel>
                                 {u.isAdmin ? (
                                   <DropdownMenuItem
                                     onClick={() => toggleAdmin(u.id, u.email, false)}
                                   >
                                     <ShieldOff className="mr-2 h-4 w-4" />
-                                    Retirer admin
+                                    {t("Retirer admin")}
                                   </DropdownMenuItem>
                                 ) : (
                                   <DropdownMenuItem
                                     onClick={() => toggleAdmin(u.id, u.email, true)}
                                   >
                                     <ShieldCheck className="mr-2 h-4 w-4" />
-                                    Rendre admin
+                                    {t("Rendre admin")}
                                   </DropdownMenuItem>
                                 )}
                               </DropdownMenuContent>
@@ -428,7 +445,7 @@ function AdminPage() {
                       {users.length === 0 && (
                         <tr>
                           <td colSpan={8} className="p-6 text-center text-muted-foreground">
-                            Aucun utilisateur.
+                            {t("Aucun utilisateur.")}
                           </td>
                         </tr>
                       )}
@@ -439,22 +456,25 @@ function AdminPage() {
 
               <TabsContent value="trafic">
                 <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  <Kpi icon={Users} label="Visites (30 j)" value={stats.visitsTotal} />
-                  <Kpi icon={Activity} label="Visites aujourd'hui" value={stats.visitsToday} />
-                  <Kpi icon={Activity} label="Pays détectés" value={visitPoints.length} />
+                  <Kpi icon={Users} label={t("Visites (30 j)")} value={stats.visitsTotal} />
+                  <Kpi icon={Activity} label={t("Visites aujourd'hui")} value={stats.visitsToday} />
+                  <Kpi icon={Activity} label={t("Pays détectés")} value={visitPoints.length} />
                 </div>
                 <div className="mt-3">
                   {visitPoints.length > 0 ? (
-                    <GeoMap points={visitPoints} valueLabel="visites" height={360} />
+                    <GeoMap points={visitPoints} valueLabel={t("visites")} height={360} />
                   ) : (
                     <p className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
-                      Aucune visite géolocalisée pour le moment. Les visites sont comptées sans
-                      cookie ni adresse IP, à partir du pays fourni par le réseau.
+                      {t(
+                        "Aucune visite géolocalisée pour le moment. Les visites sont comptées sans cookie ni adresse IP, à partir du pays fourni par le réseau.",
+                      )}
                     </p>
                   )}
                 </div>
                 <div className="mt-3 rounded-xl border border-border bg-card p-5">
-                  <h2 className="text-sm font-semibold">Visites par jour (14 derniers jours)</h2>
+                  <h2 className="text-sm font-semibold">
+                    {t("Visites par jour (14 derniers jours)")}
+                  </h2>
                   <div className="mt-4 flex h-28 items-end gap-1.5">
                     {stats.visitsByDay.map((d, i) => (
                       <div
@@ -480,15 +500,15 @@ function AdminPage() {
                   <table className="w-full min-w-[360px] text-left text-sm">
                     <thead className="border-b border-border text-xs text-muted-foreground">
                       <tr>
-                        <th className="p-3">Pays</th>
-                        <th className="p-3">Visites</th>
+                        <th className="p-3">{t("Pays")}</th>
+                        <th className="p-3">{t("Visites")}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {stats.visitsByCountry.map((row) => (
                         <tr key={row.country} className="border-b border-border last:border-0">
                           <td className="p-3">
-                            {row.country === "??" ? "Inconnu" : countryName(row.country)}
+                            {row.country === "??" ? t("Inconnu") : countryName(row.country, lang)}
                           </td>
                           <td className="p-3 tabular-nums">{row.count}</td>
                         </tr>
@@ -496,7 +516,7 @@ function AdminPage() {
                       {stats.visitsByCountry.length === 0 && (
                         <tr>
                           <td colSpan={2} className="p-6 text-center text-muted-foreground">
-                            Aucune visite.
+                            {t("Aucune visite.")}
                           </td>
                         </tr>
                       )}
@@ -504,8 +524,9 @@ function AdminPage() {
                   </table>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Mesure d'audience sans cookie : seul le pays transmis par le réseau, la page et le
-                  référent sont enregistrés. Aucune adresse IP ni donnée personnelle n'est stockée.
+                  {t(
+                    "Mesure d'audience sans cookie : seul le pays transmis par le réseau, la page et le référent sont enregistrés. Aucune adresse IP ni donnée personnelle n'est stockée.",
+                  )}
                 </p>
               </TabsContent>
 
@@ -514,10 +535,10 @@ function AdminPage() {
                   <table className="w-full min-w-[600px] text-left text-sm">
                     <thead className="border-b border-border text-xs text-muted-foreground">
                       <tr>
-                        <th className="p-3">Utilisateur</th>
-                        <th className="p-3">Conversation</th>
-                        <th className="p-3">Fichier</th>
-                        <th className="p-3">Mise à jour</th>
+                        <th className="p-3">{t("Utilisateur")}</th>
+                        <th className="p-3">{t("Conversation")}</th>
+                        <th className="p-3">{t("Fichier")}</th>
+                        <th className="p-3">{t("Mise à jour")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -526,7 +547,7 @@ function AdminPage() {
                           <td className="p-3 break-all">{t.email}</td>
                           <td className="p-3">{t.title}</td>
                           <td className="p-3">{t.dataset ?? "—"}</td>
-                          <td className="p-3">{fmt(t.updatedAt)}</td>
+                          <td className="p-3">{fmt(t.updatedAt, locale)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -536,8 +557,9 @@ function AdminPage() {
             </Tabs>
 
             <p className="mt-4 text-xs text-muted-foreground">
-              Paiements, factures et remboursements : tableau de bord Stripe. Le revenu affiché est
-              une estimation à partir des abonnements actifs.
+              {t(
+                "Paiements, factures et remboursements : tableau de bord Stripe. Le revenu affiché est une estimation à partir des abonnements actifs.",
+              )}
             </p>
           </>
         )}

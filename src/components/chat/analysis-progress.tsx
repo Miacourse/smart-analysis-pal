@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, Upload, FileSearch, BrainCircuit, ChartColumn, LoaderCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useLang } from "@/lib/i18n";
 import {
   ANALYSIS_STEPS,
   estimatedProgress,
@@ -17,6 +18,7 @@ export function UploadProgress({
   progress: number;
   fileName: string | null;
 }) {
+  const { t } = useLang();
   const percent = Math.round(Math.min(1, Math.max(0, progress)) * 100);
   const done = percent >= 100;
   return (
@@ -34,15 +36,17 @@ export function UploadProgress({
               <LoaderCircle className="size-4 motion-safe:animate-spin" />
             )}
             {done
-              ? "Fichier prêt"
-              : `Téléversement & lecture du fichier${fileName ? ` « ${fileName} »` : ""}…`}
+              ? t("Fichier prêt")
+              : fileName
+                ? t("Téléversement & lecture du fichier « {name} »…", { name: fileName })
+                : t("Téléversement & lecture du fichier…")}
           </span>
           <span className="tabular-nums text-primary">{percent} %</span>
         </div>
-        <Progress value={percent} aria-label="Progression du téléversement" className="mt-3" />
+        <Progress value={percent} aria-label={t("Progression du téléversement")} className="mt-3" />
         <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
           <FileSearch className="size-4 shrink-0" />
-          <span>Lecture et profilage du fichier (CSV, Excel, JSON, GeoJSON, LAS).</span>
+          <span>{t("Lecture et profilage du fichier (CSV, Excel, JSON, GeoJSON, LAS).")}</span>
         </div>
       </div>
     </div>
@@ -56,6 +60,7 @@ export function AnalysisProgress({
   phase: AnalysisPhase;
   startedAt: number;
 }) {
+  const { t } = useLang();
   const [now, setNow] = useState(Date.now());
   const [phaseStart, setPhaseStart] = useState(Date.now());
   useEffect(() => {
@@ -78,7 +83,7 @@ export function AnalysisProgress({
         <div className="flex items-center justify-between gap-3 text-sm font-medium">
           <span className="flex items-center gap-2">
             <LoaderCircle className="size-4 motion-safe:animate-spin" />
-            {ANALYSIS_STEPS[current]?.label}
+            {t(ANALYSIS_STEPS[current]?.label ?? "")}
           </span>
           <span className="tabular-nums text-primary">{indeterminate ? "…" : `${percent} %`}</span>
         </div>
@@ -89,7 +94,7 @@ export function AnalysisProgress({
         ) : (
           <Progress
             value={percent}
-            aria-label="Progression estimée de l’analyse"
+            aria-label={t("Progression estimée de l’analyse")}
             className="mt-3"
           />
         )}
@@ -102,14 +107,14 @@ export function AnalysisProgress({
                 className={`flex flex-col gap-1 text-xs sm:flex-row sm:items-center ${i <= current ? "text-primary" : "text-muted-foreground"}`}
               >
                 <Icon className="size-4 shrink-0" />
-                <span>{step.label}</span>
+                <span>{t(step.label)}</span>
               </div>
             );
           })}
         </div>
         {showLongAnalysisNotice(now - startedAt) && (
           <p className="mt-3 text-xs text-muted-foreground">
-            Analyse en cours, cela peut prendre 30s pour les gros fichiers
+            {t("Analyse en cours, cela peut prendre 30s pour les gros fichiers")}
           </p>
         )}
       </div>

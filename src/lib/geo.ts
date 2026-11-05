@@ -87,13 +87,13 @@ export function resolveCountry(value: string) {
 
 const BY_ISO = new Map(WORLD_COUNTRIES.map((country) => [country.iso, country]));
 
-export function countryName(iso: string) {
+export function countryName(iso: string, lang: "fr" | "en" = "fr") {
   const code = iso.trim().toUpperCase();
   const match = BY_ISO.get(code);
-  if (match) return match.fr;
+  if (match) return match[lang];
   if (/^[A-Z]{2}$/.test(code)) {
     try {
-      const localized = new Intl.DisplayNames(["fr"], { type: "region" }).of(code);
+      const localized = new Intl.DisplayNames([lang], { type: "region" }).of(code);
       if (localized && localized !== code) return localized;
     } catch {
       // Code pays inconnu : conserver le libellé d'origine.
@@ -147,7 +147,10 @@ export type GeoTraffic = {
   rows: Array<{ label: string; value: number; share: number }>;
 };
 
-export function geoTrafficFromPreview(preview: string | null | undefined): GeoTraffic | null {
+export function geoTrafficFromPreview(
+  preview: string | null | undefined,
+  lang: "fr" | "en" = "fr",
+): GeoTraffic | null {
   if (!preview || !preview.trim()) return null;
   const parsed = parseDelimited(preview);
   if (parsed.length < 3) return null;
@@ -195,7 +198,7 @@ export function geoTrafficFromPreview(preview: string | null | undefined): GeoTr
     if (existing) existing.value += row.value;
     else
       byCountry.set(country.iso, {
-        label: countryName(country.iso),
+        label: countryName(country.iso, lang),
         lat: country.lat,
         lng: country.lng,
         value: row.value,
@@ -209,7 +212,7 @@ export function geoTrafficFromPreview(preview: string | null | undefined): GeoTr
     valueColumn: preferred?.name ?? "Volume",
     points: points.sort((a, b) => b.value - a.value).slice(0, 30),
     rows: rows.slice(0, 12).map((row) => ({
-      label: countryName(resolveCountry(row.label)?.iso ?? "") || row.label,
+      label: countryName(resolveCountry(row.label)?.iso ?? "", lang) || row.label,
       value: row.value,
       share: Math.abs(row.value) / total,
     })),

@@ -19,6 +19,8 @@ import { AnalysisProgress, UploadProgress } from "./analysis-progress";
 import { AnalysisCharts } from "./analysis-charts";
 import { AnalysisOverview } from "./analysis-overview";
 import { Button } from "@/components/ui/button";
+import { useLang } from "@/lib/i18n";
+import { domainLabel, domainDescription, domainExamples } from "@/lib/domain-i18n";
 import {
   Select,
   SelectContent,
@@ -69,6 +71,7 @@ function parseStoredProfile(raw: unknown): DatasetProfile | null {
 }
 
 export function ChatWindow({ threadId }: { threadId: string }) {
+  const { t } = useLang();
   const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(null);
   const [datasetName, setDatasetName] = useState<string | null>(null);
   const [datasetRows, setDatasetRows] = useState<number | null>(null);
@@ -111,7 +114,7 @@ export function ChatWindow({ threadId }: { threadId: string }) {
   if (initialMessages === null) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <Shimmer className="text-sm">Chargement de la conversation…</Shimmer>
+        <Shimmer className="text-sm">{t("Chargement de la conversation…")}</Shimmer>
       </div>
     );
   }
@@ -159,6 +162,7 @@ function ChatSession({
     preview: string | null,
   ) => void;
 }) {
+  const { t, locale, lang } = useLang();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
@@ -193,8 +197,6 @@ function ChatSession({
       // stockage local indisponible
     }
   }, [threadId, domain, domainOwner]);
-
-  const domainMeta = getAnalysisDomain(domain);
 
   const transport = useMemo(
     () =>
@@ -244,7 +246,7 @@ function ChatSession({
     try {
       const subscription = await billingStatus();
       if (!canExport(subscription.isPro)) {
-        toast("Les exports PDF et Excel sont inclus dans Pro.");
+        toast(t("Les exports PDF et Excel sont inclus dans Pro."));
         await navigate({ to: "/pro" });
         return;
       }
@@ -267,10 +269,10 @@ function ChatSession({
       } else {
         await mod.exportExcel(input);
       }
-      toast.success("Rapport exporté.");
+      toast.success(t("Rapport exporté."));
     } catch (e) {
       console.error(e);
-      toast.error("Export impossible. Réessayez.");
+      toast.error(t("Export impossible. Réessayez."));
     } finally {
       setExporting(false);
     }
@@ -282,7 +284,7 @@ function ChatSession({
 
   async function saveDataset(file: File, rows: string[][], profile: DatasetProfile) {
     if (rows.length < 2) {
-      toast.error("Le fichier doit contenir un en-tête et au moins une ligne valide.");
+      toast.error(t("Le fichier doit contenir un en-tête et au moins une ligne valide."));
       return;
     }
     const preview = Papa.unparse(rows.slice(0, MAX_PREVIEW_ROWS + 1));
@@ -297,7 +299,12 @@ function ChatSession({
       .eq("id", threadId);
     if (error) throw error;
     onDatasetChange(file.name, profile.rows, profile, preview);
-    toast.success(`Fichier « ${file.name} » chargé : ${profileSummary(profile)} analysées.`);
+    toast.success(
+      t("Fichier « {name} » chargé : {summary} analysées.", {
+        name: file.name,
+        summary: profileSummary(profile, lang),
+      }),
+    );
     textareaRef.current?.focus();
   }
 
@@ -316,7 +323,7 @@ function ChatSession({
         `Votre offre accepte les fichiers jusqu'à ${maxFileMb(plan)} Mo. Passez à l’offre supérieure pour les fichiers plus volumineux.`,
         {
           action: {
-            label: "Voir les offres",
+            label: t("Voir les offres"),
             onClick: () => {
               navigate({ to: "/pricing" });
             },
@@ -343,10 +350,10 @@ function ChatSession({
       const rowCount = rows.length - 1;
       if (rowCount > maxRows(plan)) {
         toast.error(
-          `Votre offre accepte jusqu'à ${maxRows(plan).toLocaleString("fr-FR")} lignes ; ce fichier en contient ${rowCount.toLocaleString("fr-FR")}. Passez à l’offre supérieure pour les fichiers plus volumineux.`,
+          `Votre offre accepte jusqu'à ${maxRows(plan).toLocaleString(locale)} lignes ; ce fichier en contient ${rowCount.toLocaleString(locale)}. Passez à l’offre supérieure pour les fichiers plus volumineux.`,
           {
             action: {
-              label: "Voir les offres",
+              label: t("Voir les offres"),
               onClick: () => {
                 navigate({ to: "/pricing" });
               },
@@ -360,12 +367,12 @@ function ChatSession({
     } catch {
       toast.error(
         isExcel
-          ? "Lecture du fichier Excel impossible. Vérifiez qu’il n’est pas protégé."
+          ? t("Lecture du fichier Excel impossible. Vérifiez qu’il n’est pas protégé.")
           : isJson
-            ? "Lecture du fichier JSON/GeoJSON impossible. Vérifiez sa structure."
+            ? t("Lecture du fichier JSON/GeoJSON impossible. Vérifiez sa structure.")
             : isLas
-              ? "Lecture du fichier LAS impossible. Vérifiez les sections ~C et ~A."
-              : "Lecture du fichier impossible. Utilisez un CSV valide.",
+              ? t("Lecture du fichier LAS impossible. Vérifiez les sections ~C et ~A.")
+              : t("Lecture du fichier impossible. Utilisez un CSV valide."),
       );
     } finally {
       setUploading(false);
@@ -383,15 +390,15 @@ function ChatSession({
           <Select value={domain} onValueChange={(value) => setDomain(getAnalysisDomain(value).id)}>
             <SelectTrigger
               className="h-8 w-auto min-w-[150px] gap-2 border-border bg-card text-xs"
-              title={domainMeta.description}
+              title={domainDescription(domain, lang)}
             >
               <Layers className="h-3.5 w-3.5 shrink-0" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="max-h-80">
               {ANALYSIS_DOMAINS.map((item) => (
-                <SelectItem key={item.id} value={item.id} title={item.description}>
-                  {item.label}
+                <SelectItem key={item.id} value={item.id} title={domainDescription(item.id, lang)}>
+                  {domainLabel(item.id, lang)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -408,12 +415,14 @@ function ChatSession({
                 </span>
                 {datasetRows !== null && (
                   <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                    {datasetRows.toLocaleString("fr-FR")} lignes analysées
+                    {t("{count} lignes analysées", { count: datasetRows.toLocaleString(locale) })}
                   </span>
                 )}
               </>
             ) : (
-              <span>Aucun fichier associé — téléversez un fichier pour analyser vos données.</span>
+              <span>
+                {t("Aucun fichier associé — téléversez un fichier pour analyser vos données.")}
+              </span>
             )}
           </div>
         </div>
@@ -421,7 +430,7 @@ function ChatSession({
           <Button
             variant="outline"
             size="sm"
-            title="Exporter le rapport PDF — Pro"
+            title={t("Exporter le rapport PDF — Pro")}
             disabled={busy || exporting || !messages.some((m) => m.role === "assistant")}
             onClick={() => handleExport("pdf")}
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
@@ -432,7 +441,7 @@ function ChatSession({
           <Button
             variant="outline"
             size="sm"
-            title="Exporter le rapport Excel — Pro"
+            title={t("Exporter le rapport Excel — Pro")}
             disabled={busy || exporting || !messages.some((m) => m.role === "assistant")}
             onClick={() => handleExport("xlsx")}
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
@@ -448,7 +457,7 @@ function ChatSession({
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
           >
             <Paperclip className="h-3.5 w-3.5" />
-            {datasetName ? "Remplacer le fichier" : "Téléverser un fichier"}
+            {datasetName ? t("Remplacer le fichier") : t("Téléverser un fichier")}
           </Button>
         </div>
         <input
@@ -476,7 +485,7 @@ function ChatSession({
           <span>{analysisError}</span>
           {/analyses gratuites/i.test(analysisError) && (
             <Button size="sm" onClick={() => navigate({ to: "/pricing" })} className="shrink-0">
-              Passer à Pro
+              {t("Passer à Pro")}
             </Button>
           )}
         </div>
@@ -488,21 +497,22 @@ function ChatSession({
             <div className="flex flex-col items-center py-16 text-center">
               <img src={logo} alt="DA-Copilot" width={56} height={56} className="h-14 w-14" />
               <h2 className="mt-4 font-display text-xl font-semibold">
-                Que voulez-vous analyser ?
+                {t("Que voulez-vous analyser ?")}
               </h2>
               <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                 <Layers className="h-3 w-3" />
-                {domainMeta.label}
+                {domainLabel(domain, lang)}
               </span>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                {domainMeta.description}
+                {domainDescription(domain, lang)}
               </p>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                Téléversez un fichier (CSV, Excel, JSON, GeoJSON, LAS…), puis posez votre question
-                métier.
+                {t(
+                  "Téléversez un fichier (CSV, Excel, JSON, GeoJSON, LAS…), puis posez votre question métier.",
+                )}
               </p>
               <p className="mt-3 max-w-lg text-xs text-muted-foreground">
-                Exemples : {domainMeta.examples.join(" · ")}
+                {t("Exemples : {list}", { list: domainExamples(domain, lang).join(" · ") })}
               </p>
               {datasetProfile && <AnalysisOverview profile={datasetProfile} />}
             </div>
@@ -540,7 +550,9 @@ function ChatSession({
             </Message>
           ))}
 
-          {status === "submitted" && <Shimmer className="text-sm">Analyse en cours…</Shimmer>}
+          {status === "submitted" && (
+            <Shimmer className="text-sm">{t("Analyse en cours…")}</Shimmer>
+          )}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
@@ -557,7 +569,7 @@ function ChatSession({
           >
             <PromptInputTextarea
               ref={textareaRef}
-              placeholder="Posez votre question sur vos données…"
+              placeholder={t("Posez votre question sur vos données…")}
             />
             <PromptInputFooter className="justify-end">
               <PromptInputSubmit
@@ -571,7 +583,9 @@ function ChatSession({
             </PromptInputFooter>
           </PromptInput>
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            DA-Copilot s'appuie sur le profil statistique complet du fichier et un échantillon
+            {t(
+              "DA-Copilot s’appuie sur le profil statistique complet du fichier et un échantillon d’illustration. Vérifiez les chiffres clés.",
+            )}
             d'illustration. Vérifiez les chiffres clés.
           </p>
         </div>
