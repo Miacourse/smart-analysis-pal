@@ -116,6 +116,20 @@ describe("parseChartSpecs", () => {
     expect(specs[0]?.title).toBe("Diagramme ternaire");
   });
 
+  it("conserve les heatmaps Plotly", () => {
+    const block = [
+      "```chart",
+      JSON.stringify({
+        engine: "plotly",
+        traces: [{ type: "heatmap", z: [[1, 2]], x: ["a", "b"], y: ["c"] }],
+      }),
+      "```",
+    ].join("\n");
+    const [spec] = parseChartSpecs(block);
+    expect(spec?.engine).toBe("plotly");
+    expect(spec?.traces?.[0]?.["type"]).toBe("heatmap");
+  });
+
   it("drops Plotly traces without data", () => {
     const block = [
       "```chart",
@@ -167,6 +181,70 @@ describe("parseChartSpecs", () => {
       "```",
     ].join("\n");
     expect(parseChartSpecs(block)[0]?.engine).toBe("recharts");
+  });
+
+  it("supprime les ressources externes des specs Vega", () => {
+    const block = [
+      "```chart",
+      JSON.stringify({
+        engine: "vega",
+        vegaSpec: {
+          mark: "bar",
+          data: { url: "https://evil.example/data.csv", values: [{ a: 1 }] },
+          encoding: { x: { field: "a" } },
+        },
+      }),
+      "```",
+    ].join("\n");
+    const [spec] = parseChartSpecs(block);
+    expect(spec?.engine).toBe("vega");
+    expect(JSON.stringify(spec)).not.toContain("evil.example");
+    expect(JSON.stringify(spec)).not.toContain('"url"');
+  });
+
+  it("supprime les URL externes et le HTML des specs Plotly", () => {
+    const block = [
+      "```chart",
+      JSON.stringify({
+        engine: "plotly",
+        traces: [
+          {
+            type: "scatter",
+            x: [1],
+            y: [2],
+            xsrc: "https://evil.example/x.csv",
+            text: ["<img src=x onerror=alert(1)>"],
+          },
+        ],
+        layout: {
+          images: [{ source: "https://evil.example/image.png" }],
+          mapbox: { accesstoken: "secret" },
+        },
+      }),
+      "```",
+    ].join("\n");
+    const [spec] = parseChartSpecs(block);
+    expect(spec?.engine).toBe("plotly");
+    const json = JSON.stringify(spec);
+    expect(json).not.toContain("evil.example");
+    expect(json).not.toContain("mapbox");
+    expect(json).not.toContain("<img");
+  });
+
+  it("ignore les clés de prototype dans les données", () => {
+    const block = [
+      "```chart",
+      JSON.stringify({
+        type: "bar",
+        xKey: "A",
+        yKeys: ["B"],
+        data: [{ A: "x", B: 1, __proto__: { polluted: true } }],
+      }),
+      "```",
+    ].join("\n");
+    const [spec] = parseChartSpecs(block);
+    expect(Object.keys(spec?.data?.[0] ?? {})).not.toContain("__proto__");
+    expect(({} as { polluted?: boolean }).polluted).toBeUndefined();
   });
 });
 

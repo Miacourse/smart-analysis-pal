@@ -20,8 +20,26 @@ type AppVisitsClient = {
   };
 };
 
+const PRODUCTION_ORIGIN = "https://da-copilot.lovable.app";
+const ALLOWED_ORIGIN_HOSTS = new Set(["da-copilot.lovable.app", "localhost", "127.0.0.1"]);
+const ALLOWED_ORIGIN_SUFFIXES = [".lovable.app", ".lovableproject.com", ".lovableproject-dev.com"];
+
+export function isAllowedOrigin(value: string): boolean {
+  try {
+    const url = new URL(value);
+    const local = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    if (url.protocol !== "https:" && !(url.protocol === "http:" && local)) return false;
+    if (url.username || url.password) return false;
+    if (ALLOWED_ORIGIN_HOSTS.has(url.hostname)) return true;
+    return ALLOWED_ORIGIN_SUFFIXES.some((suffix) => url.hostname.endsWith(suffix));
+  } catch {
+    return false;
+  }
+}
+
 function originOf() {
-  return getRequestHeader("origin") ?? "https://da-copilot.lovable.app";
+  const origin = getRequestHeader("origin");
+  return origin && isAllowedOrigin(origin) ? new URL(origin).origin : PRODUCTION_ORIGIN;
 }
 
 async function emailOf(supabase: SupabaseClient<Database>): Promise<string> {

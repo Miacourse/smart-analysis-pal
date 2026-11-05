@@ -71,10 +71,28 @@ const HTML_ENTITIES: Record<string, string> = {
   percnt: "%",
 };
 
+function decodeCodePoint(code: string): string {
+  const point = /^#x/i.test(code)
+    ? Number.parseInt(code.slice(2), 16)
+    : Number.parseInt(code.slice(1), 10);
+  if (
+    !Number.isInteger(point) ||
+    point < 0 ||
+    point > 0x10ffff ||
+    (point >= 0xd800 && point <= 0xdfff)
+  ) {
+    return "\uFFFD";
+  }
+  try {
+    return String.fromCodePoint(point);
+  } catch {
+    return "\uFFFD";
+  }
+}
+
 function decodeEntities(input: string): string {
   return input.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g, (match, code: string) => {
-    if (/^#x/i.test(code)) return String.fromCodePoint(Number.parseInt(code.slice(2), 16));
-    if (code.startsWith("#")) return String.fromCodePoint(Number.parseInt(code.slice(1), 10));
+    if (code.startsWith("#")) return decodeCodePoint(code);
     return HTML_ENTITIES[code.toLowerCase()] ?? match;
   });
 }
@@ -142,8 +160,21 @@ function fileBase(input: ReportInput) {
   return `rapport-${base.replace(/[^\w-]+/g, "_")}-${d}`;
 }
 
-function sanitizeCell(value: string) {
-  return sanitizeReportText(stripMd(value).replace(/\s+/g, " "));
+const MAX_CELL_CHARS = 32_000;
+const NUMERIC_CELL_RE = /^[-+]?\d+(?:[.,]\d+)?%?$/;
+
+function sanitizeCellText(value: string) {
+  return sanitizeReportText(stripMd(value).replace(/\s+/g, " "))
+    .replace(/\p{Cc}/gu, "")
+    .slice(0, MAX_CELL_CHARS);
+}
+
+// Excel interprète les cellules commençant par =, +, -, @, tab ou CR comme des
+// formules. On préfixe d'une apostrophe, sauf pour les nombres négatifs légitimes.
+export function sanitizeExcelCell(value: string) {
+  const clean = sanitizeCellText(value);
+  if (NUMERIC_CELL_RE.test(clean)) return clean;
+  return /^\s*[=+\-@\t\r]/.test(clean) ? `'${clean}` : clean;
 }
 
 export function extractMarkdownTables(md: string): string[][][] {
@@ -389,7 +420,7 @@ function buildPdf(doc: ReportDoc, input: ReportInput) {
     if (rows.length === 0) return;
     const cols = Math.max(...rows.map((r) => r.length));
     const cleaned = rows.map((r) =>
-      Array.from({ length: cols }, (_, c) => sanitizeCell(r[c] ?? "")),
+      Array.from({ length: cols }, (_, c) => sanitizeCellText(r[c] ?? "")),
     );
     const maxLen = new Array(cols).fill(8) as number[];
     for (const r of cleaned) {
@@ -752,14 +783,14 @@ export async function exportExcel(input: ReportInput) {
   const wb = XLSX.utils.book_new();
   const summary = [
     ["Rapport d'analyse Datello"],
-    ["Conversation", sanitizeReportText(input.title)],
-    ["Fichier", sanitizeReportText(input.datasetName ?? "aucun")],
-    ["Généré le", sanitizeReportText(new Date().toLocaleString("fr-FR"))],
+    ["Conversation", sanitizeExcelCell(input.title)],
+    ["Fichier", sanitizeExcelCell(input.datasetName ?? "aucun")],
+    ["Généré le", sanitizeExcelCell(new Date().toLocaleString("fr-FR"))],
     [],
     ["Rôle", "Contenu"],
     ...input.messages.map((m) => [
       m.role === "user" ? "Question" : "Analyse",
-      sanitizeReportText(messageText(m)),
+      sanitizeExcelCell(messageText(m)),
     ]),
   ];
   const ws = XLSX.utils.aoa_to_sheet(summary);
@@ -773,7 +804,7 @@ export async function exportExcel(input: ReportInput) {
       if (n > 20) break;
       XLSX.utils.book_append_sheet(
         wb,
-        XLSX.utils.aoa_to_sheet(t.map((row) => row.map((cell) => sanitizeCell(cell)))),
+        XLSX.utils.aoa_to_sheet(t.map((row) => row.map((cell) => sanitizeExcelCell(cell)))),
         `Tableau ${n++}`,
       );
     }
@@ -781,15 +812,27 @@ export async function exportExcel(input: ReportInput) {
   const geo = geoTrafficFromPreview(input.datasetPreview);
   if (geo) {
     const rows = [
-      [geo.labelColumn, geo.valueColumn, "Part"],
-      ...geo.rows.map((row) => [row.label, row.value, Number((row.share * 100).toFixed(1))]),
+      [sanitizeExcelCell(geo.labelColumn), sanitizeExcelCell(geo.valueColumn), "Part"],
+      ...geo.rows.map((row) => [
+        sanitizeExcelCell(row.label),
+        row.value,
+        Number((row.share * 100).toFixed(1)),
+      ]),
     ];
     const geoSheet = XLSX.utils.aoa_to_sheet(rows);
     geoSheet["!cols"] = [{ wch: 22 }, { wch: 14 }, { wch: 10 }];
     XLSX.utils.book_append_sheet(wb, geoSheet, "Géographie");
   }
   if (input.datasetPreview) {
-    const rows = input.datasetPreview.split("\n").map((r) => r.split(","));
+    const rows = input.datasetPreview
+      .split("\n")
+      .slice(0, 200)
+      .map((r) =>
+        r
+          .split(",")
+          .slice(0, 50)
+          .map((cell) => sanitizeExcelCell(cell)),
+      );
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Extrait données");
   }
   XLSX.writeFile(wb, `${fileBase(input)}.xlsx`);

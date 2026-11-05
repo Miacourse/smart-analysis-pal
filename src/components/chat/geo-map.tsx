@@ -50,12 +50,16 @@ function loadLeaflet(): Promise<Leaflet> {
       link.id = CSS_ID;
       link.rel = "stylesheet";
       link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      link.crossOrigin = "";
+      link.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
+      link.crossOrigin = "anonymous";
+      link.referrerPolicy = "no-referrer";
       document.head.appendChild(link);
     }
     const script = document.createElement("script");
     script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    script.crossOrigin = "";
+    script.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
+    script.crossOrigin = "anonymous";
+    script.referrerPolicy = "no-referrer";
     script.onload = () => (window.L ? resolve(window.L) : reject(new Error("leaflet missing")));
     script.onerror = () => reject(new Error("leaflet load failed"));
     document.head.appendChild(script);

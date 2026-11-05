@@ -17,6 +17,26 @@ export interface ChartSpec {
 const CHART_TYPES: ChartType[] = ["bar", "line", "area", "pie", "scatter"];
 const CHART_BLOCK_RE = /```chart\s*([\s\S]*?)```/gi;
 const MAX_SPEC_CHARS = 300_000;
+const MAX_TOTAL_SPEC_CHARS = 1_200_000;
+const MAX_SPEC_DEPTH = 24;
+const MAX_SPEC_NODES = 50_000;
+const MAX_SPEC_ARRAY = 5_000;
+const MAX_SPEC_STRING = 20_000;
+const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+const NETWORK_KEYS = new Set([
+  "url",
+  "href",
+  "src",
+  "loader",
+  "poster",
+  "dataurl",
+  "baseurl",
+  "geojson",
+  "topojson",
+  "mapbox",
+]);
+const HTML_TAG_RE = /<\/?[a-z][^>]*>/gi;
+const CONTROL_RE = /\p{Cc}/gu;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -33,6 +53,125 @@ function isNumeric(value: unknown): boolean {
     return cleaned !== "" && Number.isFinite(Number(cleaned));
   }
   return false;
+}
+
+function isUnsafeKey(key: string): boolean {
+  return DANGEROUS_KEYS.has(key);
+}
+
+function isNetworkKey(key: string, parentKey?: string): boolean {
+  const lower = key.toLowerCase();
+  if (lower === "source") return parentKey === "images" || parentKey === "image";
+  return NETWORK_KEYS.has(lower) || lower.endsWith("src");
+}
+
+function sanitizeChartString(value: string): string {
+  return value.replace(HTML_TAG_RE, " ").replace(CONTROL_RE, "").slice(0, MAX_SPEC_STRING);
+}
+
+function sanitizeDataValue(value: unknown, depth: number, budget: { nodes: number }): unknown {
+  if (budget.nodes-- <= 0 || depth > MAX_SPEC_DEPTH) return undefined;
+  if (typeof value === "string") return sanitizeChartString(value);
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value === "boolean" || value === null) return value;
+  if (Array.isArray(value)) {
+    const out: unknown[] = [];
+    for (const item of value.slice(0, MAX_SPEC_ARRAY)) {
+      const safe = sanitizeDataValue(item, depth + 1, budget);
+      if (safe !== undefined) out.push(safe);
+    }
+    return out;
+  }
+  if (isRecord(value)) {
+    const out: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(value)) {
+      if (isUnsafeKey(key)) continue;
+      const safe = sanitizeDataValue(child, depth + 1, budget);
+      if (safe !== undefined) out[key] = safe;
+    }
+    return out;
+  }
+  return undefined;
+}
+
+function sanitizeDataRows(rows: unknown[]): Record<string, unknown>[] {
+  const budget = { nodes: MAX_SPEC_NODES };
+  return rows
+    .filter(isRecord)
+    .slice(0, MAX_SPEC_ARRAY)
+    .map((row) => sanitizeDataValue(row, 0, budget))
+    .filter(isRecord);
+}
+
+type SpecContext = {
+  depth: number;
+  budget: { nodes: number };
+  rows: boolean;
+  inDatasets: boolean;
+  parentKey: string | undefined;
+};
+
+function sanitizeSpecValue(value: unknown, ctx: SpecContext): unknown {
+  if (ctx.budget.nodes-- <= 0 || ctx.depth > MAX_SPEC_DEPTH) return undefined;
+  if (typeof value === "string") return sanitizeChartString(value);
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value === "boolean" || value === null) return value;
+  if (Array.isArray(value)) {
+    const childRows = ctx.rows || ctx.inDatasets;
+    const out: unknown[] = [];
+    for (const item of value.slice(0, MAX_SPEC_ARRAY)) {
+      const safe = sanitizeSpecValue(item, {
+        depth: ctx.depth + 1,
+        budget: ctx.budget,
+        rows: childRows,
+        inDatasets: false,
+        parentKey: ctx.parentKey,
+      });
+      if (safe !== undefined) out.push(safe);
+    }
+    return out;
+  }
+  if (isRecord(value)) {
+    if (ctx.rows) return sanitizeDataValue(value, ctx.depth, ctx.budget);
+    const out: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(value)) {
+      if (isUnsafeKey(key) || isNetworkKey(key, ctx.parentKey)) continue;
+      if (
+        key === "type" &&
+        typeof child === "string" &&
+        /^(?:scatter|choropleth|density)map(?:box)?$/i.test(child)
+      ) {
+        continue;
+      }
+      if (
+        (key === "width" || key === "height") &&
+        typeof child === "number" &&
+        (!Number.isFinite(child) || child < 0 || child > 5000)
+      ) {
+        continue;
+      }
+      const safe = sanitizeSpecValue(child, {
+        depth: ctx.depth + 1,
+        budget: ctx.budget,
+        rows: key === "values",
+        inDatasets: key === "datasets" || ctx.inDatasets,
+        parentKey: key,
+      });
+      if (safe !== undefined) out[key] = safe;
+    }
+    return out;
+  }
+  return undefined;
+}
+
+function sanitizeSpecNode(value: unknown): unknown {
+  return sanitizeSpecValue(value, {
+    depth: 0,
+    budget: { nodes: MAX_SPEC_NODES },
+    rows: false,
+    inDatasets: false,
+    parentKey: undefined,
+  });
 }
 
 export function stripChartBlocks(text: string): string {
@@ -79,18 +218,23 @@ function normalizeRecharts(raw: Record<string, unknown>): ChartSpec | null {
 
   const rawData = Array.isArray(raw["data"]) ? raw["data"] : null;
   if (!rawData) return null;
-  const data = rawData.filter(isRecord).slice(0, 200);
+  const data = sanitizeDataRows(rawData).slice(0, 200);
   if (data.length === 0) return null;
 
   const first = data[0] ?? {};
   const keys = Object.keys(first);
   if (keys.length === 0) return null;
 
-  let xKey =
-    typeof raw["xKey"] === "string" && raw["xKey"].length > 0 ? raw["xKey"] : (keys[0] ?? "label");
+  const requestedXKey =
+    typeof raw["xKey"] === "string" ? sanitizeChartString(raw["xKey"]).trim() : "";
+  if (requestedXKey && isUnsafeKey(requestedXKey)) return null;
+  let xKey = requestedXKey.length > 0 ? requestedXKey : (keys[0] ?? "label");
 
   const requestedYKeys = Array.isArray(raw["yKeys"])
-    ? raw["yKeys"].filter((key): key is string => typeof key === "string" && key.length > 0)
+    ? raw["yKeys"]
+        .filter((key): key is string => typeof key === "string")
+        .map((key) => sanitizeChartString(key).trim())
+        .filter((key) => key.length > 0 && !isUnsafeKey(key))
     : [];
   const presentYKeys = requestedYKeys.filter((key) => keys.includes(key));
   let yKeys =
@@ -108,8 +252,9 @@ function normalizeRecharts(raw: Record<string, unknown>): ChartSpec | null {
   if (yKeys.length === 0) return null;
 
   const spec: ChartSpec = { engine: "recharts", type, xKey, yKeys, data };
-  if (typeof raw["title"] === "string" && raw["title"].trim().length > 0) {
-    spec.title = raw["title"].trim();
+  if (typeof raw["title"] === "string") {
+    const title = sanitizeChartString(raw["title"]).trim();
+    if (title) spec.title = title;
   }
   if (raw["stacked"] === true) spec.stacked = true;
   return spec;
@@ -213,10 +358,14 @@ function vegaToRecharts(
 
 function normalizeVega(raw: Record<string, unknown>): ChartSpec | null {
   const candidate = isRecord(raw["vegaSpec"]) ? raw["vegaSpec"] : raw;
-  const vegaSpec: Record<string, unknown> = { ...candidate };
-  delete vegaSpec["engine"];
-  delete vegaSpec["title"];
-  delete vegaSpec["vegaSpec"];
+  const source: Record<string, unknown> = { ...candidate };
+  delete source["engine"];
+  delete source["title"];
+  delete source["vegaSpec"];
+
+  const sanitized = sanitizeSpecNode(source);
+  if (!isRecord(sanitized)) return null;
+  const vegaSpec = sanitized;
 
   const looksLikeVega = ["mark", "layer", "facet", "concat", "hconcat", "vconcat", "spec"].some(
     (key) => key in vegaSpec,
@@ -224,19 +373,19 @@ function normalizeVega(raw: Record<string, unknown>): ChartSpec | null {
   if (!looksLikeVega) return null;
 
   const spec: ChartSpec = { engine: "vega", vegaSpec };
-  const title =
+  const rawTitle =
     typeof raw["title"] === "string"
-      ? raw["title"].trim()
+      ? sanitizeChartString(raw["title"]).trim()
       : typeof vegaSpec["title"] === "string"
-        ? vegaSpec["title"].trim()
+        ? sanitizeChartString(vegaSpec["title"]).trim()
         : "";
 
   const values = extractVegaValues(vegaSpec);
   if (!values) return null;
-  const converted = vegaToRecharts(values, vegaSpec, title);
+  const converted = vegaToRecharts(values, vegaSpec, rawTitle);
   if (converted) return converted;
 
-  if (title) spec.title = title;
+  if (rawTitle) spec.title = rawTitle;
   return spec;
 }
 
@@ -251,14 +400,24 @@ function normalizePlotly(raw: Record<string, unknown>): ChartSpec | null {
   const traces = rawTraces
     .filter(isRecord)
     .filter((trace) => Object.values(trace).some((value) => Array.isArray(value)))
+    .filter((trace) => {
+      const type = trace["type"];
+      return typeof type !== "string" || !/^(?:scatter|choropleth|density)map(?:box)?$/i.test(type);
+    })
+    .map((trace) => sanitizeSpecNode(trace))
+    .filter(isRecord)
     .slice(0, 8);
   if (traces.length === 0) return null;
 
   const spec: ChartSpec = { engine: "plotly", traces };
-  if (typeof raw["title"] === "string" && raw["title"].trim().length > 0) {
-    spec.title = raw["title"].trim();
+  if (typeof raw["title"] === "string") {
+    const title = sanitizeChartString(raw["title"]).trim();
+    if (title) spec.title = title;
   }
-  if (isRecord(raw["layout"])) spec.layout = raw["layout"];
+  if (isRecord(raw["layout"])) {
+    const layout = sanitizeSpecNode(raw["layout"]);
+    if (isRecord(layout)) spec.layout = layout;
+  }
   return spec;
 }
 
@@ -271,19 +430,31 @@ function normalizeChartSpec(raw: unknown): ChartSpec | null {
   }
 
   const engine = detectEngine(raw);
-  if (engine === "vega") return normalizeVega(raw);
-  if (engine === "plotly") return normalizePlotly(raw);
-  return normalizeRecharts(raw);
+  const spec =
+    engine === "vega"
+      ? normalizeVega(raw)
+      : engine === "plotly"
+        ? normalizePlotly(raw)
+        : normalizeRecharts(raw);
+  if (!spec) return null;
+  try {
+    return JSON.stringify(spec).length > MAX_SPEC_CHARS ? null : spec;
+  } catch {
+    return null;
+  }
 }
 
 export function parseChartSpecs(text: string, maxSpecs = 24): ChartSpec[] {
   const specs: ChartSpec[] = [];
   if (!text) return specs;
   CHART_BLOCK_RE.lastIndex = 0;
+  let totalChars = 0;
   let match: RegExpExecArray | null;
   while ((match = CHART_BLOCK_RE.exec(text)) !== null && specs.length < maxSpecs) {
     const body = match[1]?.trim();
     if (!body) continue;
+    totalChars += body.length;
+    if (totalChars > MAX_TOTAL_SPEC_CHARS) break;
     try {
       const spec = normalizeChartSpec(JSON.parse(body) as unknown);
       if (spec) specs.push(spec);
@@ -313,6 +484,7 @@ export function buildChartData(spec: ChartSpec): Record<string, string | number>
   const rows = spec.data ?? [];
   const xKey = spec.xKey ?? "";
   const yKeys = spec.yKeys ?? [];
+  if (isUnsafeKey(xKey)) return [];
   return rows.map((row, index) => {
     const output: Record<string, string | number> = {};
     if (spec.type === "scatter") {
@@ -322,6 +494,7 @@ export function buildChartData(spec: ChartSpec): Record<string, string | number>
       output[xKey] = label === undefined || label === null ? `#${index + 1}` : String(label);
     }
     for (const key of yKeys) {
+      if (isUnsafeKey(key)) continue;
       output[key] = toChartNumber(row[key]) ?? 0;
     }
     return output;

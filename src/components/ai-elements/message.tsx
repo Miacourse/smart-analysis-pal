@@ -271,6 +271,16 @@ export const MessageBranchPage = ({ className, ...props }: MessageBranchPageProp
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 const streamdownPlugins = { cjk, code, math, mermaid };
+const BLOCKED_MEDIA_ELEMENTS = [
+  "img",
+  "video",
+  "audio",
+  "iframe",
+  "object",
+  "embed",
+  "source",
+  "track",
+] as const;
 
 export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
@@ -278,6 +288,7 @@ export const MessageResponse = memo(
       className={cn("size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0", className)}
       plugins={streamdownPlugins}
       {...props}
+      disallowedElements={BLOCKED_MEDIA_ELEMENTS}
     />
   ),
   (prevProps, nextProps) =>

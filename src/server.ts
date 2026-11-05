@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { requestErrorResponse } from "./lib/http-error";
+import { withSecurityHeaders } from "./lib/security-headers";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -49,10 +50,10 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response, request);
+      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response, request));
     } catch (error) {
       console.error(error);
-      return requestErrorResponse(request);
+      return withSecurityHeaders(requestErrorResponse(request));
     }
   },
 };

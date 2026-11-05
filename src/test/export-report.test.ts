@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   extractMarkdownTables,
   reportTitle,
+  sanitizeExcelCell,
   sanitizeReportText,
   splitReportBlocks,
 } from "@/lib/export-report";
@@ -87,6 +88,16 @@ describe("sanitizeReportText", () => {
       "Display & Paid Social -> Paid Search >= 2",
     );
     expect(sanitizeReportText("Marge &#8594; hausse")).toBe("Marge -> hausse");
+  });
+});
+
+describe("sanitizeExcelCell", () => {
+  it("neutralise les formules Excel sans casser les nombres négatifs", () => {
+    expect(sanitizeExcelCell("=1+1")).toBe("'=1+1");
+    expect(sanitizeExcelCell("+SUM(A1)")).toBe("'+SUM(A1)");
+    expect(sanitizeExcelCell("@cmd")).toBe("'@cmd");
+    expect(sanitizeExcelCell("-2+3")).toBe("'-2+3");
+    expect(sanitizeExcelCell("-12,5")).toBe("-12,5");
   });
 });
 

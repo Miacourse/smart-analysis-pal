@@ -43,11 +43,56 @@ Règles :
 \`\`\`
   N'ajoute pas de graphique seulement si aucune colonne numérique n'existe. Produis autant de blocs que l'analyse le justifie (classement, tendance, répartition, corrélation, anomalie, comparaison, saisonnalité), un par idée clé et sans doublon : le nombre de graphiques dépend des données et des questions, pas d'un plafond fixe. Le titre de chaque graphique doit être explicite et issu de la compréhension des données, du métier et de la question : cite l'indicateur et la dimension analysés (par exemple « Sessions par ville, top 10 » ou « Taux d'engagement par canal »), jamais un titre générique comme « Graphique 1 ». Chaque bloc doit contenir uniquement du JSON valide, sans commentaire autour du JSON.`;
 
-function jsonError(status: number, message: string) {
+const MAX_BODY_BYTES = 1_000_000;
+const MAX_MESSAGES = 200;
+const MAX_MESSAGE_CHARS = 40_000;
+const MAX_TOTAL_CHARS = 200_000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+type AdminRpcClient = {
+  rpc: (
+    fn: "consume_analysis_for_user" | "release_analysis_for_user",
+    args: { _user_id: string },
+  ) => Promise<{ data: unknown; error: unknown }>;
+};
+
+function jsonError(status: number, message: string, headers?: Record<string, string>) {
   return new Response(JSON.stringify({ error: message }), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
   });
+}
+
+function textOf(message: UIMessage): string {
+  return message.parts
+    .map((part) => (part.type === "text" ? part.text : ""))
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
+/**
+ * Ne conserve que le texte des messages : les parts `file`, `tool` ou `source`
+ * envoyées par un client malveillant ne doivent jamais atteindre le fournisseur.
+ */
+function sanitizeMessages(input: unknown): UIMessage[] | null {
+  if (!Array.isArray(input) || input.length === 0 || input.length > MAX_MESSAGES) return null;
+  const safe: UIMessage[] = [];
+  let total = 0;
+  for (const item of input) {
+    if (!item || typeof item !== "object") return null;
+    const message = item as UIMessage;
+    if (message.role !== "user" && message.role !== "assistant") return null;
+    if (!Array.isArray(message.parts)) return null;
+    const text = textOf(message);
+    if (!text) continue;
+    if (text.length > MAX_MESSAGE_CHARS) return null;
+    total += text.length;
+    if (total > MAX_TOTAL_CHARS) return null;
+    safe.push({ ...message, parts: [{ type: "text", text }] });
+  }
+  if (safe.length === 0 || safe[safe.length - 1]?.role !== "user") return null;
+  return safe;
 }
 
 export const Route = createFileRoute("/api/chat")({
@@ -56,6 +101,11 @@ export const Route = createFileRoute("/api/chat")({
       POST: async ({ request }) => {
         let release: (() => Promise<void>) | null = null;
         try {
+          const contentLength = Number(request.headers.get("content-length") ?? "0");
+          if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+            return jsonError(413, "Requête trop volumineuse.");
+          }
+
           const authHeader = request.headers.get("authorization");
           if (!authHeader) return jsonError(401, "Connexion requise.");
 
@@ -72,16 +122,25 @@ export const Route = createFileRoute("/api/chat")({
           } = await supabase.auth.getUser();
           if (!user) return jsonError(401, "Session invalide. Reconnectez-vous.");
 
-          let body: { messages: UIMessage[]; threadId?: string; domain?: string };
-          try {
-            body = await request.json();
-          } catch {
+          const { consumeRateLimit } = await import("@/lib/rate-limit.server");
+          const rate = consumeRateLimit(`chat:${user.id}`, 20, 60_000);
+          if (!rate.allowed) {
+            return jsonError(429, "Trop de requêtes. Réessayez dans quelques instants.", {
+              "Retry-After": String(rate.retryAfter),
+            });
+          }
+
+          const { readJsonBody } = await import("@/lib/request-body.server");
+          const parsed = await readJsonBody(request, MAX_BODY_BYTES);
+          if (!parsed || typeof parsed !== "object") {
             return jsonError(400, "Requête d’analyse invalide. Relancez votre question.");
           }
-          const { messages, threadId, domain: domainId } = body;
-          if (!threadId || !Array.isArray(messages) || messages.length === 0) {
-            return jsonError(400, "Requête invalide.");
-          }
+          const body = parsed as { messages?: unknown; threadId?: unknown; domain?: unknown };
+          const threadId = typeof body.threadId === "string" ? body.threadId : "";
+          const domainId = typeof body.domain === "string" ? body.domain : undefined;
+          if (!UUID_RE.test(threadId)) return jsonError(400, "Requête invalide.");
+          const messages = sanitizeMessages(body.messages);
+          if (!messages) return jsonError(400, "Requête invalide.");
 
           const { data: thread } = await supabase
             .from("threads")
@@ -116,20 +175,29 @@ export const Route = createFileRoute("/api/chat")({
           }
           // Réservation atomique d'une analyse : les requêtes simultanées reçoivent des
           // compteurs distincts, ce qui empêche de dépasser la limite gratuite.
+          // Les fonctions de quota sont réservées au service_role : un utilisateur ne
+          // peut plus appeler release_analysis() lui-même pour contourner la limite.
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const adminRpc = supabaseAdmin as unknown as AdminRpcClient;
           let released = false;
           const releaseQuota = async () => {
             if (released) return;
             released = true;
             try {
-              await supabase.rpc("release_analysis");
+              await adminRpc.rpc("release_analysis_for_user", { _user_id: user.id });
             } catch (e) {
               console.error("Libération du quota impossible", e);
             }
           };
           if (!isAdmin) {
             release = releaseQuota;
-            const reserved = await supabase.rpc("consume_analysis");
-            const analysesUsedAfter = typeof reserved.data === "number" ? reserved.data : used + 1;
+            const reserved = await adminRpc.rpc("consume_analysis_for_user", {
+              _user_id: user.id,
+            });
+            if (reserved.error || typeof reserved.data !== "number") {
+              return jsonError(503, "Service d’analyse temporairement indisponible.");
+            }
+            const analysesUsedAfter = reserved.data;
             if (!isPro && analysesUsedAfter > freeLimit) {
               await release();
               return jsonError(

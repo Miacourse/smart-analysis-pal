@@ -1,6 +1,30 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import embed from "vega-embed";
+import { loader as createLoader, type Loader } from "vega";
 import { useLang } from "@/lib/i18n";
+
+const SAFE_RESOURCE = /^(data|blob):/i;
+
+function safeLoader(): Loader {
+  const base = createLoader();
+  return {
+    ...base,
+    load: (uri, options) => {
+      if (typeof uri !== "string" || !SAFE_RESOURCE.test(uri)) {
+        return Promise.reject(new Error("External Vega resources are blocked"));
+      }
+      return base.load(uri, options);
+    },
+    sanitize: (uri, options) => {
+      if (typeof uri !== "string" || !SAFE_RESOURCE.test(uri)) {
+        return Promise.resolve({ href: "" });
+      }
+      return base.sanitize(uri, options);
+    },
+    http: () => Promise.reject(new Error("External Vega resources are blocked")),
+    file: () => Promise.reject(new Error("External Vega resources are blocked")),
+  };
+}
 
 export default function VegaChart({
   spec,
@@ -29,7 +53,11 @@ export default function VegaChart({
       ...spec,
     };
 
-    void embed(element, fullSpec as never, { actions: false, renderer: "canvas" })
+    void embed(element, fullSpec as never, {
+      actions: false,
+      renderer: "canvas",
+      loader: safeLoader(),
+    })
       .then((result) => {
         if (cancelled) result.finalize();
         else view = result;
