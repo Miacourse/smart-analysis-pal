@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
@@ -164,7 +165,7 @@ export function ThreadSidebar({
     `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
       active
         ? "bg-sidebar-accent font-semibold text-sidebar-foreground"
-        : "text-sidebar-foreground/75 hover:bg-white/5 hover:text-sidebar-foreground"
+        : "text-sidebar-foreground/75 hover:bg-sidebar-foreground/5 hover:text-sidebar-foreground"
     }`;
 
   return (
@@ -178,13 +179,13 @@ export function ThreadSidebar({
       </div>
 
       <div className="px-3">
-        <button
+        <Button variant="ghost"
           onClick={createThread}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-teal-dark px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-teal-dark px-3 py-2.5 text-sm font-semibold text-sidebar-foreground transition-colors hover:bg-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
         >
           <Plus className="h-4 w-4" />
           {t("Nouvelle analyse")}
-        </button>
+        </Button>
       </div>
 
       <nav className="mt-4 space-y-1 px-3">
@@ -205,7 +206,7 @@ export function ThreadSidebar({
       <div className="mt-5 flex-1 overflow-y-auto px-3 pb-3">
         {recentFiles.length > 0 && (
           <div className="mb-4">
-            <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/45">
+            <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wide text-sidebar-foreground/45">
               {t("Fichiers récents")}
             </p>
             <ul className="space-y-0.5">
@@ -215,13 +216,13 @@ export function ThreadSidebar({
                     to="/chat/$threadId"
                     params={{ threadId: thread.id }}
                     onClick={() => onNavigate?.()}
-                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-sidebar-foreground/75 hover:bg-white/5 hover:text-sidebar-foreground"
+                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-sidebar-foreground/75 hover:bg-sidebar-foreground/5 hover:text-sidebar-foreground"
                   >
                     <FileText className="h-3.5 w-3.5 shrink-0" />
                     <span className="min-w-0 flex-1 truncate" title={thread.dataset_name ?? ""}>
                       {thread.dataset_name}
                     </span>
-                    <span className="shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-white/70">
+                    <span className="shrink-0 rounded bg-sidebar-foreground/10 px-1.5 py-0.5 text-[10px] font-semibold text-sidebar-foreground/70">
                       {fileBadge(thread.dataset_name ?? "")}
                     </span>
                   </Link>
@@ -231,7 +232,7 @@ export function ThreadSidebar({
           </div>
         )}
 
-        <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/45">
+        <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wide text-sidebar-foreground/45">
           {t("Conversations")}
         </p>
         <div className="space-y-0.5">
@@ -241,7 +242,7 @@ export function ThreadSidebar({
               className={`group flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm ${
                 thread.id === activeThreadId
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/75 hover:bg-white/5"
+                  : "text-sidebar-foreground/75 hover:bg-sidebar-foreground/5"
               }`}
             >
               <Link
@@ -253,24 +254,24 @@ export function ThreadSidebar({
                 <span className="block truncate font-medium">{thread.title}</span>
                 {thread.dataset_name && (
                   <span
-                    className="block truncate text-xs text-white/45"
+                    className="block truncate text-xs text-sidebar-foreground/45"
                     title={thread.dataset_name}
                   >
                     {thread.dataset_name}
                   </span>
                 )}
               </Link>
-              <button
+              <Button variant="ghost"
                 onClick={() => deleteThread(thread.id)}
                 aria-label={t("Supprimer la conversation")}
-                className="rounded p-1 opacity-0 transition-opacity hover:bg-white/10 group-hover:opacity-100 focus-visible:opacity-100"
+                className="rounded p-1 opacity-0 transition-opacity hover:bg-sidebar-foreground/10 group-hover:opacity-100 focus-visible:opacity-100"
               >
-                <Trash2 className="h-3.5 w-3.5 text-white/60" />
-              </button>
+                <Trash2 className="h-3.5 w-3.5 text-sidebar-foreground/60" />
+              </Button>
             </div>
           ))}
           {threads.length === 0 && (
-            <p className="px-2 py-6 text-center text-xs text-white/45">
+            <p className="px-2 py-6 text-center text-xs text-sidebar-foreground/45">
               {t("Aucune conversation. Lancez votre première analyse !")}
             </p>
           )}
@@ -278,36 +279,36 @@ export function ThreadSidebar({
       </div>
 
       <div className="space-y-1 border-t border-sidebar-border p-3">
-        <div className="mb-2 flex items-center gap-1 rounded-lg bg-white/5 p-1">
+        <div className="mb-2 flex items-center gap-1 rounded-lg bg-sidebar-foreground/5 p-1">
           {(["fr", "en"] as const).map((code) => (
-            <button
+            <Button variant="ghost"
               key={code}
               onClick={() => setLang(code)}
               aria-pressed={lang === code}
               className={`min-h-8 flex-1 rounded-md px-2 text-xs font-semibold uppercase transition-colors ${
                 lang === code
-                  ? "bg-white/15 text-white"
-                  : "text-white/55 hover:bg-white/10 hover:text-white"
+                  ? "bg-sidebar-foreground/15 text-sidebar-foreground"
+                  : "text-sidebar-foreground/55 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
               }`}
             >
               {code === "fr" ? "Français" : "English"}
-            </button>
+            </Button>
           ))}
         </div>
 
         {usage && (
-          <div className="mb-2 rounded-lg bg-white/5 px-3 py-2 text-xs">
+          <div className="mb-2 rounded-lg bg-sidebar-foreground/5 px-3 py-2 text-xs">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-sidebar-foreground">
                 {usage.plan === "team" ? "Team" : usage.plan === "pro" ? "Pro" : t("Gratuit")}
               </span>
               {usage.plan !== "free" && (
-                <span className="rounded-full bg-brand-teal-dark px-2 py-0.5 text-[10px] font-semibold text-white">
+                <span className="rounded-full bg-brand-teal-dark px-2 py-0.5 text-[10px] font-semibold text-sidebar-foreground">
                   {t("Actif")}
                 </span>
               )}
             </div>
-            <p className="mt-1 text-white/55">
+            <p className="mt-1 text-sidebar-foreground/55">
               {usage.plan === "free"
                 ? t("{used} / {limit} analyses utilisées", {
                     used: Math.min(usage.analysesUsed, usage.freeLimit ?? FREE_ANALYSIS_LIMIT),
@@ -316,7 +317,7 @@ export function ThreadSidebar({
                 : t("Analyses illimitées")}
             </p>
             {usage.plan === "free" && (
-              <div className="mt-1.5 h-1.5 rounded-full bg-white/15">
+              <div className="mt-1.5 h-1.5 rounded-full bg-sidebar-foreground/15">
                 <div
                   className="h-full rounded-full bg-brand-mint"
                   style={{
@@ -330,14 +331,14 @@ export function ThreadSidebar({
                 <Link
                   to="/pricing"
                   onClick={() => onNavigate?.()}
-                  className="mt-2 flex min-h-9 items-center justify-center gap-1.5 rounded-md bg-brand-teal-dark px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-brand-teal"
+                  className="mt-2 flex min-h-9 items-center justify-center gap-1.5 rounded-md bg-brand-teal-dark px-2 py-1.5 text-[11px] font-semibold text-sidebar-foreground hover:bg-brand-teal"
                 >
                   <Sparkles className="h-3 w-3" />
                   {t("Passer à Pro — analyses illimitées")}
                 </Link>
               )}
             {usage.plan !== "free" && usage.periodEnd && (
-              <p className="text-white/55">
+              <p className="text-sidebar-foreground/55">
                 {t("Renouvellement le {date}", {
                   date: new Date(usage.periodEnd).toLocaleDateString(locale),
                 })}
@@ -349,7 +350,7 @@ export function ThreadSidebar({
           <Link
             to="/admin"
             onClick={() => onNavigate?.()}
-            className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/75 hover:bg-white/5"
+            className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/75 hover:bg-sidebar-foreground/5"
           >
             <Shield className="h-4 w-4" />
             {t("Administration")}
@@ -358,31 +359,31 @@ export function ThreadSidebar({
         <Link
           to="/pricing"
           onClick={() => onNavigate?.()}
-          className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-brand-mint hover:bg-white/5"
+          className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-brand-mint hover:bg-sidebar-foreground/5"
         >
           <Sparkles className="h-4 w-4" />
           {t("Offres / Abonnement")}
         </Link>
         {email && (
-          <p className="truncate px-3 pt-2 text-xs text-white/45" title={email}>
+          <p className="truncate px-3 pt-2 text-xs text-sidebar-foreground/45" title={email}>
             {t("Connecté :")} <span className="font-medium text-sidebar-foreground">{email}</span>
           </p>
         )}
         <a
           href={`mailto:${SUPPORT_EMAIL}`}
-          className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/55 hover:bg-white/5"
+          className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/55 hover:bg-sidebar-foreground/5"
         >
           <Mail className="h-4 w-4" />
           {t("Aide / Contact")}
         </a>
-        <button
+        <Button variant="ghost"
           onClick={signOut}
-          className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/55 hover:bg-white/5"
+          className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/55 hover:bg-sidebar-foreground/5"
         >
           <LogOut className="h-4 w-4" />
           {t("Se déconnecter / changer de compte")}
-        </button>
-        <button
+        </Button>
+        <Button variant="ghost"
           onClick={() => {
             setDeleteOpen((open) => !open);
             setDeleteConfirmation("");
@@ -391,11 +392,11 @@ export function ThreadSidebar({
         >
           <Trash2 className="h-4 w-4" />
           {t("Supprimer mon compte")}
-        </button>
+        </Button>
         {deleteOpen && (
           <div className="mx-3 mb-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs">
             <p className="font-semibold text-destructive">{t("Cette action est définitive.")}</p>
-            <p className="mt-1 text-white/60">
+            <p className="mt-1 text-sidebar-foreground/60">
               {t(
                 "Votre abonnement Stripe actif sera résilié immédiatement. Tapez SUPPRIMER pour confirmer.",
               )}
@@ -403,27 +404,27 @@ export function ThreadSidebar({
             <input
               value={deleteConfirmation}
               onChange={(event) => setDeleteConfirmation(event.target.value)}
-              className="mt-2 w-full rounded-md border border-white/20 bg-white/10 px-2 py-1.5 text-xs text-white placeholder:text-white/40"
+              className="mt-2 w-full rounded-md border border-sidebar-foreground/20 bg-sidebar-foreground/10 px-2 py-1.5 text-xs text-sidebar-foreground placeholder:text-sidebar-foreground/40"
               placeholder="SUPPRIMER"
               aria-label={t("Confirmation de suppression du compte")}
             />
             <div className="mt-2 flex gap-2">
-              <button
+              <Button variant="ghost"
                 onClick={confirmDeleteAccount}
                 disabled={deleteConfirmation !== "SUPPRIMER" || deleting}
                 className="rounded-md bg-destructive px-2.5 py-1.5 font-semibold text-destructive-foreground disabled:opacity-50"
               >
                 {deleting ? t("Suppression…") : t("Confirmer")}
-              </button>
-              <button
+              </Button>
+              <Button variant="ghost"
                 onClick={() => {
                   setDeleteOpen(false);
                   setDeleteConfirmation("");
                 }}
-                className="rounded-md border border-white/20 px-2.5 py-1.5 text-white/80"
+                className="rounded-md border border-sidebar-foreground/20 px-2.5 py-1.5 text-sidebar-foreground/80"
               >
                 {t("Annuler")}
-              </button>
+              </Button>
             </div>
           </div>
         )}

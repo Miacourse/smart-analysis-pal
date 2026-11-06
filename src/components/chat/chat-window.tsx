@@ -554,7 +554,7 @@ function ChatSession({
             <Button
               size="sm"
               onClick={() => lastFile && handleCsvUpload(lastFile)}
-              className="min-h-11 shrink-0 gap-2 bg-brand-teal-dark text-white hover:bg-brand-teal"
+              className="min-h-11 shrink-0 gap-2 bg-brand-teal-dark text-sidebar-foreground hover:bg-brand-teal"
             >
               <RotateCcw className="h-4 w-4" />
               {moments.erreurFichier[lang].bouton}
@@ -594,7 +594,7 @@ function ChatSession({
               </p>
               <div className="mt-6 flex w-full max-w-xl flex-col gap-2">
                 {moments.accueil[lang].suggestions.map((suggestion) => (
-                  <button
+                  <Button variant="ghost"
                     key={suggestion}
                     type="button"
                     onClick={() => {
@@ -604,7 +604,7 @@ function ChatSession({
                     className="min-h-11 w-full rounded-xl border border-border bg-card px-4 py-2.5 text-left text-sm text-foreground shadow-sm transition-colors hover:border-brand-teal hover:bg-secondary hover:text-brand-teal-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
                   >
                     {suggestion}
-                  </button>
+                  </Button>
                 ))}
               </div>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
@@ -631,7 +631,7 @@ function ChatSession({
             if (m.role === "user") {
               return (
                 <div key={m.id} className="flex justify-end">
-                  <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-brand-ink px-4 py-3 text-sm text-white">
+                  <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-brand-ink px-4 py-3 text-sm text-sidebar-foreground">
                     {text}
                   </div>
                 </div>
@@ -662,7 +662,7 @@ function ChatSession({
                   </div>
                   {!busy && (
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <button
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => {
                           setDraft(moments.resultat[lang].actions[0]);
@@ -671,22 +671,22 @@ function ChatSession({
                         className="min-h-11 rounded-full border border-brand-teal-dark px-4 text-xs font-semibold text-brand-teal-dark transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
                       >
                         {moments.resultat[lang].actions[0]}
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="ghost"
                         type="button"
                         disabled={exporting}
                         onClick={() => exportResponseChart(m.id)}
                         className="min-h-11 rounded-full bg-secondary px-4 text-xs font-semibold text-brand-teal-dark transition-colors hover:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
                       >
                         {moments.resultat[lang].actions[1]}
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="ghost"
                         type="button"
                         onClick={addToDashboard}
                         className="min-h-11 rounded-full bg-secondary px-4 text-xs font-semibold text-brand-teal-dark transition-colors hover:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
                       >
                         {moments.resultat[lang].actions[2]}
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -737,7 +737,7 @@ function ChatSession({
             }}
             className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-brand-teal"
           >
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => fileInputRef.current?.click()}
               aria-label={t("Importer un fichier CSV ou Excel")}
@@ -745,7 +745,7 @@ function ChatSession({
               className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
             >
               <Paperclip className="h-5 w-5" />
-            </button>
+            </Button>
             <label htmlFor="datello-question" className="sr-only">
               {t("Posez une question sur vos données…")}
             </label>
@@ -762,27 +762,27 @@ function ChatSession({
               }}
               rows={1}
               placeholder={t("Posez une question sur vos données…")}
-              className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-1 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+              className="max-h-40 min-h-11 min-w-0 flex-1 resize-none bg-transparent px-1 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
             {busy ? (
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => {
                   stop();
                   setProcessing(null);
                 }}
-                className="min-h-11 rounded-xl bg-brand-teal-dark px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-teal"
+                className="min-h-11 rounded-xl bg-brand-teal-dark px-4 text-sm font-semibold text-sidebar-foreground transition-colors hover:bg-brand-teal"
               >
                 {t("Arrêter")}
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button variant="ghost"
                 type="submit"
                 disabled={!draft.trim() || uploading}
                 className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {t("Analyser")}
-              </button>
+              </Button>
             )}
           </form>
           <p className="mt-2 text-center text-xs text-muted-foreground">
