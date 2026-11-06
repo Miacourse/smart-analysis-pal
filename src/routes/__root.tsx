@@ -97,30 +97,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://da-copilot.lovable.app/" },
-      {
-        property: "og:image",
-        content: "https://da-copilot.lovable.app/og-image-v2.png",
-      },
-      { property: "og:image:type", content: "image/png" },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
-      {
-        property: "og:image:alt",
-        content: "Logo Datello et accroche : vos données, enfin claires.",
-      },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Datello — Vos données, enfin claires" },
       {
         name: "twitter:description",
         content: "Importez un fichier, posez votre question, obtenez la réponse en graphique.",
-      },
-      {
-        name: "twitter:image",
-        content: "https://da-copilot.lovable.app/og-image-v2.png",
-      },
-      {
-        name: "twitter:image:alt",
-        content: "Logo Datello et accroche : vos données, enfin claires.",
       },
     ],
     links: [

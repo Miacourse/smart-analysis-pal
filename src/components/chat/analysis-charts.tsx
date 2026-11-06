@@ -90,7 +90,7 @@ function RechartsBody({
     [spec, xKey, yKeys],
   );
 
-  const grid = <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />;
+  const grid = <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />;
   const legend = yKeys.length > 1 ? <Legend wrapperStyle={{ fontSize: 12 }} /> : null;
 
   if (spec.type === "pie") {

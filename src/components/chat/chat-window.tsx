@@ -45,6 +45,7 @@ import { MessageResponse } from "@/components/ai-elements/message";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { DatelloMascot } from "@/components/brand/DatelloMascot";
 import { moments } from "@/lib/messages";
+import { clarificationColumns, emptyReferencedColumn, saveDashboardId } from "@/lib/brand-state";
 
 const MAX_PREVIEW_ROWS = 40;
 
@@ -181,6 +182,7 @@ function ChatSession({
   const [fileError, setFileError] = useState(false);
   const [lastFile, setLastFile] = useState<File | null>(null);
   const [online, setOnline] = useState(true);
+  const [submittedQuestion, setSubmittedQuestion] = useState("");
 
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);
@@ -291,6 +293,45 @@ function ChatSession({
       toast.error(t("Export impossible. Réessayez."));
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function exportResponseChart(messageId: string) {
+    setExporting(true);
+    try {
+      if (!canExport((await billingStatus()).isPro)) {
+        toast(t("Les exports PDF et Excel sont inclus dans Pro."));
+        await navigate({ to: "/pro" });
+        return;
+      }
+      const root = document.getElementById(`datello-response-${messageId}`);
+      if (!root) return;
+      const { captureChartImages } = await import("@/lib/chart-capture");
+      const charts = await captureChartImages(root);
+      if (charts.length === 0) {
+        toast(lang === "fr" ? "Aucun graphique à exporter dans cette réponse." : "No chart to export in this response.");
+        return;
+      }
+      for (const [index, chart] of charts.entries()) {
+        const link = document.createElement("a");
+        link.href = chart.dataUrl;
+        link.download = `datello-graphique-${index + 1}.png`;
+        link.click();
+      }
+    } catch {
+      toast.error(t("Export impossible. Réessayez."));
+    } finally { setExporting(false); }
+  }
+
+  async function addToDashboard() {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return;
+    try {
+      saveDashboardId(data.user.id, threadId);
+      toast.success(lang === "fr" ? "Analyse ajoutée aux favoris de ce navigateur." : "Analysis saved to this browser's favorites.");
+      await navigate({ to: "/dashboards" });
+    } catch {
+      toast.error(lang === "fr" ? "L’enregistrement est indisponible dans ce navigateur." : "Saving is unavailable in this browser.");
     }
   }
 
@@ -513,7 +554,7 @@ function ChatSession({
             <Button
               size="sm"
               onClick={() => lastFile && handleCsvUpload(lastFile)}
-              className="min-h-11 shrink-0 gap-2 bg-brand-teal-dark text-white hover:bg-brand-teal"
+              className="min-h-11 shrink-0 gap-2 bg-brand-teal-dark text-sidebar-foreground hover:bg-brand-teal"
             >
               <RotateCcw className="h-4 w-4" />
               {moments.erreurFichier[lang].bouton}
@@ -524,7 +565,7 @@ function ChatSession({
 
       {uploading && <UploadProgress progress={uploadProgress ?? 0} fileName={uploadName} />}
       {!uploading && processing && (
-        <AnalysisProgress phase={processing.phase} startedAt={processing.startedAt} />
+        <AnalysisProgress phase={processing.phase} startedAt={processing.startedAt} streaming={status === "streaming"} />
       )}
       {analysisError && (
         <div
@@ -553,7 +594,7 @@ function ChatSession({
               </p>
               <div className="mt-6 flex w-full max-w-xl flex-col gap-2">
                 {moments.accueil[lang].suggestions.map((suggestion) => (
-                  <button
+                  <Button variant="ghost"
                     key={suggestion}
                     type="button"
                     onClick={() => {
@@ -563,7 +604,7 @@ function ChatSession({
                     className="min-h-11 w-full rounded-xl border border-border bg-card px-4 py-2.5 text-left text-sm text-foreground shadow-sm transition-colors hover:border-brand-teal hover:bg-secondary hover:text-brand-teal-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
                   >
                     {suggestion}
-                  </button>
+                  </Button>
                 ))}
               </div>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
@@ -590,22 +631,28 @@ function ChatSession({
             if (m.role === "user") {
               return (
                 <div key={m.id} className="flex justify-end">
-                  <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-brand-ink px-4 py-3 text-sm text-white">
+                  <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-brand-ink px-4 py-3 text-sm text-sidebar-foreground">
                     {text}
                   </div>
                 </div>
               );
             }
 
+            const columns = clarificationColumns(text, datasetProfile);
+            const missingColumn = m.id === messages.at(-1)?.id ? emptyReferencedColumn(submittedQuestion, datasetProfile) : null;
+            const pending = busy && m.id === messages.at(-1)?.id;
             return (
-              <div key={m.id} className="flex items-start gap-3">
+              <div key={m.id} id={`datello-response-${m.id}`} className="flex items-start gap-3">
                 <DatelloMascot
-                  mood={busy ? "reflechit" : "trouve"}
+                  mood={pending ? "reflechit" : columns.length || missingColumn ? "oups" : "trouve"}
                   size={44}
                   className="mt-1 shrink-0"
                 />
                 <div className="min-w-0 flex-1">
                   <div className="rounded-2xl rounded-tl-sm bg-card px-4 py-3 shadow-sm ring-1 ring-border/70">
+                    {!pending && <p className="mb-3 text-sm font-semibold text-brand-teal-dark">{columns.length ? moments.questionFloue[lang].texte.replace("{suggestions}", columns.join(", ")) : moments.resultat[lang].texte}</p>}
+                    {!pending && missingColumn && <p className="mb-3 text-sm text-muted-foreground">{moments.donneesManquantes[lang].texte.replace("{colonne}", missingColumn).replace("{pourcentage}", "100 %")}</p>}
+                    {!pending && columns.length > 0 && <div className="mb-3 flex flex-wrap gap-2">{columns.map((column) => <Button key={column} type="button" variant="secondary" className="min-h-11 rounded-full" onClick={() => { setDraft(column); textareaRef.current?.focus(); }}>{column}</Button>)}</div>}
                     <MessageResponse>
                       {/<(?:!doctype|html|head|body)\b/i.test(text)
                         ? safeAnalysisError(text)
@@ -615,7 +662,7 @@ function ChatSession({
                   </div>
                   {!busy && (
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <button
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => {
                           setDraft(moments.resultat[lang].actions[0]);
@@ -624,21 +671,22 @@ function ChatSession({
                         className="min-h-11 rounded-full border border-brand-teal-dark px-4 text-xs font-semibold text-brand-teal-dark transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
                       >
                         {moments.resultat[lang].actions[0]}
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="ghost"
                         type="button"
-                        onClick={() => handleExport("pdf")}
+                        disabled={exporting}
+                        onClick={() => exportResponseChart(m.id)}
                         className="min-h-11 rounded-full bg-secondary px-4 text-xs font-semibold text-brand-teal-dark transition-colors hover:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
                       >
                         {moments.resultat[lang].actions[1]}
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="ghost"
                         type="button"
-                        onClick={() => navigate({ to: "/dashboards" })}
+                        onClick={addToDashboard}
                         className="min-h-11 rounded-full bg-secondary px-4 text-xs font-semibold text-brand-teal-dark transition-colors hover:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
                       >
                         {moments.resultat[lang].actions[2]}
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -682,13 +730,14 @@ function ChatSession({
               setAnalysisError(null);
               setFileError(false);
               setFileReady(null);
+              setSubmittedQuestion(text);
               setProcessing({ phase: "ai", startedAt: Date.now() });
               sendMessage({ text });
               setDraft("");
             }}
             className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-brand-teal"
           >
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => fileInputRef.current?.click()}
               aria-label={t("Importer un fichier CSV ou Excel")}
@@ -696,7 +745,7 @@ function ChatSession({
               className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
             >
               <Paperclip className="h-5 w-5" />
-            </button>
+            </Button>
             <label htmlFor="datello-question" className="sr-only">
               {t("Posez une question sur vos données…")}
             </label>
@@ -713,27 +762,27 @@ function ChatSession({
               }}
               rows={1}
               placeholder={t("Posez une question sur vos données…")}
-              className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-1 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+              className="max-h-40 min-h-11 min-w-0 flex-1 resize-none bg-transparent px-1 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
             {busy ? (
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => {
                   stop();
                   setProcessing(null);
                 }}
-                className="min-h-11 rounded-xl bg-brand-teal-dark px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-teal"
+                className="min-h-11 rounded-xl bg-brand-teal-dark px-4 text-sm font-semibold text-sidebar-foreground transition-colors hover:bg-brand-teal"
               >
                 {t("Arrêter")}
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button variant="ghost"
                 type="submit"
                 disabled={!draft.trim() || uploading}
                 className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {t("Analyser")}
-              </button>
+              </Button>
             )}
           </form>
           <p className="mt-2 text-center text-xs text-muted-foreground">

@@ -116,7 +116,7 @@
   h4,
   .font-display {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
   }
 }
 
@@ -146,3 +146,6 @@
 .geo-country-label.leaflet-tooltip-top::before {
   border-top-color: rgb(255 255 255 / 0.94);
 }
+
+/* Datello keeps readable spacing across existing typography utilities. */
+.tracking-tight, .tracking-wide { letter-spacing: 0; }

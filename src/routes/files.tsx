@@ -13,6 +13,7 @@ export const Route = createFileRoute("/files")({
       { title: "Mes fichiers — Datello" },
       { name: "description", content: "Vos fichiers importés dans Datello." },
       { property: "og:title", content: "Mes fichiers — Datello" },
+      { property: "og:description", content: "Retrouvez vos fichiers importés et reprenez leur analyse dans Datello." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
