@@ -45,6 +45,7 @@ import { MessageResponse } from "@/components/ai-elements/message";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { DatelloMascot } from "@/components/brand/DatelloMascot";
 import { moments } from "@/lib/messages";
+import { clarificationColumns, emptyReferencedColumn, saveDashboardId } from "@/lib/brand-state";
 
 const MAX_PREVIEW_ROWS = 40;
 
@@ -181,6 +182,7 @@ function ChatSession({
   const [fileError, setFileError] = useState(false);
   const [lastFile, setLastFile] = useState<File | null>(null);
   const [online, setOnline] = useState(true);
+  const [submittedQuestion, setSubmittedQuestion] = useState("");
 
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);
@@ -291,6 +293,45 @@ function ChatSession({
       toast.error(t("Export impossible. Réessayez."));
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function exportResponseChart(messageId: string) {
+    setExporting(true);
+    try {
+      if (!canExport((await billingStatus()).isPro)) {
+        toast(t("Les exports PDF et Excel sont inclus dans Pro."));
+        await navigate({ to: "/pro" });
+        return;
+      }
+      const root = document.getElementById(`datello-response-${messageId}`);
+      if (!root) return;
+      const { captureChartImages } = await import("@/lib/chart-capture");
+      const charts = await captureChartImages(root);
+      if (charts.length === 0) {
+        toast(lang === "fr" ? "Aucun graphique à exporter dans cette réponse." : "No chart to export in this response.");
+        return;
+      }
+      for (const [index, chart] of charts.entries()) {
+        const link = document.createElement("a");
+        link.href = chart.dataUrl;
+        link.download = `datello-graphique-${index + 1}.png`;
+        link.click();
+      }
+    } catch {
+      toast.error(t("Export impossible. Réessayez."));
+    } finally { setExporting(false); }
+  }
+
+  async function addToDashboard() {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return;
+    try {
+      saveDashboardId(data.user.id, threadId);
+      toast.success(lang === "fr" ? "Analyse ajoutée aux favoris de ce navigateur." : "Analysis saved to this browser's favorites.");
+      await navigate({ to: "/dashboards" });
+    } catch {
+      toast.error(lang === "fr" ? "L’enregistrement est indisponible dans ce navigateur." : "Saving is unavailable in this browser.");
     }
   }
 
@@ -524,7 +565,7 @@ function ChatSession({
 
       {uploading && <UploadProgress progress={uploadProgress ?? 0} fileName={uploadName} />}
       {!uploading && processing && (
-        <AnalysisProgress phase={processing.phase} startedAt={processing.startedAt} />
+        <AnalysisProgress phase={processing.phase} startedAt={processing.startedAt} streaming={status === "streaming"} />
       )}
       {analysisError && (
         <div
@@ -597,15 +638,21 @@ function ChatSession({
               );
             }
 
+            const columns = clarificationColumns(text, datasetProfile);
+            const missingColumn = m.id === messages.at(-1)?.id ? emptyReferencedColumn(submittedQuestion, datasetProfile) : null;
+            const pending = busy && m.id === messages.at(-1)?.id;
             return (
-              <div key={m.id} className="flex items-start gap-3">
+              <div key={m.id} id={`datello-response-${m.id}`} className="flex items-start gap-3">
                 <DatelloMascot
-                  mood={busy ? "reflechit" : "trouve"}
+                  mood={pending ? "reflechit" : columns.length || missingColumn ? "oups" : "trouve"}
                   size={44}
                   className="mt-1 shrink-0"
                 />
                 <div className="min-w-0 flex-1">
                   <div className="rounded-2xl rounded-tl-sm bg-card px-4 py-3 shadow-sm ring-1 ring-border/70">
+                    {!pending && <p className="mb-3 text-sm font-semibold text-brand-teal-dark">{columns.length ? moments.questionFloue[lang].texte.replace("{suggestions}", columns.join(", ")) : moments.resultat[lang].texte}</p>}
+                    {!pending && missingColumn && <p className="mb-3 text-sm text-muted-foreground">{moments.donneesManquantes[lang].texte.replace("{colonne}", missingColumn).replace("{pourcentage}", "100 %")}</p>}
+                    {!pending && columns.length > 0 && <div className="mb-3 flex flex-wrap gap-2">{columns.map((column) => <Button key={column} type="button" variant="secondary" className="min-h-11 rounded-full" onClick={() => { setDraft(column); textareaRef.current?.focus(); }}>{column}</Button>)}</div>}
                     <MessageResponse>
                       {/<(?:!doctype|html|head|body)\b/i.test(text)
                         ? safeAnalysisError(text)
@@ -627,14 +674,15 @@ function ChatSession({
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleExport("pdf")}
+                        disabled={exporting}
+                        onClick={() => exportResponseChart(m.id)}
                         className="min-h-11 rounded-full bg-secondary px-4 text-xs font-semibold text-brand-teal-dark transition-colors hover:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
                       >
                         {moments.resultat[lang].actions[1]}
                       </button>
                       <button
                         type="button"
-                        onClick={() => navigate({ to: "/dashboards" })}
+                        onClick={addToDashboard}
                         className="min-h-11 rounded-full bg-secondary px-4 text-xs font-semibold text-brand-teal-dark transition-colors hover:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
                       >
                         {moments.resultat[lang].actions[2]}
@@ -682,6 +730,7 @@ function ChatSession({
               setAnalysisError(null);
               setFileError(false);
               setFileReady(null);
+              setSubmittedQuestion(text);
               setProcessing({ phase: "ai", startedAt: Date.now() });
               sendMessage({ text });
               setDraft("");

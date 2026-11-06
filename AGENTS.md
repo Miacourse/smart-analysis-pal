@@ -17,3 +17,6 @@
 - Parse CSV previews in a browser worker and serialize with Papa.unparse to preserve quoting without blocking interaction.
 - Reserve report downloads for verified Pro subscriptions and share upload limits through billing constants to keep plan rules consistent.
 - Keep the detailed Pro offer on its own public route with factual retention and sampling disclosures so sales copy matches product behavior.
+- Keep supplied brand SVG geometry and bilingual message definitions unchanged; integrate fonts through root head links for Tailwind v4 compatibility.
+- Dashboard favorites use account-scoped browser storage referencing existing threads, with browser-local retention disclosed; no duplicate dataset storage is created.
+- Derive brand analysis states from actual response lifecycle and explicit clarification signals; never reject questions based on presentation heuristics.

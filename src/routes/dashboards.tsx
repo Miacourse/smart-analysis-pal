@@ -31,7 +31,7 @@ type AnalysisThread = {
 
 function DashboardsPage() {
   const navigate = useNavigate();
-  const { t, locale } = useLang();
+  const { t, locale, lang } = useLang();
   const [threads, setThreads] = useState<AnalysisThread[] | null>(null);
 
   useEffect(() => {
@@ -78,7 +78,7 @@ function DashboardsPage() {
                 {t("Aucun tableau de bord pour le moment.")}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {langText()}
+                {lang === "fr" ? "Ajoutez une réponse depuis votre conversation. Les favoris sont conservés dans ce navigateur." : "Add a response from your conversation. Favorites are saved in this browser."}
               </p>
               <Link
                 to="/chat"
