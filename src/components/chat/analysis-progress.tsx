@@ -4,6 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { DatelloMascot } from "@/components/brand/DatelloMascot";
 import { useLang } from "@/lib/i18n";
 import { moments } from "@/lib/messages";
+import { analysisStep } from "@/lib/brand-state";
 import {
   estimatedProgress,
   showLongAnalysisNotice,
@@ -51,7 +52,7 @@ export function UploadProgress({
           />
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
             <FileSearch className="size-4 shrink-0" />
-            <span>{moments.nettoyage[lang].texte}</span>
+            <span>{lang === "fr" ? "Lecture et contrôle des données : doublons, valeurs manquantes et formats." : "Reading and checking data: duplicates, missing values and formats."}</span>
           </div>
         </div>
       </div>
@@ -62,9 +63,11 @@ export function UploadProgress({
 export function AnalysisProgress({
   phase,
   startedAt,
+  streaming = false,
 }: {
   phase: AnalysisPhase;
   startedAt: number;
+  streaming?: boolean;
 }) {
   const { t, lang } = useLang();
   const [now, setNow] = useState(Date.now());
@@ -78,7 +81,7 @@ export function AnalysisProgress({
   }, []);
   const percent = estimatedProgress(phase, Math.max(0, now - phaseStart));
   const indeterminate = phase === "upload" || phase === "parsing";
-  const completed = phase === "charts" ? 2 : 0;
+  const completed = analysisStep(phase, streaming);
   const steps = moments.analyse[lang].etapes;
   return (
     <div
