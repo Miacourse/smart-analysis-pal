@@ -4,8 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import { DatelloMascot } from "@/components/brand/DatelloMascot";
 import { useLang } from "@/lib/i18n";
 import { moments } from "@/lib/messages";
+import { analysisStep } from "@/lib/brand-state";
 import {
-  ANALYSIS_STEPS,
   estimatedProgress,
   showLongAnalysisNotice,
   type AnalysisPhase,
@@ -52,7 +52,11 @@ export function UploadProgress({
           />
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
             <FileSearch className="size-4 shrink-0" />
-            <span>{moments.nettoyage[lang].texte}</span>
+            <span>
+              {lang === "fr"
+                ? "Lecture et contrôle des données : doublons, valeurs manquantes et formats."
+                : "Reading and checking data: duplicates, missing values and formats."}
+            </span>
           </div>
         </div>
       </div>
@@ -63,9 +67,11 @@ export function UploadProgress({
 export function AnalysisProgress({
   phase,
   startedAt,
+  streaming = false,
 }: {
   phase: AnalysisPhase;
   startedAt: number;
+  streaming?: boolean;
 }) {
   const { t, lang } = useLang();
   const [now, setNow] = useState(Date.now());
@@ -79,10 +85,8 @@ export function AnalysisProgress({
   }, []);
   const percent = estimatedProgress(phase, Math.max(0, now - phaseStart));
   const indeterminate = phase === "upload" || phase === "parsing";
-  const currentIndex = Math.max(
-    0,
-    ANALYSIS_STEPS.findIndex((step) => step.phase === phase),
-  );
+  const completed = analysisStep(phase, streaming);
+  const steps = moments.analyse[lang].etapes;
   return (
     <div
       className="border-b border-border bg-secondary/40 px-4 py-4"
@@ -112,13 +116,13 @@ export function AnalysisProgress({
               className="mt-3"
             />
           )}
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {ANALYSIS_STEPS.map((step, index) => {
-              const isDone = index < currentIndex;
-              const isActive = index === currentIndex;
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {steps.map((step, index) => {
+              const isDone = index < completed;
+              const isActive = index === completed;
               return (
                 <div
-                  key={step.phase}
+                  key={step}
                   className={`flex items-center gap-1.5 text-xs ${
                     isDone || isActive ? "text-brand-teal-dark" : "text-muted-foreground"
                   }`}
@@ -130,7 +134,7 @@ export function AnalysisProgress({
                   ) : (
                     <span className="size-4 shrink-0 rounded-full border border-current" />
                   )}
-                  <span>{t(step.label)}</span>
+                  <span>{step}</span>
                 </div>
               );
             })}

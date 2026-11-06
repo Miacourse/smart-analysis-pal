@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ChatShell } from "@/components/chat/chat-shell";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { useLang } from "@/lib/i18n";
+import { readDashboardIds } from "@/lib/brand-state";
 
 export const Route = createFileRoute("/dashboards")({
   head: () => ({
@@ -13,6 +14,10 @@ export const Route = createFileRoute("/dashboards")({
       { title: "Tableaux de bord — Datello" },
       { name: "description", content: "Vos analyses enregistrées dans Datello." },
       { property: "og:title", content: "Tableaux de bord — Datello" },
+      {
+        property: "og:description",
+        content: "Retrouvez les analyses et graphiques ajoutés à vos tableaux de bord Datello.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -29,7 +34,7 @@ type AnalysisThread = {
 
 function DashboardsPage() {
   const navigate = useNavigate();
-  const { t, locale } = useLang();
+  const { t, locale, lang } = useLang();
   const [threads, setThreads] = useState<AnalysisThread[] | null>(null);
 
   useEffect(() => {
@@ -48,7 +53,11 @@ function DashboardsPage() {
         .select("id, title, dataset_name, updated_at")
         .not("dataset_name", "is", null)
         .order("updated_at", { ascending: false });
-      if (!cancelled) setThreads((data ?? []) as AnalysisThread[]);
+      const savedIds = readDashboardIds(session.user.id);
+      if (!cancelled)
+        setThreads(
+          ((data ?? []) as AnalysisThread[]).filter((thread) => savedIds.includes(thread.id)),
+        );
     })();
     return () => {
       cancelled = true;
@@ -75,7 +84,9 @@ function DashboardsPage() {
                 {t("Aucun tableau de bord pour le moment.")}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {t("Chaque analyse terminée apparaît ici avec ses graphiques.")}
+                {lang === "fr"
+                  ? "Ajoutez une réponse depuis votre conversation. Les favoris sont conservés dans ce navigateur."
+                  : "Add a response from your conversation. Favorites are saved in this browser."}
               </p>
               <Link
                 to="/chat"

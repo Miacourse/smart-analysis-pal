@@ -110,7 +110,9 @@ export async function captureChartImages(
     if (canvas) dataUrl = canvasToChartDataUrl(canvas);
     else if (svg) dataUrl = await svgToChartDataUrl(svg as SVGSVGElement);
     if (!dataUrl) continue;
-    const rect = (svg ?? canvas)!.getBoundingClientRect();
+    const element = svg ?? canvas;
+    if (!element) continue;
+    const rect = element.getBoundingClientRect();
     const width = Math.round(rect.width) || 700;
     const height = Math.round(rect.height) || 280;
     const title = figure.querySelector("figcaption")?.textContent?.trim() ?? "";
