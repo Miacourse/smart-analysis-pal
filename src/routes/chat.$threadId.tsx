@@ -50,7 +50,7 @@ function ChatThreadPage() {
 
   if (!ready) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-dvh items-center justify-center bg-background">
         <Shimmer className="text-sm">{t("Vérification de votre session…")}</Shimmer>
       </div>
     );

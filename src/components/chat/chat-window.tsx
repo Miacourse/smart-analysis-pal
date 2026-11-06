@@ -339,7 +339,10 @@ function ChatSession({
     }
     if (file.size > maxFileMb(plan) * 1024 * 1024) {
       toast.error(
-        `Votre offre accepte les fichiers jusqu'à ${maxFileMb(plan)} Mo. Passez à l’offre supérieure pour les fichiers plus volumineux.`,
+        t(
+          "Votre offre accepte les fichiers jusqu’à {mb} Mo. Passez à l’offre supérieure pour les fichiers plus volumineux.",
+          { mb: maxFileMb(plan) },
+        ),
         {
           action: {
             label: t("Voir les offres"),
@@ -372,7 +375,13 @@ function ChatSession({
       const rowCount = rows.length - 1;
       if (rowCount > maxRows(plan)) {
         toast.error(
-          `Votre offre accepte jusqu'à ${maxRows(plan).toLocaleString(locale)} lignes ; ce fichier en contient ${rowCount.toLocaleString(locale)}. Passez à l’offre supérieure pour les fichiers plus volumineux.`,
+          t(
+            "Votre offre accepte jusqu’à {max} lignes ; ce fichier en contient {count}. Passez à l’offre supérieure pour les fichiers plus volumineux.",
+            {
+              max: maxRows(plan).toLocaleString(locale),
+              count: rowCount.toLocaleString(locale),
+            },
+          ),
           {
             action: {
               label: t("Voir les offres"),

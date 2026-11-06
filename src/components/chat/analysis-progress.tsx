@@ -5,6 +5,7 @@ import { DatelloMascot } from "@/components/brand/DatelloMascot";
 import { useLang } from "@/lib/i18n";
 import { moments } from "@/lib/messages";
 import {
+  ANALYSIS_STEPS,
   estimatedProgress,
   showLongAnalysisNotice,
   type AnalysisPhase,
@@ -78,8 +79,10 @@ export function AnalysisProgress({
   }, []);
   const percent = estimatedProgress(phase, Math.max(0, now - phaseStart));
   const indeterminate = phase === "upload" || phase === "parsing";
-  const completed = phase === "charts" ? 2 : 0;
-  const steps = moments.analyse[lang].etapes;
+  const currentIndex = Math.max(
+    0,
+    ANALYSIS_STEPS.findIndex((step) => step.phase === phase),
+  );
   return (
     <div
       className="border-b border-border bg-secondary/40 px-4 py-4"
@@ -109,13 +112,13 @@ export function AnalysisProgress({
               className="mt-3"
             />
           )}
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            {steps.map((step, index) => {
-              const isDone = index < completed;
-              const isActive = index === completed;
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {ANALYSIS_STEPS.map((step, index) => {
+              const isDone = index < currentIndex;
+              const isActive = index === currentIndex;
               return (
                 <div
-                  key={step}
+                  key={step.phase}
                   className={`flex items-center gap-1.5 text-xs ${
                     isDone || isActive ? "text-brand-teal-dark" : "text-muted-foreground"
                   }`}
@@ -127,7 +130,7 @@ export function AnalysisProgress({
                   ) : (
                     <span className="size-4 shrink-0 rounded-full border border-current" />
                   )}
-                  <span>{step}</span>
+                  <span>{t(step.label)}</span>
                 </div>
               );
             })}
