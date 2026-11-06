@@ -4,7 +4,7 @@ import { convertToModelMessages, type UIMessage } from "ai";
 
 import { createAnalysisCall } from "@/lib/ai/provider.server";
 import { getProStatus } from "@/lib/stripe.server";
-import { activeCompPlan, FREE_ANALYSIS_LIMIT } from "@/lib/billing";
+import { activeCompPlan, exceedsFreeLimit, FREE_ANALYSIS_LIMIT } from "@/lib/billing";
 import { safeAnalysisError } from "@/lib/analysis-state";
 import { formatProfileForPrompt, type DatasetProfile } from "@/lib/dataset-profile";
 import { getAnalysisDomain } from "@/lib/analysis-domains";
@@ -198,7 +198,7 @@ export const Route = createFileRoute("/api/chat")({
               return jsonError(503, "Service d’analyse temporairement indisponible.");
             }
             const analysesUsedAfter = reserved.data;
-            if (!isPro && analysesUsedAfter > freeLimit) {
+            if (exceedsFreeLimit(isPro, analysesUsedAfter, bonus)) {
               await release();
               return jsonError(
                 402,
