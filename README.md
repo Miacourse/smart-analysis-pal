@@ -4,7 +4,7 @@ Datello analyse vos fichiers CSV, Excel, JSON, GeoJSON et LAS : importez un fich
 
 This project was built with [Lovable](https://lovable.dev).
 
-**Live app**: https://da-copilot.lovable.app
+**Live app**: https://datello.lovable.app
 
 ## Build with Lovable
 

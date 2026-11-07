@@ -20,7 +20,7 @@ type AppVisitsClient = {
   };
 };
 
-const PRODUCTION_ORIGIN = "https://da-copilot.lovable.app";
+const PRODUCTION_ORIGIN = "https://datello.lovable.app";
 const ALLOWED_ORIGIN_HOSTS = new Set([
   "da-copilot.lovable.app",
   "datello.lovable.app",
