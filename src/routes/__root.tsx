@@ -96,7 +96,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Importez un fichier, posez votre question, obtenez la réponse en graphique.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://datello.lovable.app/" },
+      { property: "og:url", content: "https://da-copilot.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Datello — Vos données, enfin claires" },
       {

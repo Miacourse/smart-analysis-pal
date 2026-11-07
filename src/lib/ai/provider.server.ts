@@ -138,7 +138,7 @@ export function createAnalysisCall(
       baseURL: OPENROUTER_BASE_URL,
       apiKey: openrouterKey()!,
       headers: {
-        "HTTP-Referer": process.env["OPENROUTER_SITE_URL"] ?? "https://datello.lovable.app",
+        "HTTP-Referer": process.env["OPENROUTER_SITE_URL"] ?? "https://da-copilot.lovable.app",
         "X-Title": "Datello",
       },
     });
