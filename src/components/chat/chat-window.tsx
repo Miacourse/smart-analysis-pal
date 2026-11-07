@@ -309,11 +309,7 @@ function ChatSession({
       const { captureChartImages } = await import("@/lib/chart-capture");
       const charts = await captureChartImages(root);
       if (charts.length === 0) {
-        toast(
-          lang === "fr"
-            ? "Aucun graphique à exporter dans cette réponse."
-            : "No chart to export in this response.",
-        );
+        toast(lang === "fr" ? "Aucun graphique à exporter dans cette réponse." : "No chart to export in this response.");
         return;
       }
       for (const [index, chart] of charts.entries()) {
@@ -324,9 +320,7 @@ function ChatSession({
       }
     } catch {
       toast.error(t("Export impossible. Réessayez."));
-    } finally {
-      setExporting(false);
-    }
+    } finally { setExporting(false); }
   }
 
   async function addToDashboard() {
@@ -334,18 +328,10 @@ function ChatSession({
     if (!data.user) return;
     try {
       saveDashboardId(data.user.id, threadId);
-      toast.success(
-        lang === "fr"
-          ? "Analyse ajoutée aux favoris de ce navigateur."
-          : "Analysis saved to this browser's favorites.",
-      );
+      toast.success(lang === "fr" ? "Analyse ajoutée aux favoris de ce navigateur." : "Analysis saved to this browser's favorites.");
       await navigate({ to: "/dashboards" });
     } catch {
-      toast.error(
-        lang === "fr"
-          ? "L’enregistrement est indisponible dans ce navigateur."
-          : "Saving is unavailable in this browser.",
-      );
+      toast.error(lang === "fr" ? "L’enregistrement est indisponible dans ce navigateur." : "Saving is unavailable in this browser.");
     }
   }
 
@@ -394,10 +380,7 @@ function ChatSession({
     }
     if (file.size > maxFileMb(plan) * 1024 * 1024) {
       toast.error(
-        t(
-          "Votre offre accepte les fichiers jusqu’à {mb} Mo. Passez à l’offre supérieure pour les fichiers plus volumineux.",
-          { mb: maxFileMb(plan) },
-        ),
+        `Votre offre accepte les fichiers jusqu'à ${maxFileMb(plan)} Mo. Passez à l’offre supérieure pour les fichiers plus volumineux.`,
         {
           action: {
             label: t("Voir les offres"),
@@ -430,13 +413,7 @@ function ChatSession({
       const rowCount = rows.length - 1;
       if (rowCount > maxRows(plan)) {
         toast.error(
-          t(
-            "Votre offre accepte jusqu’à {max} lignes ; ce fichier en contient {count}. Passez à l’offre supérieure pour les fichiers plus volumineux.",
-            {
-              max: maxRows(plan).toLocaleString(locale),
-              count: rowCount.toLocaleString(locale),
-            },
-          ),
+          `Votre offre accepte jusqu'à ${maxRows(plan).toLocaleString(locale)} lignes ; ce fichier en contient ${rowCount.toLocaleString(locale)}. Passez à l’offre supérieure pour les fichiers plus volumineux.`,
           {
             action: {
               label: t("Voir les offres"),
@@ -588,11 +565,7 @@ function ChatSession({
 
       {uploading && <UploadProgress progress={uploadProgress ?? 0} fileName={uploadName} />}
       {!uploading && processing && (
-        <AnalysisProgress
-          phase={processing.phase}
-          startedAt={processing.startedAt}
-          streaming={status === "streaming"}
-        />
+        <AnalysisProgress phase={processing.phase} startedAt={processing.startedAt} streaming={status === "streaming"} />
       )}
       {analysisError && (
         <div
@@ -621,8 +594,7 @@ function ChatSession({
               </p>
               <div className="mt-6 flex w-full max-w-xl flex-col gap-2">
                 {moments.accueil[lang].suggestions.map((suggestion) => (
-                  <Button
-                    variant="ghost"
+                  <Button variant="ghost"
                     key={suggestion}
                     type="button"
                     onClick={() => {
@@ -667,10 +639,7 @@ function ChatSession({
             }
 
             const columns = clarificationColumns(text, datasetProfile);
-            const missingColumn =
-              m.id === messages.at(-1)?.id
-                ? emptyReferencedColumn(submittedQuestion, datasetProfile)
-                : null;
+            const missingColumn = m.id === messages.at(-1)?.id ? emptyReferencedColumn(submittedQuestion, datasetProfile) : null;
             const pending = busy && m.id === messages.at(-1)?.id;
             return (
               <div key={m.id} id={`datello-response-${m.id}`} className="flex items-start gap-3">
@@ -681,41 +650,9 @@ function ChatSession({
                 />
                 <div className="min-w-0 flex-1">
                   <div className="rounded-2xl rounded-tl-sm bg-card px-4 py-3 shadow-sm ring-1 ring-border/70">
-                    {!pending && (
-                      <p className="mb-3 text-sm font-semibold text-brand-teal-dark">
-                        {columns.length
-                          ? moments.questionFloue[lang].texte.replace(
-                              "{suggestions}",
-                              columns.join(", "),
-                            )
-                          : moments.resultat[lang].texte}
-                      </p>
-                    )}
-                    {!pending && missingColumn && (
-                      <p className="mb-3 text-sm text-muted-foreground">
-                        {moments.donneesManquantes[lang].texte
-                          .replace("{colonne}", missingColumn)
-                          .replace("{pourcentage}", "100 %")}
-                      </p>
-                    )}
-                    {!pending && columns.length > 0 && (
-                      <div className="mb-3 flex flex-wrap gap-2">
-                        {columns.map((column) => (
-                          <Button
-                            key={column}
-                            type="button"
-                            variant="secondary"
-                            className="min-h-11 rounded-full"
-                            onClick={() => {
-                              setDraft(column);
-                              textareaRef.current?.focus();
-                            }}
-                          >
-                            {column}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
+                    {!pending && <p className="mb-3 text-sm font-semibold text-brand-teal-dark">{columns.length ? moments.questionFloue[lang].texte.replace("{suggestions}", columns.join(", ")) : moments.resultat[lang].texte}</p>}
+                    {!pending && missingColumn && <p className="mb-3 text-sm text-muted-foreground">{moments.donneesManquantes[lang].texte.replace("{colonne}", missingColumn).replace("{pourcentage}", "100 %")}</p>}
+                    {!pending && columns.length > 0 && <div className="mb-3 flex flex-wrap gap-2">{columns.map((column) => <Button key={column} type="button" variant="secondary" className="min-h-11 rounded-full" onClick={() => { setDraft(column); textareaRef.current?.focus(); }}>{column}</Button>)}</div>}
                     <MessageResponse>
                       {/<(?:!doctype|html|head|body)\b/i.test(text)
                         ? safeAnalysisError(text)
@@ -725,8 +662,7 @@ function ChatSession({
                   </div>
                   {!busy && (
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <Button
-                        variant="ghost"
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => {
                           setDraft(moments.resultat[lang].actions[0]);
@@ -736,8 +672,7 @@ function ChatSession({
                       >
                         {moments.resultat[lang].actions[0]}
                       </Button>
-                      <Button
-                        variant="ghost"
+                      <Button variant="ghost"
                         type="button"
                         disabled={exporting}
                         onClick={() => exportResponseChart(m.id)}
@@ -745,8 +680,7 @@ function ChatSession({
                       >
                         {moments.resultat[lang].actions[1]}
                       </Button>
-                      <Button
-                        variant="ghost"
+                      <Button variant="ghost"
                         type="button"
                         onClick={addToDashboard}
                         className="min-h-11 rounded-full bg-secondary px-4 text-xs font-semibold text-brand-teal-dark transition-colors hover:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
@@ -803,8 +737,7 @@ function ChatSession({
             }}
             className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-brand-teal"
           >
-            <Button
-              variant="ghost"
+            <Button variant="ghost"
               type="button"
               onClick={() => fileInputRef.current?.click()}
               aria-label={t("Importer un fichier CSV ou Excel")}
@@ -832,8 +765,7 @@ function ChatSession({
               className="max-h-40 min-h-11 min-w-0 flex-1 resize-none bg-transparent px-1 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
             {busy ? (
-              <Button
-                variant="ghost"
+              <Button variant="ghost"
                 type="button"
                 onClick={() => {
                   stop();
@@ -844,8 +776,7 @@ function ChatSession({
                 {t("Arrêter")}
               </Button>
             ) : (
-              <Button
-                variant="ghost"
+              <Button variant="ghost"
                 type="submit"
                 disabled={!draft.trim() || uploading}
                 className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"

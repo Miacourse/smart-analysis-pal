@@ -1,6 +1,6 @@
-# Datello
+# Your Smart Assistant App
 
-Datello analyse vos fichiers CSV, Excel, JSON, GeoJSON et LAS : importez un fichier, posez votre question en langage naturel et obtenez des KPI, tendances, anomalies et recommandations, avec des graphiques et des exports PDF/Excel.
+Here is the Agent that I have create, How can I transform this into an app that is usable easily and the users pay to use it: "https://miacourse.github.io/da-copilot/"
 
 This project was built with [Lovable](https://lovable.dev).
 

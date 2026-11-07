@@ -3,13 +3,6 @@ export const PRO_PRODUCT_ID = "prod_VPfoTNcE2F23lN";
 export const TEAM_PRICE_ID = "price_1UPXaJBoxBpL8B89zDiFkz04";
 export const TEAM_PRODUCT_ID = "prod_VQONeLgUE63zip";
 export const FREE_ANALYSIS_LIMIT = 5;
-export const PRODUCTION_ORIGIN = "https://da-copilot.lovable.app";
-export const ALLOWED_ORIGIN_HOSTS = new Set(["da-copilot.lovable.app", "localhost", "127.0.0.1"]);
-export const ALLOWED_ORIGIN_SUFFIXES = [
-  ".lovable.app",
-  ".lovableproject.com",
-  ".lovableproject-dev.com",
-];
 export const FREE_MAX_FILE_MB = 5;
 export const PRO_MAX_FILE_MB = 100;
 export const TEAM_MAX_FILE_MB = 250;
@@ -44,23 +37,6 @@ export function activeCompPlan(
 
 export function canAnalyze(isPro: boolean, used: number) {
   return isPro || used < FREE_ANALYSIS_LIMIT;
-}
-
-export function exceedsFreeLimit(isPro: boolean, usedAfter: number, bonus = 0) {
-  return !isPro && usedAfter > FREE_ANALYSIS_LIMIT + bonus;
-}
-
-export function isAllowedOrigin(value: string): boolean {
-  try {
-    const url = new URL(value);
-    const local = url.hostname === "localhost" || url.hostname === "127.0.0.1";
-    if (url.protocol !== "https:" && !(url.protocol === "http:" && local)) return false;
-    if (url.username || url.password) return false;
-    if (ALLOWED_ORIGIN_HOSTS.has(url.hostname)) return true;
-    return ALLOWED_ORIGIN_SUFFIXES.some((suffix) => url.hostname.endsWith(suffix));
-  } catch {
-    return false;
-  }
 }
 
 export function maxFileMb(plan: Plan) {
