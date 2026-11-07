@@ -67,6 +67,7 @@ function DashboardsPage() {
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("Reprenez vos analyses enregistrées et leurs graphiques.")}
+            {lang === "fr" ? " Favoris conservés dans ce navigateur pour votre compte." : " Favorites saved in this browser for your account."}
           </p>
 
           {threads === null ? (

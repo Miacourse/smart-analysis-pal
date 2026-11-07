@@ -188,7 +188,7 @@ function AdminPage() {
     const blob = new Blob([[head, ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "utilisateurs-da-copilot.csv";
+    a.download = "utilisateurs-datello.csv";
     a.click();
   }
 

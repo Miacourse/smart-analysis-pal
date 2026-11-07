@@ -278,7 +278,7 @@ export function ThreadSidebar({
         </div>
       </div>
 
-      <div className="space-y-1 border-t border-sidebar-border p-3">
+      <div className="max-h-[55%] shrink-0 space-y-1 overflow-y-auto border-t border-sidebar-border p-3">
         <div className="mb-2 flex items-center gap-1 rounded-lg bg-sidebar-foreground/5 p-1">
           {(["fr", "en"] as const).map((code) => (
             <Button variant="ghost"
