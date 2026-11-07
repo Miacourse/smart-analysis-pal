@@ -22,10 +22,13 @@ export function ChatShell({
       <ThreadSidebar activeThreadId={activeThreadId} className="hidden md:flex" />
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-3 md:hidden">
-          <Button variant="ghost"
+          <Button
+            variant="ghost"
             type="button"
             onClick={() => setOpen(true)}
-            aria-label={lang === "fr" ? "Ouvrir le menu des conversations" : "Open conversations menu"}
+            aria-label={
+              lang === "fr" ? "Ouvrir le menu des conversations" : "Open conversations menu"
+            }
             className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
           >
             <Menu className="h-4 w-4" />
@@ -36,7 +39,9 @@ export function ChatShell({
       </div>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[280px] max-w-[85vw] p-0">
-          <SheetTitle className="sr-only">{lang === "fr" ? "Conversations" : "Conversations"}</SheetTitle>
+          <SheetTitle className="sr-only">
+            {lang === "fr" ? "Conversations" : "Conversations"}
+          </SheetTitle>
           <ThreadSidebar activeThreadId={activeThreadId} onNavigate={() => setOpen(false)} />
         </SheetContent>
       </Sheet>

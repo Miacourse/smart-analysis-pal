@@ -96,7 +96,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Importez un fichier, posez votre question, obtenez la réponse en graphique.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://da-copilot.lovable.app/" },
+      { property: "og:url", content: "https://datello.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Datello — Vos données, enfin claires" },
       {
@@ -145,7 +145,8 @@ function RootComponent() {
     // Mesure réservée aux visiteurs réels du site de production :
     // les navigateurs automatisés (tests, prévisualisations) ne sont pas comptés.
     if (navigator.webdriver) return;
-    if (window.location.hostname !== "da-copilot.lovable.app") return;
+    if (!["datello.lovable.app", "da-copilot.lovable.app"].includes(window.location.hostname))
+      return;
     try {
       if (localStorage.getItem("da-no-track")) return;
     } catch {

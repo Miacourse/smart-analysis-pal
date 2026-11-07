@@ -14,7 +14,10 @@ export const Route = createFileRoute("/dashboards")({
       { title: "Tableaux de bord — Datello" },
       { name: "description", content: "Vos analyses enregistrées dans Datello." },
       { property: "og:title", content: "Tableaux de bord — Datello" },
-      { property: "og:description", content: "Retrouvez les analyses et graphiques ajoutés à vos tableaux de bord Datello." },
+      {
+        property: "og:description",
+        content: "Retrouvez les analyses et graphiques ajoutés à vos tableaux de bord Datello.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -51,7 +54,10 @@ function DashboardsPage() {
         .not("dataset_name", "is", null)
         .order("updated_at", { ascending: false });
       const savedIds = readDashboardIds(session.user.id);
-      if (!cancelled) setThreads(((data ?? []) as AnalysisThread[]).filter((thread) => savedIds.includes(thread.id)));
+      if (!cancelled)
+        setThreads(
+          ((data ?? []) as AnalysisThread[]).filter((thread) => savedIds.includes(thread.id)),
+        );
     })();
     return () => {
       cancelled = true;
@@ -67,7 +73,9 @@ function DashboardsPage() {
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("Reprenez vos analyses enregistrées et leurs graphiques.")}
-            {lang === "fr" ? " Favoris conservés dans ce navigateur pour votre compte." : " Favorites saved in this browser for your account."}
+            {lang === "fr"
+              ? " Favoris conservés dans ce navigateur pour votre compte."
+              : " Favorites saved in this browser for your account."}
           </p>
 
           {threads === null ? (
@@ -79,7 +87,9 @@ function DashboardsPage() {
                 {t("Aucun tableau de bord pour le moment.")}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {lang === "fr" ? "Ajoutez une réponse depuis votre conversation. Les favoris sont conservés dans ce navigateur." : "Add a response from your conversation. Favorites are saved in this browser."}
+                {lang === "fr"
+                  ? "Ajoutez une réponse depuis votre conversation. Les favoris sont conservés dans ce navigateur."
+                  : "Add a response from your conversation. Favorites are saved in this browser."}
               </p>
               <Link
                 to="/chat"

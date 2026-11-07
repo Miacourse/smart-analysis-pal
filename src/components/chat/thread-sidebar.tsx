@@ -179,7 +179,8 @@ export function ThreadSidebar({
       </div>
 
       <div className="px-3">
-        <Button variant="ghost"
+        <Button
+          variant="ghost"
           onClick={createThread}
           className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-teal-dark px-3 py-2.5 text-sm font-semibold text-sidebar-foreground transition-colors hover:bg-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
         >
@@ -261,7 +262,8 @@ export function ThreadSidebar({
                   </span>
                 )}
               </Link>
-              <Button variant="ghost"
+              <Button
+                variant="ghost"
                 onClick={() => deleteThread(thread.id)}
                 aria-label={t("Supprimer la conversation")}
                 className="rounded p-1 opacity-0 transition-opacity hover:bg-sidebar-foreground/10 group-hover:opacity-100 focus-visible:opacity-100"
@@ -281,7 +283,8 @@ export function ThreadSidebar({
       <div className="max-h-[55%] shrink-0 space-y-1 overflow-y-auto border-t border-sidebar-border p-3">
         <div className="mb-2 flex items-center gap-1 rounded-lg bg-sidebar-foreground/5 p-1">
           {(["fr", "en"] as const).map((code) => (
-            <Button variant="ghost"
+            <Button
+              variant="ghost"
               key={code}
               onClick={() => setLang(code)}
               aria-pressed={lang === code}
@@ -376,14 +379,16 @@ export function ThreadSidebar({
           <Mail className="h-4 w-4" />
           {t("Aide / Contact")}
         </a>
-        <Button variant="ghost"
+        <Button
+          variant="ghost"
           onClick={signOut}
           className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/55 hover:bg-sidebar-foreground/5"
         >
           <LogOut className="h-4 w-4" />
           {t("Se déconnecter / changer de compte")}
         </Button>
-        <Button variant="ghost"
+        <Button
+          variant="ghost"
           onClick={() => {
             setDeleteOpen((open) => !open);
             setDeleteConfirmation("");
@@ -409,14 +414,16 @@ export function ThreadSidebar({
               aria-label={t("Confirmation de suppression du compte")}
             />
             <div className="mt-2 flex gap-2">
-              <Button variant="ghost"
+              <Button
+                variant="ghost"
                 onClick={confirmDeleteAccount}
                 disabled={deleteConfirmation !== "SUPPRIMER" || deleting}
                 className="rounded-md bg-destructive px-2.5 py-1.5 font-semibold text-destructive-foreground disabled:opacity-50"
               >
                 {deleting ? t("Suppression…") : t("Confirmer")}
               </Button>
-              <Button variant="ghost"
+              <Button
+                variant="ghost"
                 onClick={() => {
                   setDeleteOpen(false);
                   setDeleteConfirmation("");

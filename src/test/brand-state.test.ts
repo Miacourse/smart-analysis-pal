@@ -1,11 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { analysisStep, clarificationColumns, dashboardKey, emptyReferencedColumn, readDashboardIds, saveDashboardId } from "@/lib/brand-state";
+import {
+  analysisStep,
+  clarificationColumns,
+  dashboardKey,
+  emptyReferencedColumn,
+  readDashboardIds,
+  saveDashboardId,
+} from "@/lib/brand-state";
 import { profileDataset } from "@/lib/dataset-profile";
 
 describe("Datello states", () => {
-  const profile = profileDataset([["Produit", "Montant", "Date"], ["A", "12", ""], ["B", "18", ""]], "ventes.csv");
+  const profile = profileDataset(
+    [
+      ["Produit", "Montant", "Date"],
+      ["A", "12", ""],
+      ["B", "18", ""],
+    ],
+    "ventes.csv",
+  );
   it("suggests columns only for an explicit clarification", () => {
-    expect(clarificationColumns("Quelle colonne : Produit ou Montant ?", profile)).toEqual(["Produit", "Montant"]);
+    expect(clarificationColumns("Quelle colonne : Produit ou Montant ?", profile)).toEqual([
+      "Produit",
+      "Montant",
+    ]);
     expect(clarificationColumns("Le montant total est 30.", profile)).toEqual([]);
   });
   it("warns only about a referenced entirely empty column", () => {

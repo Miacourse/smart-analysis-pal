@@ -20,8 +20,8 @@ type AppVisitsClient = {
   };
 };
 
-const PRODUCTION_ORIGIN = "https://da-copilot.lovable.app";
-const ALLOWED_ORIGIN_HOSTS = new Set(["da-copilot.lovable.app", "localhost", "127.0.0.1"]);
+const PRODUCTION_ORIGIN = "https://datello.lovable.app";
+const ALLOWED_ORIGIN_HOSTS = new Set(["datello.lovable.app", "localhost", "127.0.0.1"]);
 const ALLOWED_ORIGIN_SUFFIXES = [".lovable.app", ".lovableproject.com", ".lovableproject-dev.com"];
 
 export function isAllowedOrigin(value: string): boolean {

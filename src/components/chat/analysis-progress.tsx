@@ -52,7 +52,11 @@ export function UploadProgress({
           />
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
             <FileSearch className="size-4 shrink-0" />
-            <span>{lang === "fr" ? "Lecture et contrôle des données : doublons, valeurs manquantes et formats." : "Reading and checking data: duplicates, missing values and formats."}</span>
+            <span>
+              {lang === "fr"
+                ? "Lecture et contrôle des données : doublons, valeurs manquantes et formats."
+                : "Reading and checking data: duplicates, missing values and formats."}
+            </span>
           </div>
         </div>
       </div>
