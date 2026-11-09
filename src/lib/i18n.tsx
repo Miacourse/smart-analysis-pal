@@ -24,6 +24,10 @@ const EN: Record<string, string> = {
     "Open a conversation, then upload a CSV or Excel file.",
   "Reprenez vos analyses enregistrées et leurs graphiques.":
     "Resume your saved analyses and their charts.",
+  "Vos favoris et vos analyses récentes.": "Your favorites and recent analyses.",
+  Favoris: "Favorites",
+  "Analyses récentes": "Recent analyses",
+  "Aucune analyse pour le moment.": "No analyses yet.",
   "Chargement de vos tableaux de bord…": "Loading your dashboards…",
   "Aucun tableau de bord pour le moment.": "No dashboards yet.",
   "Chaque analyse terminée apparaît ici avec ses graphiques.":
