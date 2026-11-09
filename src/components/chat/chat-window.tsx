@@ -49,11 +49,29 @@ import { clarificationColumns, emptyReferencedColumn, saveDashboardId } from "@/
 
 const MAX_PREVIEW_ROWS = 40;
 
+function normalizeMessageParts(raw: unknown): UIMessage["parts"] {
+  if (typeof raw === "string") {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      return normalizeMessageParts(parsed);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (part) =>
+      Boolean(part) &&
+      typeof part === "object" &&
+      typeof (part as { type?: unknown }).type === "string",
+  ) as UIMessage["parts"];
+}
+
 function rowsToUIMessages(rows: { id: string; role: string; parts: unknown }[]): UIMessage[] {
   return rows.map((r) => ({
     id: r.id,
     role: r.role as "user" | "assistant",
-    parts: (r.parts as UIMessage["parts"]) ?? [],
+    parts: normalizeMessageParts(r.parts),
   }));
 }
 
