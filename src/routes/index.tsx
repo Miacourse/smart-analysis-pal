@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
   FileSpreadsheet,
@@ -36,6 +36,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { DatelloLogo } from "@/components/brand/DatelloLogo";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -64,6 +65,25 @@ const DISPLAYED_DOMAIN_COUNT = ANALYSIS_DOMAINS.length;
 function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { t, locale, lang } = useLang();
+  const navigate = useNavigate();
+
+  // Retour de la connexion Google : la session est posée sur l'accueil,
+  // on emmène directement l'utilisateur vers l'espace d'analyse.
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (active && data.user) navigate({ to: "/chat" });
+    });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session?.user) navigate({ to: "/chat" });
+    });
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const steps = [
     {
