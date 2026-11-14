@@ -168,6 +168,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_analysis: { Args: never; Returns: number }
+      consume_analysis_for_user: { Args: { _user_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -175,6 +177,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      release_analysis: { Args: never; Returns: number }
+      release_analysis_for_user: { Args: { _user_id: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "user"

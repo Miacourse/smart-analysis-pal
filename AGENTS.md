@@ -20,3 +20,4 @@
 - Keep supplied brand SVG geometry and bilingual message definitions unchanged; integrate fonts through root head links for Tailwind v4 compatibility.
 - Dashboard favorites use account-scoped browser storage referencing existing threads, with browser-local retention disclosed; no duplicate dataset storage is created.
 - Derive brand analysis states from actual response lifecycle and explicit clarification signals; never reject questions based on presentation heuristics.
+- Analysis quota RPCs must exist in the deployed database and be executable only by service_role; reserve atomically and release failed requests without exposing counter writes to clients.
