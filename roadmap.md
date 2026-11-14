@@ -1,5 +1,7 @@
 # Travail demandé
 
+- [ ] Restaurer le compteur sécurisé des essais et vérifier une analyse de fichier réelle.
+
 - [x] Installer l’identité Datello : thème, textes exacts, logo, mascotte, favicon et nom du projet.
 - [x] Refaire l’espace d’analyse et brancher les moments FR/EN sans modifier les limites ni les exports.
 - [x] Vérifier l’affichage mobile/ordinateur et un import suivi d’une analyse authentifiée.
