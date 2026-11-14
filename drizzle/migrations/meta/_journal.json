@@ -43,6 +43,13 @@
       "when": 1792109665594,
       "tag": "0005_admin_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794624278103,
+      "tag": "0006_restore_analysis_quota_rpcs",
+      "breakpoints": true
     }
   ]
 }
