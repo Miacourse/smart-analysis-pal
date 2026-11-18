@@ -50,6 +50,13 @@
       "when": 1794624278103,
       "tag": "0006_restore_analysis_quota_rpcs",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795045000000,
+      "tag": "0007_lock_legacy_quota_rpcs",
+      "breakpoints": true
     }
   ]
 }

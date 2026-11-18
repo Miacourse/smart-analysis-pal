@@ -3,14 +3,16 @@ import { describe, expect, it } from "vitest";
 
 const url = process.env["SUPABASE_URL"];
 const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+const configured = Boolean(url && key && !url.includes("ci.supabase.co") && key !== "ci");
 
-describe.skipIf(!url || !key)("deployed analysis quota", () => {
+describe.skipIf(!configured)("deployed analysis quota", () => {
   it("reserves five distinct free trials atomically and releases failed analyses", async () => {
     if (!url || !key) throw new Error("Missing integration test configuration");
     const client = createClient(url, key, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const userId = crypto.randomUUID();
+    let cleanupError: unknown = null;
     try {
       const results = await Promise.all(
         Array.from({ length: 5 }, () =>
@@ -25,13 +27,17 @@ describe.skipIf(!url || !key)("deployed analysis quota", () => {
       const released = await client.rpc("release_analysis_for_user", { _user_id: userId });
       expect(released.error).toBeNull();
       expect(released.data).toBe(5);
-      const { data, error } = await client.from("subscriptions")
-        .select("analyses_used").eq("user_id", userId).single();
+      const { data, error } = await client
+        .from("subscriptions")
+        .select("analyses_used")
+        .eq("user_id", userId)
+        .single();
       expect(error).toBeNull();
       expect(data?.analyses_used).toBe(5);
     } finally {
       const { error } = await client.from("subscriptions").delete().eq("user_id", userId);
-      if (error) throw error;
+      cleanupError = error;
     }
+    expect(cleanupError).toBeNull();
   });
 });
